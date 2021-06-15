@@ -1,8 +1,13 @@
 {
+  "name": "JSPyBridge",
+  "author": "extremeheat",
   "scripts": {
-    "test": "mocha"
+    "install": "pip3 install black",
+    "lint": "black --line-length 100 src",
+    "test": "standard --fix && mocha"
   },
   "devDependencies": {
-    "mocha": "^9.0.0"
+    "mocha": "^9.0.0",
+    "standard": "^16.0.3"
   }
 }

@@ -62,30 +62,20 @@ def exec_sync(command, timeout=1000):
 # Since we can be multitasking over the same pipe, it's possible exec_sync
 # will run but with output for a different command.
 def command(requestId, command, pollingInterval=20):
-    # fuck it, multitasking on one pipe, it's too complicated
     for line in exec_sync(command):
         if line["r"] == requestId:
             return line
-        # print('L',line)
     return None
-    # outs = exec_sync(command)
-    # if len(outs):
-    #     if out['r'] == requestId:
-    #         return out
-    # while True:
-    #     proc.stdin.read()
 
 
 # Write a message to a remote socket, in this case it's standard input
 # but it could be a websocket (slower) or other generic pipe.
 def writeAll(objs):
-    # print("WRITING", objs)
     for obj in objs:
         j = json.dumps(obj) + "\n"
         debug("[py -> js]", int(time.time() * 1000), j)
         proc.stdin.write(j.encode())
         proc.stdin.flush()
-        # print("Wrote")
 
 
 stderr_lines = []
@@ -99,12 +89,8 @@ def readAll():
 
 
 def com_io():
-    # print("POLLING", proc.poll())
-    # while proc.poll() == None:
     while proc.poll() == None:
         stderr_lines.append(proc.stderr.readline())
-        # time.sleep(1)
-        # print("Read!!", stderr_lines)
 
 
 com_thread = threading.Thread(target=com_io, args=(), daemon=True)

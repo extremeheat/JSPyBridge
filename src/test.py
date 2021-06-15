@@ -1,12 +1,14 @@
-from JSPyBridge import require, console, MyDemoClass
+from JSPyBridge import require, console, DemoClass
+import os
+os.environ['DEBUG'] = 'bridge'
 
 chalk, fs = require("chalk"), require("fs")
 
 console.log("Hello", chalk.red("world!"))
 fs.writeFileSync("HelloWorld.txt", "hi!")
 
-demo = MyDemoClass("blue", {"a": 3})
-demo2 = MyDemoClass("blue", {"a": 3})
+demo = DemoClass("blue", {"a": 3})
+demo2 = DemoClass("blue", {"a": 3})
 
 console.log(demo.other(demo2))
 

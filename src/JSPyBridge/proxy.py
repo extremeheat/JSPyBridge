@@ -17,13 +17,9 @@ class Executor:
         if action == "get":  # return obj[prop]
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
         if action == "init":  # return new obj[prop]
-            l = self.queue(
-                r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args}
-            )
+            l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
         if action == "call":  # return await obj[prop]
-            l = self.queue(
-                r, {"r": r, "action": "call", "ffid": ffid, "key": attr, "args": args}
-            )
+            l = self.queue(r, {"r": r, "action": "call", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
