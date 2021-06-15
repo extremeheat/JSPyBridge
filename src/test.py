@@ -9,7 +9,10 @@ fs.writeFileSync("HelloWorld.txt", "hi!")
 demo = DemoClass("blue", {"a": 3})
 demo2 = DemoClass("blue", {"a": 3})
 
-console.log(demo.other(demo2))
+console.log(demo.other(demo2), demo.array(), demo.array()['0'])
+
+for i in demo.array():
+    print("i",i)
 
 # This should throw for now :
 # demo.x = 3

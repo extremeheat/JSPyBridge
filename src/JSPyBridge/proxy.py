@@ -55,7 +55,7 @@ class Executor:
         return resp["val"]
 
 
-INTERNAL_VARS = ["id", "exe"]
+INTERNAL_VARS = ["id", "ix", "exe"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
@@ -63,6 +63,7 @@ class Proxy(object):
     def __init__(self, exe, ffid):
         self.id = ffid
         self.exe = exe
+        self.ix = 0
 
     def _call(self, method, methodType, val):
         def fn(*args):
@@ -93,6 +94,22 @@ class Proxy(object):
     def __getattr__(self, attr):
         methodType, val = self.exe.getProp(self.id, attr)
         return self._call(attr, methodType, val)
+
+    def __getitem__(self, attr):
+        methodType, val = self.exe.getProp(self.id, attr)
+        return self._call(attr, methodType, val)
+
+    def __iter__(self):
+        self.ix = 0
+        return self
+
+    def __next__(self):
+        if self.ix < self.length:
+            result = self[self.ix]
+            self.ix += 1
+            return result
+        else:
+            raise StopIteration
 
     def __setattr__(self, name, value):
         if name in INTERNAL_VARS:
