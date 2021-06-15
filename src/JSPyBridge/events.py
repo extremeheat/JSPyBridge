@@ -66,8 +66,11 @@ class EventLoop:
         self.threads = [x for x in self.threads if x[1] != method]
 
     # Stop the thread immediately
-    def terminate(self):
-        pass
+    def terminate(self, method):
+        for state, handler, thread in self.threads:
+            if handler == method:
+                thread.terminate()
+        self.threads = [x for x in self.threads if x[1] != method]
 
     # === EVENTS ===
     def _removeFromEventLoop(self, id_or_eventName):

@@ -7,7 +7,6 @@ def init():
     config.event_loop = events.EventLoop()
     config.event_thread = threading.Thread(target=config.event_loop.loop, args=(), daemon=True)
     config.event_thread.start()
-    # print("Event loop started", config.event_loop, config.event_thread)
     exe = proxy.Executor(config.event_loop)
     config.global_jsi = proxy.Proxy(exe, 0)
 

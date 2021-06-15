@@ -1,6 +1,5 @@
+# Must run with "DEBUG=true python3 test.py"
 from JSPyBridge import require, console, DemoClass
-import os
-os.environ['DEBUG'] = 'bridge'
 
 chalk, fs = require("chalk"), require("fs")
 

@@ -1,11 +1,9 @@
 import threading, subprocess, json, time, signal
 import atexit, os
+from .config import debug
 
 # Currently this uses process standard input & standard error pipes
 # to communicate with JS, but this can be turned to a socket later on
-
-# debug = print
-debug = lambda *a: a
 
 dn = os.path.dirname(__file__)
 
@@ -31,7 +29,6 @@ def read_stderr(stderrs):
     for stderr in stderrs:
         inp = stderr.decode("utf-8")
         for line in inp.split("\n"):
-            # print("L",line)
             if not len(line):
                 continue
             try:
@@ -98,12 +95,10 @@ com_thread.start()
 
 
 def kill_proc():
-    # print("KILL!")
     proc.terminate()
 
 
+# Make sure out child process is killed if the parent one is exiting
 atexit.register(kill_proc)
-signal.signal(signal.SIGTERM, kill_proc)
-signal.signal(signal.SIGINT, kill_proc)
 
 # print("Got", command(100, { "r": 100, "ffid": 0, "action": "get", "key": "console" }))
