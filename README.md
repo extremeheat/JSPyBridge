@@ -26,3 +26,13 @@ chalk, fs = require("chalk"), require("fs")
 console.log("Hello", chalk.red("world!"))
 fs.writeFileSync("HelloWorld.txt", "hi!")
 ```
+
+### Run an example
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
+
+Open in Gitpod link above, and run :
+```
+npm install # this installs test deps
+cd src
+DEBUG=true python3 test.py
+```
