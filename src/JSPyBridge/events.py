@@ -2,6 +2,7 @@ import time, threading, json, sys
 from . import connection, config
 from queue import Queue
 
+
 class TaskState:
     def __init__(self):
         self.stopping = False
@@ -14,6 +15,7 @@ class TaskState:
         if self.stopping:
             # print("we were cancelled!")
             sys.exit(1)
+
 
 # The event loop here is shared across all threads. All of the IO between the
 # JS and Python happens through this event loop. Because of Python's "Global Interperter Lock"
@@ -31,8 +33,8 @@ class EventLoop:
     # After a socket request is made, it's ID is pushed to self.requests. Then, after a response
     # is recieved it's removed from requests and put into responses, where it should be deleted
     # by the consumer.
-    requests = {} # Map of requestID -> threading.Lock
-    responses = {} # Map of requestID -> response payload
+    requests = {}  # Map of requestID -> threading.Lock
+    responses = {}  # Map of requestID -> response payload
 
     # === THREADING ===
     def _newTaskThread(self, handler, *args):
@@ -83,10 +85,15 @@ class EventLoop:
         #                 del self.eventMap[i]
         #                 return
 
-        self.events = [x for x in self.events if (x[0] != id_or_eventName and x[2] != id_or_eventName)]
+        self.events = [
+            x
+            for x in self.events
+            if (x[0] != id_or_eventName and x[2] != id_or_eventName)
+        ]
 
     def on(self, what, event, handler, asynchronous=False):
         bridge = self
+
         def run():
             evts = what.addEventListener(event)
             for evt in evts:
@@ -95,11 +102,13 @@ class EventLoop:
                 else:
                     handler(evt)
             return True, False
+
         def end():
             if asynchronous:
                 self.stop(handler)
             else:
                 what.removeEventListener(event)
+
         identifier = hash(what) + hash(event) + hash(handler)
         # if hwhat not in eventMap:
         #     eventMap[hwhat] = {}
@@ -112,15 +121,21 @@ class EventLoop:
         identifier = hash(what) + hash(eventName) + hash(handler)
         for _identifier, _what, _event, _run, _end in self.events:
             if what == _what and eventName == _event:
-                if not handler: # No handler specified, remove all that match what & evt name
+                if (
+                    not handler
+                ):  # No handler specified, remove all that match what & evt name
                     _end()
-                elif identifier == _identifier: # remove just those that match signature
+                elif (
+                    identifier == _identifier
+                ):  # remove just those that match signature
                     _end()
         # filter out the array
         if handler:
             self._removeFromEventLoop(identifier)
         else:
-            self.events = [x for x in self.events if (x[1] != what and x[2] != eventName)]
+            self.events = [
+                x for x in self.events if (x[1] != what and x[2] != eventName)
+            ]
 
     # == IO ==
 
@@ -162,15 +177,16 @@ class EventLoop:
             inbounds = connection.readAll()
             # print("4")
             for inbound in inbounds:
-                r = inbound['r']
+                r = inbound["r"]
                 if r in self.requests:
                     lock, timeout = self.requests[r]
                     self.responses[r] = inbound
                     del self.requests[r]
                     # print("set", r, self.responses)
-                    lock.set() # release, allow calling thread to resume
+                    lock.set()  # release, allow calling thread to resume
 
             time.sleep(self.sleepSeconds)
+
 
 # task = {
 #     canceled: if the task was requested to be canceled. After the stop() timeout, this task is terminated
@@ -205,4 +221,3 @@ class EventLoop:
 # loop.loop()
 
 # bridge.exit()
-
