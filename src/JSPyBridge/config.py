@@ -5,7 +5,8 @@ event_thread = None
 # The "root" interface to JavaScript with FFID 0
 global_jsi = None
 
-if "jspybridge" in os.getenv("DEBUG"):
+
+if ('DEBUG' in os.environ) and ("jspybridge" in os.getenv("DEBUG")):
     debug = print
 else:
     debug = lambda *a: a

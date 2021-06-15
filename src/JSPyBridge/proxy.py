@@ -55,19 +55,19 @@ class Executor:
         return resp["val"]
 
 
-INTERNAL_VARS = ["id", "ix", "exe"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
     def __init__(self, exe, ffid):
-        self.id = ffid
-        self.exe = exe
-        self.ix = 0
+        self.ffid = ffid
+        self._exe = exe
+        self._ix = 0
 
     def _call(self, method, methodType, val):
         def fn(*args):
-            mT, v = self.exe.callProp(self.id, method, args)
+            mT, v = self._exe.callProp(self.ffid, method, args)
             # bleh, functions inside functions cause inf recursion
             # can we avoid from JS? --done, with { call } wrapper
             if mT == "fn":
@@ -75,9 +75,9 @@ class Proxy(object):
             return self._call(method, mT, v)
 
         def instantiatable(*args):
-            mT, v = self.exe.initProp(self.id, method, args)
+            mT, v = self._exe.initProp(self.ffid, method, args)
             # when we call "new" keyword we always get object back
-            return self._call(self.id, mT, v)
+            return self._call(self.ffid, mT, v)
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
@@ -85,28 +85,28 @@ class Proxy(object):
         if methodType == "class":
             return instantiatable
         if methodType == "obj":
-            return Proxy(self.exe, val)
+            return Proxy(self._exe, val)
         if methodType == "void":
             return None
         else:
             return val
 
     def __getattr__(self, attr):
-        methodType, val = self.exe.getProp(self.id, attr)
+        methodType, val = self._exe.getProp(self.ffid, attr)
         return self._call(attr, methodType, val)
 
     def __getitem__(self, attr):
-        methodType, val = self.exe.getProp(self.id, attr)
+        methodType, val = self._exe.getProp(self.ffid, attr)
         return self._call(attr, methodType, val)
 
     def __iter__(self):
-        self.ix = 0
+        self._ix = 0
         return self
 
     def __next__(self):
-        if self.ix < self.length:
-            result = self[self.ix]
-            self.ix += 1
+        if self._ix < self.length:
+            result = self[self._ix]
+            self._ix += 1
             return result
         else:
             raise StopIteration
@@ -118,11 +118,11 @@ class Proxy(object):
             raise Exception("Sorry, all JS objects are immutable right now")
 
     def __str__(self):
-        return self.exe.inspect(self.id)
+        return self._exe.inspect(self.ffid)
 
     def __json__(self):
         # important ref
-        return {"ffid": self.id}
+        return {"ffid": self.ffid}
 
     def __del__(self):
-        self.exe.free(self.id)
+        self._exe.free(self.ffid)
