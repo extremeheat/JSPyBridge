@@ -9,7 +9,9 @@ class DemoClass extends EventEmitter {
 
   increment () {
     this.y++
-    this.emit('increment', 3)
+    setInterval(() => {
+      this.emit('increment', this.y++, { a: this })
+    }, 150)
   }
 
   get () {

@@ -6,13 +6,40 @@ from queue import Queue
 class TaskState:
     def __init__(self):
         self.stopping = False
+        self.sleep = self.wait
 
-    def wait(self, ms):
-        stopTime = time.time() + (ms / 1000)
+    def wait(self, sec):
+        stopTime = time.time() + sec
         while time.time() < stopTime and not self.stopping:
             time.sleep(0.2)
         if self.stopping:
             sys.exit(1)
+
+
+class EventExecutorThread(threading.Thread):
+    running = True
+    jobs = Queue()
+    completed = []
+    doing = []
+
+    def __init__(self):
+        super().__init__()
+        self.setDaemon(True)
+
+    def add_job(self, request_id, cb_id, job, args):
+        if request_id in self.doing:
+            return  # We already are doing this
+        self.doing.append(request_id)
+        self.jobs.put([request_id, cb_id, job, args])
+
+    def run(self):
+        while self.running:
+            request_id, cb_id, job, args = self.jobs.get()
+            ok = job(args)
+            if ok:
+                self.completed.append(cb_id)
+            if self.jobs.empty():
+                self.doing = []
 
 
 # The event loop here is shared across all threads. All of the IO between the
@@ -21,8 +48,12 @@ class TaskState:
 class EventLoop:
     active = True
     sleepSeconds = 0.01
-    # EventEmitters in JS to listen for
-    events = []
+
+    callbackExecutor = EventExecutorThread()
+
+    # This contains a map of callback request IDs to an object that can execute the callback.
+    callbacks = {}
+
     # The threads created managed by this event loop.
     threads = []
 
@@ -34,26 +65,29 @@ class EventLoop:
     requests = {}  # Map of requestID -> threading.Lock
     responses = {}  # Map of requestID -> response payload
 
+    def __init__(self):
+        self.callbackExecutor.start()
+
     # === THREADING ===
-    def _newTaskThread(self, handler, *args):
+    def newTaskThread(self, handler, *args):
         state = TaskState()
         t = threading.Thread(target=handler, args=(state, *args), daemon=True)
         self.threads.append([state, handler, t])
         t.start()
         return t
 
-    def start(self, method):
+    def startThread(self, method):
         h = hash(method)
-        self._newTaskThread(method)
+        self.newTaskThread(method)
 
     # Signal to the thread that it should stop. No forcing.
-    def stop(self, method):
+    def stopThread(self, method):
         for state, handler, thread in self.threads:
             if method == handler:
                 state.stopping = True
 
     # Force the thread to stop -- if it doesn't kill after a set amount of time.
-    def abort(self, method, killAfter=0.5):
+    def abortThread(self, method, killAfter=0.5):
         for state, handler, thread in self.threads:
             if handler == method:
                 state.stopping = True
@@ -66,51 +100,11 @@ class EventLoop:
         self.threads = [x for x in self.threads if x[1] != method]
 
     # Stop the thread immediately
-    def terminate(self, method):
+    def terminateThread(self, method):
         for state, handler, thread in self.threads:
             if handler == method:
                 thread.terminate()
         self.threads = [x for x in self.threads if x[1] != method]
-
-    # === EVENTS ===
-    def _removeFromEventLoop(self, id_or_eventName):
-        self.events = [
-            x for x in self.events if (x[0] != id_or_eventName and x[2] != id_or_eventName)
-        ]
-
-    def on(self, what, event, handler, asynchronous=False):
-        bridge = self
-
-        def run():
-            evts = what.addEventListener(event)
-            for evt in evts:
-                if asynchronous:
-                    bridge._newTaskThread(handler, evt)
-                else:
-                    handler(evt)
-            return True, False
-
-        def end():
-            if asynchronous:
-                self.stop(handler)
-            else:
-                what.removeEventListener(event)
-
-        identifier = hash(what) + hash(event) + hash(handler)
-        self.events.append([identifier, what, event, run, end])
-
-    def off(self, what, eventName, handler=None):
-        identifier = hash(what) + hash(eventName) + hash(handler)
-        for _identifier, _what, _event, _run, _end in self.events:
-            if what == _what and eventName == _event:
-                # No handler specified, remove all that match what & evt name
-                if not handler or identifier == _identifier:
-                    _end()  # remove just those that match signature
-        # filter out the array
-        if handler:
-            self._removeFromEventLoop(identifier)
-        else:
-            self.events = [x for x in self.events if (x[1] != what and x[2] != eventName)]
 
     # == IO ==
 
@@ -128,27 +122,26 @@ class EventLoop:
             connection.writeAll(self.outbound)
             self.outbound = []
 
-            # Run all of the event handler checks
-            removes = []
-            for identifier, what, event, run, end in self.events:
-                ok, remove = run()
-                if remove:
-                    removes.append(identifier)
-            for remove in removes:
-                end()
-                self.removeFromEventLoop(remove)
-
             # Iterate over the open threads and check if any have been killed, if so
             # remove them from self.threads
             self.threads = [x for x in self.threads if x[2].is_alive()]
 
+            for r in self.callbackExecutor.completed:
+                del self.callbacks[r]
+            self.callbackExecutor.completed = []
+
             inbounds = connection.readAll()
             for inbound in inbounds:
                 r = inbound["r"]
+                cbid = inbound["cb"] if "cb" in inbound else None
                 if r in self.requests:
                     lock, timeout = self.requests[r]
                     self.responses[r] = inbound
                     del self.requests[r]
                     lock.set()  # release, allow calling thread to resume
+                if cbid in self.callbacks:
+                    self.callbackExecutor.add_job(
+                        r, cbid, self.callbacks[cbid]["internal"], inbound
+                    )
 
             time.sleep(self.sleepSeconds)

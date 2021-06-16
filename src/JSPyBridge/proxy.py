@@ -1,4 +1,4 @@
-import time
+import time, threading
 from .config import debug, is_main_loop_active
 from . import json_patch
 
@@ -13,7 +13,7 @@ class Executor:
             if not is_main_loop_active():
                 return {"val": True}  # Event loop is dead, no need for GC
 
-        r = int(time.time() * 1000)  # unique request ts, acts as ID for response
+        r = time.time_ns() & 0xFFFFFF  # unique request ts, acts as ID for response
         l = None  # the lock
         if action == "get":  # return obj[prop]
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
@@ -29,6 +29,7 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
 
         if not l.wait(10):
+            print("Timed out", action, ffid, attr)
             raise Exception("Execution timed out")
         res = self.loop.responses[r]
         del self.loop.responses[r]
@@ -53,6 +54,62 @@ class Executor:
     def free(self, ffid):
         resp = self.ipc("free", ffid, "")
         return resp["val"]
+
+    def on(self, what, event, handler):
+        this = self
+        pollingId = int(time.time() * 100)
+
+        def handleCallback(data):
+            ffid = data["val"]
+            if not ffid:
+                # no paramater shortcut
+                handler()
+            else:
+                args = Proxy(this, ffid)
+                e = []
+                for arg in args:
+                    e.append(arg)
+                handler(*e)
+            return False
+
+        self.loop.callbacks[pollingId] = {
+            "internal": handleCallback,
+            "what": what,
+            "event": event,
+            "user": handler,
+        }
+        self.loop.outbound.append(
+            {
+                "r": pollingId - 1,
+                "action": "call",
+                "ffid": 0,
+                "key": "startEventPolling",
+                "args": [what.ffid, event, pollingId],
+            }
+        )
+
+    def off(self, what, event, handler=None):
+        ids = []
+        for pollingId in self.loop.callbacks:
+            cb = self.loop.callbacks[pollingId]
+            if cb["what"] == what and cb["event"] == event:
+                if handler:
+                    if cb["user"] == handler:
+                        ids.append(pollingId)
+                else:
+                    ids.append(pollingId)
+
+        for pollingId in ids:
+            del self.loop.callbacks[pollingId]
+            self.loop.outbound.append(
+                {
+                    "r": int(time.time() * 1000),
+                    "action": "call",
+                    "ffid": 0,
+                    "key": "stopEventPolling",
+                    "args": [pollingId],
+                }
+            )
 
 
 INTERNAL_VARS = ["ffid", "_ix", "_exe"]

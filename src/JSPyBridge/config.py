@@ -2,11 +2,12 @@ import os
 
 event_loop = None
 event_thread = None
+executor = None
 # The "root" interface to JavaScript with FFID 0
 global_jsi = None
 
 
-if ('DEBUG' in os.environ) and ("jspybridge" in os.getenv("DEBUG")):
+if ("DEBUG" in os.environ) and ("jspybridge" in os.getenv("DEBUG")):
     debug = print
 else:
     debug = lambda *a: a
