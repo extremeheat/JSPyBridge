@@ -115,6 +115,13 @@ class EventLoop:
         self.requests[request_id] = [lock, timeout]
         return lock
 
+    def on_exit(self):
+        if len(self.callbacks):
+            config.debug('cannot exit because active callback', self.callbacks)
+        while len(self.callbacks):
+            time.sleep(0.2)
+        self.callbackExecutor.running = False
+
     # === LOOP ===
     def loop(self):
         while self.active:

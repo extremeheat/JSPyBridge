@@ -25,7 +25,6 @@ def onIncrement(num, obj):
 on(demo, "increment", onIncrement)
 demo.increment()
 
-time.sleep(0.8)
 
 # This should throw for now :
 # demo.x = 3

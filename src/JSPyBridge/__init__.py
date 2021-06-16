@@ -1,6 +1,6 @@
 # This file contains all the exposed modules
 from . import config, proxy, events, decorator
-import threading, time
+import threading, time, atexit
 
 
 def init():
@@ -9,6 +9,7 @@ def init():
     config.event_thread.start()
     config.executor = proxy.Executor(config.event_loop)
     config.global_jsi = proxy.Proxy(config.executor, 0)
+    atexit.register(config.event_loop.on_exit)
 
 
 init()
