@@ -1,5 +1,7 @@
-const { StdioCom } = require('./StdioCom')
+const { StdioCom } = require('./IpcPipeCom')
+const { resolve } = require('path')
 const util = require('util')
+const log = () => {}
 
 const REQ_TIMEOUT = 10000
 
@@ -21,6 +23,8 @@ async function waitFor(cb, withTimeout, onTimeout) {
   if (ret === 'timeout') onTimeout()
   return ret
 }
+
+const nextReq = () => (performance.now() * 10) | 0
 
 class Bridge {
   constructor(com) {
@@ -47,7 +51,7 @@ class Bridge {
   }
 
   async len(ffid, stack) {
-    const req = { r: Date.now(), action: 'length', ffid: ffid, key: stack, val: '' }
+    const req = { r: nextReq(), action: 'length', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
@@ -55,7 +59,7 @@ class Bridge {
   }
 
   async get(ffid, stack, args) {
-    const req = { r: Date.now(), action: 'get', ffid: ffid, key: stack, val: args }
+    const req = { r: nextReq(), action: 'get', ffid: ffid, key: stack, val: args }
 
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -73,11 +77,11 @@ class Bridge {
   }
 
   async call(ffid, stack, args) {
-    const req = { r: Date.now(), action: 'call', ffid: ffid, key: stack, val: args }
+    const req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: args }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
-    console.log('call', ffid, stack, args, resp)
+    log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
       case 'int':
@@ -91,7 +95,7 @@ class Bridge {
   }
 
   async inspect(ffid, stack) {
-    const req = { r: Date.now(), action: 'inspect', ffid: ffid, key: stack, val: '' }
+    const req = { r: nextReq(), action: 'inspect', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
@@ -99,7 +103,7 @@ class Bridge {
   }
 
   async free(ffid) {
-    const req = { r: Date.now(), action: 'free', ffid: ffid, key: '', val: '' }
+    const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
@@ -128,7 +132,7 @@ class Bridge {
     const handler = {
       get: (target, prop, reciever) => {
         const next = new Intermediate(target.callstack)
-        console.log('```prop', next.callstack, prop)
+        // log('```prop', next.callstack, prop)
         if (prop === 'ffid') return ffid
         if (prop === 'then') {
           // Avoid .then loops
@@ -181,11 +185,23 @@ class Bridge {
   }
 }
 
-async function load() {
-  const com = new StdioCom()
-  const bridge = new Bridge(com)
-  const root = bridge.makePyObject(0)
-  return root
-}
+const com = new StdioCom()
+const bridge = new Bridge(com)
+const root = bridge.makePyObject(0)
 
-module.exports = load
+// async function load() {
+// }
+
+module.exports = {
+  root,
+  python(file) {
+    if (file.startsWith('/') || file.startsWith('./') || file.includes(':')) {
+      const importPath = resolve(file)
+      const fname = file.split('/').pop() || file
+      // console.log('Loading', fname)
+      return root.fileImport(fname, importPath)
+    }
+    return root.python(...args)
+  },
+  com
+}

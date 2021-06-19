@@ -4,7 +4,7 @@ def make_signature(what):
     # print('w', what, type(what))
     s = repr(what)
     # For primitives, do nothing special
-    if isinstance(what, (bytes, bytearray, str, int, dict, list, tuple)):
+    if isinstance(what, (bytes, bytearray, str, int, complex, float, dict, list, tuple)):
         return s
     s += '\n'
     if inspect.isclass(what):
