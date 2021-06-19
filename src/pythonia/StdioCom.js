@@ -16,7 +16,7 @@ class StdioCom {
   }
 
   start () {
-    this.proc = cp.spawn(this.python, ['Bridge.py'])
+    this.proc = cp.spawn(this.python, ['Bridge.py'], { stdio: ['pipe', 'inherit', 'pipe'] })
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
       console.log('py>js data', data)
@@ -31,7 +31,7 @@ class StdioCom {
         this.recieve(recv)
       }
     })
-    this.proc.stdout.pipe(process.stdout)
+    // this.proc.stdout.pipe(process.stdout)
   }
 
   recieve (j) {

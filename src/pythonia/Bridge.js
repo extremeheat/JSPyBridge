@@ -4,14 +4,14 @@ const util = require('util')
 const REQ_TIMEOUT = 10000
 
 class BridgeException extends Error {
-  constructor (...a) {
+  constructor(...a) {
     super(...a)
     this.message += ` Python didn't respond in time (${REQ_TIMEOUT}ms), look above for any Python errors. If no errors, the API call hung.`
     // We'll fix the stack trace once this is shipped.
   }
 }
 
-async function waitFor (cb, withTimeout, onTimeout) {
+async function waitFor(cb, withTimeout, onTimeout) {
   let t
   const ret = await Promise.race([
     new Promise(resolve => cb(resolve)),
@@ -23,7 +23,7 @@ async function waitFor (cb, withTimeout, onTimeout) {
 }
 
 class Bridge {
-  constructor (com) {
+  constructor(com) {
     this.com = com
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
@@ -31,12 +31,12 @@ class Bridge {
     })
   }
 
-  request (req, cb) {
+  request(req, cb) {
     // When we call Python functions with Proxy paramaters, we need to just send the FFID
     // so it can be mapped on the python side.
     const nval = []
     for (const val of req.val) {
-      if (val.ffid) {
+      if (val?.ffid) {
         nval.push({ ffid: val.ffid })
       } else {
         nval.push(val)
@@ -46,19 +46,19 @@ class Bridge {
     this.com.write(req, cb)
   }
 
-  async len (ffid, stack) {
-    const req = { r: Date.now(), action: 'len', ffid: ffid, key: stack, val: '' }
+  async len(ffid, stack) {
+    const req = { r: Date.now(), action: 'length', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException(`Attempt to access ${stack.join('.')}, failed.`)
+      throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     return resp.val
   }
 
-  async get (ffid, stack, args) {
+  async get(ffid, stack, args) {
     const req = { r: Date.now(), action: 'get', ffid: ffid, key: stack, val: args }
 
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException(`Attempt to access ${stack.join('.')}, failed.`)
+      throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     switch (resp.key) {
       case 'string':
@@ -72,11 +72,12 @@ class Bridge {
     }
   }
 
-  async call (ffid, stack, args) {
+  async call(ffid, stack, args) {
     const req = { r: Date.now(), action: 'call', ffid: ffid, key: stack, val: args }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException(`Attempt to access ${stack.join('.')}, failed.`)
+      throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
+    console.log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
       case 'int':
@@ -89,60 +90,90 @@ class Bridge {
     }
   }
 
-  async inspect (ffid, stack) {
+  async inspect(ffid, stack) {
     const req = { r: Date.now(), action: 'inspect', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException(`Attempt to access ${stack.join('.')}, failed.`)
+      throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     return resp.val
   }
 
-  async free (ffid) {
+  async free(ffid) {
     const req = { r: Date.now(), action: 'free', ffid: ffid, key: '', val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException('Attempt to GC failed.')
+      // Allow a GC time out, it's probably because the Python process died
+      // throw new BridgeException('Attempt to GC failed.')
     })
     return resp.val
   }
 
-  queueForCollection (ffid, val) {
+  queueForCollection(ffid, val) {
     this.finalizer.register(val, ffid)
   }
 
-  makePyObject (ffid, inspectString) {
-    let callstack = []
-    function You_must_use_await_when_calling_python_APIs () {} // eslint-disable-line
+  makePyObject(ffid, inspectString) {
+    // "Intermediate" objects are returned while chaining. If the user tries to log
+    // an Intermediate then we know they forgot to use await, as if they were to use
+    // await, then() would be implicitly called where we wouldn't return a Proxy, but
+    // a Promise. Must extend Function to be a "callable" object in JS for the Proxy.
+    class Intermediate extends Function {
+      constructor(callstack) {
+        super()
+        this.callstack = [...callstack]
+      }
+      [util.inspect.custom]() {
+        return '\n[You must use await when calling a Python API]\n'
+      }
+    }
     const handler = {
       get: (target, prop, reciever) => {
+        const next = new Intermediate(target.callstack)
+        console.log('```prop', next.callstack, prop)
         if (prop === 'ffid') return ffid
         if (prop === 'then') {
           // Avoid .then loops
-          if (!callstack.length) {
+          if (!next.callstack.length) {
             return undefined
           }
           return (resolve, reject) => {
-            this.get(ffid, callstack, []).then(resolve).catch(reject)
-            callstack = [] // Empty the callstack afer running fn
+            this.get(ffid, next.callstack, []).then(resolve).catch(reject)
+            next.callstack = [] // Empty the callstack afer running fn
           }
         }
         if (prop === 'length') {
-          return this.len(ffid)
-        } else if (prop.endsWith('$')) { // stop returning Proxy chain, call python
-          callstack.push(prop.slice(0, -1))
-          console.log('Getting method attr', callstack.join('.'))
-          return this.get(ffid, callstack, [])
+          return this.len(ffid, next.callstack, [])
         }
-        callstack.push(prop)
-        return new Proxy(You_must_use_await_when_calling_python_APIs, handler) // no $ and not fn call, continue chaining
+        if (typeof prop === 'symbol') {
+          console.log('Get symbol', next.callstack, prop)
+          if (prop == Symbol.asyncIterator) {
+            // todo
+          }
+          return
+        }
+        // else if (prop.endsWith('$')) { // stop returning Proxy chain, call python
+        //   callstack.push(prop.slice(0, -1))
+        //   console.log('Getting method attr', callstack.join('.'))
+        //   return this.get(ffid, callstack, [])
+        // }
+        if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
+        next.callstack.push(prop)
+        return new Proxy(next, handler) // no $ and not fn call, continue chaining
       },
       apply: (target, self, args) => { // Called for function call
-        const ret = this.call(ffid, callstack, args)
-        callstack = [] // Flush callstack to py
+        const ret = this.call(ffid, target.callstack, args)
+        target.callstack = [] // Flush callstack to py
         return ret
       }
     }
+    // A CustomLogger is just here to allow the user to console.log Python objects
+    // since this must be sync, we need to call inspect in Python along with every CALL or GET
+    // operation, which does bring some small overhead.
     class CustomLogger extends Function {
-      [util.inspect.custom] () {
+      constructor () {
+        super()
+        this.callstack = []
+      }
+      [util.inspect.custom]() {
         return inspectString || '(Some Python object)'
       }
     }
@@ -150,36 +181,11 @@ class Bridge {
   }
 }
 
-async function work () {
+async function load() {
   const com = new StdioCom()
   const bridge = new Bridge(com)
   const root = bridge.makePyObject(0)
-
-  const demoClass = await root.demo(2)
-  const demoClass2 = await root.demo(3)
-
-  const added = await root.add(demoClass, demoClass2)
-
-  const proxy = await root.add
-  console.log('Added', added)
-
-  console.log('add', proxy)
-
-  // console.log('Numpy:\n', await root.python('numpy'))
-
-  // const n = await demoClass.nested()
-  // console.log('Numpy====:\n')
-  console.log(await demoClass.nested)
-
-  // console.log('Demo', demoClass)
-  // const py = await root.python('math')
-  // console.log('RES', await py.ceil(3.1415))
-  // console.log('yello')
-  com.proc.kill()
+  return root
 }
 
-work().then(() => {
-  setTimeout(() => {
-    console.log('DOne!')
-  }, 9000)
-})
+module.exports = load

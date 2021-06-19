@@ -1,7 +1,7 @@
 # from . 
 import util
 import inspect, importlib
-import sys, json
+import sys, json, types
 import fileinput
 
 
@@ -21,6 +21,20 @@ class DemoClass:
             return 3
         return some
 
+    def arr(self):
+        return [1,2,4]
+
+    def barr(self):
+        return bytearray()
+
+    def dic(self):
+        return {
+            'x': {
+                'y': 4,
+                'z': [5,6,7,8,None]
+            }
+        }
+
 def add(demoClas1, demoClas2):
     # print("dc", demoClas1, demoClas2)
     return demoClas1.var + demoClas2.var
@@ -30,14 +44,15 @@ class Bridge:
         0: {
             'python': python,
             'demo': DemoClass,
-            'add': add
+            'add': add,
+            'open': open
         }
     }
     cur_ffid = 0
 
     def __init__(self, ipc):
         self.ipc = ipc
-        self.q = lambda r, key, val, sig=None: self.ipc.queue({ 'r': r, 'key': key, 'val': val, 'sig': sig })
+        self.q = lambda r, key, val, sig='': self.ipc.queue({ 'r': r, 'key': key, 'val': val, 'sig': sig })
 
     def assign_ffid(self, what):
         self.cur_ffid += 1
@@ -46,7 +61,7 @@ class Bridge:
 
     def length(self, r, ffid, key, args):
         l = len(self.m[ffid])
-        self.q(r, ffid, '', l)
+        self.q(r, 'num', l)
         
     def init(self, r, ffid, key, args):
         v = self.m[ffid](*args)
@@ -55,8 +70,9 @@ class Bridge:
 
     def call(self, r, ffid, keys, args, invoke=True):
         v = self.m[ffid]
+        print("r=>", v, ffid, keys, args)
         for key in keys:
-            v = getattr(v, key, None) or v[key] # 🚨 If you get an error here, you called an undefined property
+            v = getattr(v, str(key), None) or v[key] # 🚨 If you get an error here, you called an undefined property
         # Classes when called will return void, but we need to return
         # object to JS.
         was_class = False
@@ -65,14 +81,14 @@ class Bridge:
                 was_class = True
             v = v(*args)
         typ = type(v)
-        # print("typ", typ, inspect.isclass(v), inspect.ismodule(v))
+        print("typ", v, typ, inspect.isclass(v), inspect.ismodule(v))
         if typ is str:
             self.q(r, 'string', v)
             return
-        if typ is int or typ is float or typ is complex:
+        if typ is int or typ is float or typ is complex or (v is None):
             self.q(r, 'int', v)
             return
-        if inspect.isclass(v):
+        if inspect.isclass(v) or isinstance(v, type):
             # We need to increment FFID 
             self.q(r, 'class', self.assign_ffid(v), util.make_signature(v))
             return
@@ -85,12 +101,18 @@ class Bridge:
         if typ is list:
             self.q(r, 'list', self.assign_ffid(v), util.make_signature(v))
             return
+        if repr(typ).startswith('<class'):  # numpy generator for some reason can't be picked up...
+            self.q(r, 'class', self.assign_ffid(v), util.make_signature(v))
+            return
+        # print("VOID", v, '\n', type(v), isinstance(v, (type)), inspect.isgenerator(v), inspect.isgeneratorfunction(v), inspect.isclass(v),inspect.ismethod(v), inspect.isfunction(v))
         self.q(r, 'void', self.cur_ffid)
 
     # Same as call just without invoking anything, and args
     # would be null
     def get(self, r, ffid, keys, args):
-        return self.call(r, ffid, keys, [], invoke=False)
+        o = self.call(r, ffid, keys, [], invoke=False)
+        print("Got", self, r, ffid, keys, args, o)
+        return o
 
     def inspect(self, r, ffid, keys, args):
         v = self.m[ffid]
@@ -108,12 +130,12 @@ class Bridge:
         nargs = []
         if args:
             for arg in args:
-                print("-ARG", arg)
+                # print("-ARG", arg)
                 if isinstance(arg, dict) and ('ffid' in arg):
                     nargs.append(self.m[arg['ffid']])
                 else:
                     nargs.append(arg)
-        print("Calling", action, nargs)
+        # print("Calling", action, nargs)
         return getattr(self, action)(r, ffid, key, nargs)
 
 class Ipc:

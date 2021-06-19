@@ -1,10 +1,12 @@
 import inspect
 
 def make_signature(what):
-    # print('w', what, )
-    s = repr(what) + '\n'
-    if type(what) is dict or type(what) is list or type(what) is tuple:
+    # print('w', what, type(what))
+    s = repr(what)
+    # For primitives, do nothing special
+    if isinstance(what, (bytes, bytearray, str, int, dict, list, tuple)):
         return s
+    s += '\n'
     if inspect.isclass(what):
         s += 'class'
     elif inspect.ismethod(what):
@@ -18,7 +20,7 @@ def make_signature(what):
     sig = str(inspect.signature(what)) if callable(what) else ''
     if len(sig) > 2:
         s += '' + sig
-    s += '\n' + (inspect.getcomments(what) or '')
+    s += '\n' #+ (inspect.getcomments(what) or '')
     s += what.__doc__ or ''
     return s
 
