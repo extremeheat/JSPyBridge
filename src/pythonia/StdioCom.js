@@ -9,13 +9,13 @@ const cp = require('child_process')
 // }
 
 class StdioCom {
-  constructor(ver=3) {
-    this.python = ver == 3 ? 'python3' : 'python2'
+  constructor (ver = 3) {
+    this.python = ver === 3 ? 'python3' : 'python2'
     this.handlers = {}
     this.start()
   }
-    
-  start() {
+
+  start () {
     this.proc = cp.spawn(this.python, ['Bridge.py'])
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
@@ -34,8 +34,8 @@ class StdioCom {
     this.proc.stdout.pipe(process.stdout)
   }
 
-  recieve(j) {
-    if (typeof(j) == 'object') {
+  recieve (j) {
+    if (typeof (j) === 'object') {
       console.log('[py -> js]', j)
       this.handlers[j.r]?.(j)
       delete this.handlers[j.r]
@@ -44,11 +44,11 @@ class StdioCom {
     }
   }
 
-  register(eventId, cb) {
+  register (eventId, cb) {
     this.handlers[eventId] = cb
   }
 
-  write(what, cb) {
+  write (what, cb) {
     console.log('[js -> py]', what)
     const fb = JSON.stringify(what)
     console.log('fb', fb)
@@ -72,7 +72,6 @@ module.exports = { StdioCom }
 // }
 
 // // Proxy is an "exotic object" that cannot be extended
-
 
 // class ChainPromise extends Promise {
 
