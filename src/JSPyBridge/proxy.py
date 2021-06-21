@@ -1,6 +1,6 @@
 import time, threading
 from .config import debug, is_main_loop_active
-from . import json_patch
+from . import config, json_patch
 
 
 class Executor:
@@ -10,7 +10,8 @@ class Executor:
 
     def ipc(self, action, ffid, attr, args=None):
         if action == "free":  # GC
-            if not is_main_loop_active():
+            # print('ML',config,is_main_loop_active)
+            if not is_main_loop_active or not is_main_loop_active():
                 return {"val": True}  # Event loop is dead, no need for GC
 
         r = time.time_ns() & 0xFFFFFF  # unique request ts, acts as ID for response
@@ -58,6 +59,7 @@ class Executor:
     def on(self, what, event, handler):
         this = self
         pollingId = int(time.time() * 100)
+        # print("Event Listener", what, event, handler)
 
         def handleCallback(data):
             ffid = data["val"]
@@ -87,6 +89,7 @@ class Executor:
                 "args": [what.ffid, event, pollingId],
             }
         )
+        # print("Added Listener", pollingId)
 
     def off(self, what, event, handler=None):
         ids = []
@@ -112,25 +115,38 @@ class Executor:
             )
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", '_iffid']
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid):
+    def __init__(self, exe, ffid, iffid=0):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
+        self._iffid = iffid
 
     def _call(self, method, methodType, val):
-        def fn(*args):
-            mT, v = self._exe.callProp(self.ffid, method, args)
-            # bleh, functions inside functions cause inf recursion
-            # can we avoid from JS? --done, with { call } wrapper
-            if mT == "fn":
-                raise Error("Generator functions are not supported right now")
-            return self._call(method, mT, v)
-
+        this = self
+        class fn:
+            def __call__(self, *args):
+                mT, v = this._exe.callProp(this.ffid, method, args)
+                # bleh, functions inside functions cause inf recursion
+                # can we avoid from JS? --done, with { call } wrapper
+                if mT == "fn":
+                    # print("NESTED", method, methodType, mT, v)
+                    return Proxy(this._exe, v)
+                    # raise Error("Generator functions are not supported right now")
+                # print("__call", mT, v)
+                return this._call(method, mT, v)
+            def __getattr__(self, attr):
+                # print("CALLED getattr", attr)
+                if attr == 'new':
+                    # mT, v = this._exe.initProp(this.ffid, method)
+                    return this._call('', 'class', this.ffid)
+                raise Exception("Cannot access variable inside a function type, did you forget to use .new()?")
+                # methodType, val = this._exe.getProp(this.ffid, attr)
+                # return this._call(attr, methodType, val)
         def instantiatable(*args):
             mT, v = self._exe.initProp(self.ffid, method, args)
             # when we call "new" keyword we always get object back
@@ -138,17 +154,33 @@ class Proxy(object):
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
-            return fn
+            # print("ret fn", method)
+            return fn()
         if methodType == "class":
+            # print("ret cls", method)
             return instantiatable
         if methodType == "obj":
             return Proxy(self._exe, val)
+        if methodType == 'inst':
+            return Proxy(self._exe, val, self.ffid)
         if methodType == "void":
             return None
         else:
             return val
 
+    # def __call__(self, *args):
+    #     mT, v = self._exe.callProp(self.ffid, self._iffid, args)
+    #     # bleh, functions inside functions cause inf recursion
+    #     # can we avoid from JS? --done, with { call } wrapper
+    #     if mT == "fn":
+    #         raise Error("Generator functions are not supported right now")
+    #     print('Callres', self.ffid, args, mT, v)
+    #     return self._call('', mT, v)
+
     def __getattr__(self, attr):
+        # Special handling for new keyword for ES5 classes
+        if attr == 'new':
+            return self._call(attr, 'class', self.ffid)
         methodType, val = self._exe.getProp(self.ffid, attr)
         return self._call(attr, methodType, val)
 

@@ -23,4 +23,16 @@ console = config.global_jsi.console
 DemoClass = config.global_jsi.DemoClass
 on = config.executor.on
 off = config.executor.off
-AsyncTask = decorator.AsyncTask
+
+def AsyncTask(fn):
+    fn.is_async_task = True
+    return config.event_loop.startThread(fn)
+
+def On(emitter, event, handler=None):
+    # print("On", emitter, event,onEvent)
+    if handler:
+        return on(emitter, event, handler)
+    def decor(fn):
+        on(emitter, event, fn)
+        return fn
+    return decor
