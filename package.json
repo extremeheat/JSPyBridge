@@ -3,7 +3,7 @@
   "author": "extremeheat",
   "scripts": {
     "install": "pip3 install black",
-    "lint": "black --line-length 100 src",
+    "lint": "python3 -m black --line-length 100 src",
     "test": "standard --fix && mocha"
   },
   "devDependencies": {

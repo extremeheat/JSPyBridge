@@ -1,5 +1,5 @@
 # This file contains all the exposed modules
-from . import config, proxy, events, decorator
+from . import config, proxy, events
 import threading, time, atexit
 
 
