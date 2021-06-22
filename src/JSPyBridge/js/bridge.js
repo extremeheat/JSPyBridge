@@ -69,9 +69,9 @@ class Bridge {
         // Example: some.method() -> some['method'] is GET'ed, then Python realizes
         // it's a class so returns a callable function that does a INIT operation.
         // this.m[++this.ffid] = v
-        return this.ipc.send({ r, key: 'class', val: this.ffid })
+        return this.ipc.send({ r, key: 'class', val: ffid })
       case 'fn':
-        // this.m[++this.ffid] = v
+        this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'fn', val: this.ffid })
       case 'obj':
         this.m[++this.ffid] = v
@@ -89,8 +89,12 @@ class Bridge {
 
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
-    // console.debug('call', r, ffid, args, this.m)
-    const v = await this.m[ffid][attr](...args)
+    // console.debug('call', r, ffid, attr, args)
+    if (attr) {
+      var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
+    } else {
+      var v = await this.m[ffid](...args) // eslint-disable-line
+    }
     const type = getType(v)
     // console.log('GetType', type, v)
     switch (type) {
@@ -114,7 +118,7 @@ class Bridge {
 
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
-    const s = util.inspect(await this.m[ffid])
+    const s = util.inspect(await this.m[ffid], { colors: true })
     this.ipc.send({ r, val: s })
   }
 
@@ -132,7 +136,7 @@ class Bridge {
   }
 
   onMessage ({ r, action, ffid, key, args }) {
-    // debug('onMessage!', arguments, r, action)
+    // console.debug('onMessage!', arguments, r, action)
     const nargs = []
     if (args) {
       // Sometimes function arguments might contain classes,
@@ -175,6 +179,21 @@ class Bridge {
   }
 }
 
+Object.assign(util.inspect.styles, {
+  bigint: 'yellow',
+  boolean: 'yellow',
+  date: 'magenta',
+  module: 'underline',
+  name: 'blueBright',
+  null: 'bold',
+  number: 'yellow',
+  regexp: 'red',
+  special: 'magentaBright', // (e.g., Proxies)
+  string: 'green',
+  symbol: 'blue',
+  undefined: 'grey'
+})
+
 const ipc = {
   send: data => {
     debug('js -> py', data)
@@ -196,3 +215,4 @@ process.stdin.on('data', data => {
 process.on('exit', () => {
   debug('** Node exiting')
 })
+// console.log('JS Started!')

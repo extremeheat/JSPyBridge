@@ -1,27 +1,16 @@
 import threading, subprocess, json, time, signal
-import atexit, os
+import atexit, os, sys
+from . import config
 from .config import debug
+
+os.environ["FORCE_COLOR"] = "1"
 
 # Currently this uses process standard input & standard error pipes
 # to communicate with JS, but this can be turned to a socket later on
 
 dn = os.path.dirname(__file__)
 
-try:
-    proc = subprocess.Popen(
-        ["node", dn + "/js/bridge.js"],
-        stdin=subprocess.PIPE,
-        # stdout=self.stdout,
-        stderr=subprocess.PIPE
-        # shell=True
-    )
-except Exception as e:
-    # v = subprocess.check_output(['npm', 'version'])
-    # print(v.decode())
-    print(
-        "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 15 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
-    )
-    raise e
+proc = None
 
 
 def read_stderr(stderrs):
@@ -30,6 +19,9 @@ def read_stderr(stderrs):
         inp = stderr.decode("utf-8")
         for line in inp.split("\n"):
             if not len(line):
+                continue
+            if not line.startswith("{"):
+                print("[JSE]", line)
                 continue
             try:
                 d = json.loads(line)
@@ -65,12 +57,17 @@ def command(requestId, command, pollingInterval=20):
     return None
 
 
+sendQ = []
+
 # Write a message to a remote socket, in this case it's standard input
 # but it could be a websocket (slower) or other generic pipe.
 def writeAll(objs):
     for obj in objs:
         j = json.dumps(obj) + "\n"
         debug("[py -> js]", int(time.time() * 1000), j)
+        if not proc:
+            sendQ.append(j.encode())
+            continue
         proc.stdin.write(j.encode())
         proc.stdin.flush()
 
@@ -86,8 +83,29 @@ def readAll():
 
 
 def com_io():
+    global proc
+    try:
+        proc = subprocess.Popen(
+            ["node", dn + "/js/bridge.js"],
+            stdin=subprocess.PIPE,
+            stdout=sys.stdout,
+            stderr=subprocess.PIPE,
+        )
+    except Exception as e:
+        # v = subprocess.check_output(['npm', 'version'])
+        # print(v.decode())
+        print(
+            "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 15 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
+        )
+        raise e
+
+    for send in sendQ:
+        proc.stdin.write(send)
+    proc.stdin.flush()
+
     while proc.poll() == None:
         stderr_lines.append(proc.stderr.readline())
+        config.event_loop.queue.put("stdin")
 
 
 com_thread = threading.Thread(target=com_io, args=(), daemon=True)
@@ -95,7 +113,8 @@ com_thread.start()
 
 
 def kill_proc():
-    proc.terminate()
+    if proc:
+        proc.terminate()
 
 
 # Make sure out child process is killed if the parent one is exiting

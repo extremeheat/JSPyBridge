@@ -48,6 +48,7 @@ class EventExecutorThread(threading.Thread):
 class EventLoop:
     active = True
     sleepSeconds = 0.01
+    queue = Queue()
 
     callbackExecutor = EventExecutorThread()
 
@@ -113,18 +114,67 @@ class EventLoop:
         self.outbound.append(payload)
         lock = threading.Event()
         self.requests[request_id] = [lock, timeout]
+        self.queue.put("send")
         return lock
+
+    def add_listener(self, polling_id, handler, on_object, on_event, ref):
+        self.callbacks[polling_id] = {
+            "internal": handler,
+            "what": on_object,
+            "event": on_event,
+            "ref": ref,
+        }
+        self.outbound.append(
+            {
+                "r": polling_id - 1,
+                "action": "call",
+                "ffid": 0,
+                "key": "startEventPolling",
+                "args": [on_object.ffid, on_event, polling_id],
+            }
+        )
+        self.queue.put("outbound")
+
+    def remove_listener(self, what, event, ref=None):
+        ids = []
+        for pollingId in self.callbacks:
+            cb = self.callbacks[pollingId]
+            if cb["what"] == what and cb["event"] == event:
+                if ref:
+                    if cb["ref"] == ref:
+                        ids.append(pollingId)
+                else:
+                    ids.append(pollingId)
+
+        for pollingId in ids:
+            del self.callbacks[pollingId]
+            self.outbound.append(
+                {
+                    "r": int(time.time() * 1000),
+                    "action": "call",
+                    "ffid": 0,
+                    "key": "stopEventPolling",
+                    "args": [pollingId],
+                }
+            )
+        self.queue.put("outbound")
 
     def on_exit(self):
         if len(self.callbacks):
-            config.debug('cannot exit because active callback', self.callbacks)
+            config.debug("cannot exit because active callback", self.callbacks)
         while len(self.callbacks):
             time.sleep(0.2)
         self.callbackExecutor.running = False
+        self.queue.put("exit")
 
     # === LOOP ===
     def loop(self):
         while self.active:
+            # Wait until we have jobs
+            self.queue.get(block=True)
+            # Empty the jobs & start running stuff !
+            self.queue.empty()
+
             # Send the next outbound request batch
             connection.writeAll(self.outbound)
             self.outbound = []
@@ -133,10 +183,12 @@ class EventLoop:
             # remove them from self.threads
             self.threads = [x for x in self.threads if x[2].is_alive()]
 
+            # Clear the completed callbacks
             for r in self.callbackExecutor.completed:
                 del self.callbacks[r]
             self.callbackExecutor.completed = []
 
+            # Read the inbound data and route it to correct handler
             inbounds = connection.readAll()
             for inbound in inbounds:
                 r = inbound["r"]
@@ -150,5 +202,3 @@ class EventLoop:
                     self.callbackExecutor.add_job(
                         r, cbid, self.callbacks[cbid]["internal"], inbound
                     )
-
-            time.sleep(self.sleepSeconds)
