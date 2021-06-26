@@ -1,28 +1,30 @@
 import inspect
 
+
 def make_signature(what):
     # print('w', what, type(what))
     s = repr(what)
     # For primitives, do nothing special
     if isinstance(what, (bytes, bytearray, str, int, complex, float, dict, list, tuple)):
         return s
-    s += '\n'
+    s += "\n"
     if inspect.isclass(what):
-        s += 'class'
+        s += "class"
     elif inspect.ismethod(what):
-        s += 'method'
+        s += "method"
     elif callable(what):
-        s += 'def'
+        s += "def"
     elif inspect.ismodule(what):
-        s += 'module'
-    s += ' ' + getattr(what, '__name__', '')
+        s += "module"
+    s += " " + getattr(what, "__name__", "")
     # print(inspect.signature(what))
-    sig = str(inspect.signature(what)) if callable(what) else ''
+    sig = str(inspect.signature(what)) if callable(what) else ""
     if len(sig) > 2:
-        s += '' + sig
-    s += '\n' #+ (inspect.getcomments(what) or '')
-    s += what.__doc__ or ''
+        s += "" + sig
+    s += "\n"  # + (inspect.getcomments(what) or '')
+    s += what.__doc__ or ""
     return s
+
 
 # tupl = (2, 3, 4)
 

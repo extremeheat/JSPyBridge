@@ -20,7 +20,11 @@ class StdioCom {
 
   recieve (j) {
     log('[py -> js]', j)
+    if (this.handlers[j.c]) {
+      return this.handlers[j.c](j)
+    }
     this.handlers[j.r]?.(j)
+    // console.log(this.handlers)
     delete this.handlers[j.r]
   }
 

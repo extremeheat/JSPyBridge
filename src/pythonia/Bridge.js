@@ -1,6 +1,7 @@
 const { StdioCom } = require('./IpcPipeCom')
 const { resolve } = require('path')
 const util = require('util')
+const { JSBridge } = require('./JSBridge')
 const log = () => {}
 
 const REQ_TIMEOUT = 10000
@@ -10,6 +11,24 @@ class BridgeException extends Error {
     super(...a)
     this.message += ` Python didn't respond in time (${REQ_TIMEOUT}ms), look above for any Python errors. If no errors, the API call hung.`
     // We'll fix the stack trace once this is shipped.
+  }
+}
+
+class PyClass {
+  #supers = []
+  #waits = []
+  constructor(exts = []) {
+    for (const ext of exts) {
+      this.#waits.push( ext.then(ex => this.#supers.push(ex)) )
+    }
+  }
+
+  async waitForReady() {
+    return Promise.all(this.#waits)
+  }
+
+  superclass(ix = 0) {
+    return this.#supers[ix]
   }
 }
 
@@ -29,24 +48,31 @@ const nextReq = () => (performance.now() * 10) | 0
 class Bridge {
   constructor(com) {
     this.com = com
+    // This is a ref map used so Python can call back JS APIs
+    this.jrefs = {}
+
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
       this.free(ffid)
+      // Once the Proxy is freed, we also want to release the pyClass ref
+      delete this.jsi.m[ffid]
     })
+
+    this.jsi = new JSBridge()
+    this.jsi.ipc = {
+      send: async req => {
+        const resp = await waitFor(cb => this.com.write(req, cb), REQ_TIMEOUT, () => {
+          throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
+        })
+        return this.jsi.onMessage(resp)
+      }
+    }
+    this.com.register('jsi', this.jsi.onMessage.bind(this.jsi))
   }
 
   request(req, cb) {
     // When we call Python functions with Proxy paramaters, we need to just send the FFID
     // so it can be mapped on the python side.
-    const nval = []
-    for (const val of req.val) {
-      if (val?.ffid) {
-        nval.push({ ffid: val.ffid })
-      } else {
-        nval.push(val)
-      }
-    }
-    req.val = nval
     this.com.write(req, cb)
   }
 
@@ -77,7 +103,23 @@ class Bridge {
   }
 
   async call(ffid, stack, args) {
-    const req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: args }
+    let nargs = []
+    for (const arg of args) {
+      if (arg.ffid) {
+        nargs.push({ ffid: arg.ffid })
+      } else if (typeof arg === 'function') {
+        const jfid = await this.pyFn(arg)
+        nargs.push({ ffid: jfid })
+      } else if (arg instanceof PyClass) {
+        await arg.waitForReady()
+        const jfid = await this.pyFn(arg)
+        nargs.push({ ffid: jfid })
+      } else {
+        nargs.push(arg)
+      }
+    }
+    // console.log('nargs', nargs)
+    const req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
@@ -111,6 +153,17 @@ class Bridge {
     return resp.val
   }
 
+  async pyFn(fn) {
+    const req = { r: nextReq(), action: 'make', ffid: '', key: fn.name ?? fn.constructor.name, val: '' }
+    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+      throw new BridgeException(`Attempt create function '${fn.name}' failed.`)
+    })
+    const ffid = resp.val
+    this.jsi.m[ffid] = fn
+    this.queueForCollection(ffid, fn)
+    return ffid
+  }
+
   queueForCollection(ffid, val) {
     this.finalizer.register(val, ffid)
   }
@@ -133,6 +186,7 @@ class Bridge {
       get: (target, prop, reciever) => {
         const next = new Intermediate(target.callstack)
         // log('```prop', next.callstack, prop)
+        if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'then') {
           // Avoid .then loops
@@ -154,11 +208,6 @@ class Bridge {
           }
           return
         }
-        // else if (prop.endsWith('$')) { // stop returning Proxy chain, call python
-        //   callstack.push(prop.slice(0, -1))
-        //   console.log('Getting method attr', callstack.join('.'))
-        //   return this.get(ffid, callstack, [])
-        // }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
         next.callstack.push(prop)
         return new Proxy(next, handler) // no $ and not fn call, continue chaining
@@ -183,6 +232,34 @@ class Bridge {
     }
     return new Proxy(new CustomLogger(), handler)
   }
+
+  // async pyClass(obj) {
+  //   const extend = []
+  //   for (let ex of obj.extends) {
+  //     ex = await ex
+  //     if (!ex.ffid) {
+  //       throw new Error('Cannot extend a non-Python object')
+  //     }
+  //     extend.push(ex.ffid)
+  //   }
+
+  //   const req = { action: 'makeclass', name: obj.name, extends: extend, methods: [] }
+  //   for (const key in obj) {
+  //     if (key !== 'name' && key !== 'extends') {
+  //       req.methods.push({ name: key })
+  //     }
+  //   }
+
+  //   const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+  //     throw new BridgeException(`Attempt create class '${obj.name}' failed.`)
+  //   })
+  //   const ffid = resp.val
+  //   this.jsi.m[ffid] = obj
+  //   const py = this.makePyObject(ffid, resp.sig)
+  //   this.queueForCollection(ffid, py)
+  // }
+
+
 }
 
 const com = new StdioCom()
@@ -193,6 +270,7 @@ const root = bridge.makePyObject(0)
 // }
 
 module.exports = {
+  PyClass,
   root,
   python(file) {
     if (file.startsWith('/') || file.startsWith('./') || file.includes(':')) {
@@ -201,7 +279,7 @@ module.exports = {
       // console.log('Loading', fname)
       return root.fileImport(fname, importPath)
     }
-    return root.python(...args)
+    return root.python(file)
   },
   com
 }
