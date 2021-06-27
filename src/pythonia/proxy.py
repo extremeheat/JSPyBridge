@@ -29,6 +29,8 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
+        if action == "make":
+            l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
         if action == "free":  # return JSON.stringify(obj[prop])
             try: # Event loop is dead, no need for GC
                 l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
@@ -92,8 +94,13 @@ class Executor:
     def off(self, what, event, handler=None):
         return self.loop.remove_listener(what, event, handler)
 
+    def new_ffid(self, for_object):
+        self.loop.cur_ffid += 1
+        self.loop.m[self.loop.cur_ffid] = for_object
+        resp = self.ipc("make", self.loop.cur_ffid, "")
+        return self.loop.cur_ffid
 
-NTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
@@ -130,6 +137,18 @@ class Proxy(object):
             return val
 
     def __call__(self, *args):
+        # print("Call", args)
+        nargs = []
+        for arg in args:
+            if (not hasattr(arg, 'ffid')) and callable(arg):
+                ffid = self._exe.new_ffid(arg)
+                setattr(arg, 'ffid', ffid)
+                nargs.append({ 'ffid': ffid })
+            elif hasattr(arg, 'ffid'):
+                nargs.append({ 'ffid': arg.ffid })
+            else:
+                # print('nc', arg)
+                nargs.append(arg)
         mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
         if mT == "fn":
             return Proxy(self._exe, v)

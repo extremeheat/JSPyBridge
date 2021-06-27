@@ -65,7 +65,8 @@ class Bridge {
           throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
         })
         return this.jsi.onMessage(resp)
-      }
+      },
+      makePyObject: ffid => this.makePyObject(ffid)
     }
     this.com.register('jsi', this.jsi.onMessage.bind(this.jsi))
   }
@@ -102,18 +103,25 @@ class Bridge {
     }
   }
 
-  async call(ffid, stack, args) {
+  async call(ffid, stack, args, icall) {
     let nargs = []
     for (const arg of args) {
-      if (arg.ffid) {
+      if (icall && !arg.ffid) {
+        icall = false
+        const jfid = await this.pyFn(arg)
+        nargs.push({ ffid: jfid })
+        arg.ffid = jfid
+      } if (arg.ffid) {
         nargs.push({ ffid: arg.ffid })
       } else if (typeof arg === 'function') {
         const jfid = await this.pyFn(arg)
         nargs.push({ ffid: jfid })
+        arg.ffid = jfid
       } else if (arg instanceof PyClass) {
         await arg.waitForReady()
         const jfid = await this.pyFn(arg)
         nargs.push({ ffid: jfid })
+        arg.ffid = jfid
       } else {
         nargs.push(arg)
       }
@@ -213,7 +221,17 @@ class Bridge {
         return new Proxy(next, handler) // no $ and not fn call, continue chaining
       },
       apply: (target, self, args) => { // Called for function call
-        const ret = this.call(ffid, target.callstack, args)
+        const final = target.callstack[target.callstack.length - 1]
+        let icall
+        if (final === 'apply') {
+          target.callstack.pop()
+          icall = true
+          args = [args[0], ...args[1]]
+        } else if (final === 'call') {
+          target.callstack.pop()
+          icall = true
+        }
+        const ret = this.call(ffid, target.callstack, args, icall)
         target.callstack = [] // Flush callstack to py
         return ret
       }
@@ -232,34 +250,6 @@ class Bridge {
     }
     return new Proxy(new CustomLogger(), handler)
   }
-
-  // async pyClass(obj) {
-  //   const extend = []
-  //   for (let ex of obj.extends) {
-  //     ex = await ex
-  //     if (!ex.ffid) {
-  //       throw new Error('Cannot extend a non-Python object')
-  //     }
-  //     extend.push(ex.ffid)
-  //   }
-
-  //   const req = { action: 'makeclass', name: obj.name, extends: extend, methods: [] }
-  //   for (const key in obj) {
-  //     if (key !== 'name' && key !== 'extends') {
-  //       req.methods.push({ name: key })
-  //     }
-  //   }
-
-  //   const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-  //     throw new BridgeException(`Attempt create class '${obj.name}' failed.`)
-  //   })
-  //   const ffid = resp.val
-  //   this.jsi.m[ffid] = obj
-  //   const py = this.makePyObject(ffid, resp.sig)
-  //   this.queueForCollection(ffid, py)
-  // }
-
-
 }
 
 const com = new StdioCom()

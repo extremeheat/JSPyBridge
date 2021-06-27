@@ -137,6 +137,11 @@ class JSBridge {
     this.ipc.send({ r, val: true })
   }
 
+  make (r, ffid) {
+    this.m[ffid] = new WeakRef(this.ipc.makePyObject(ffid))
+    this.ipc.send({ r, val: true })
+  }
+
   onMessage ({ r, action, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
     const nargs = []
@@ -145,7 +150,8 @@ class JSBridge {
       // or objects, which we need to convert.
       for (const arg of args) {
         if (arg.ffid) {
-          nargs.push(this.m[arg.ffid])
+          const r = this.m[arg.ffid]
+          nargs.push(r instanceof WeakRef ? r.deref() : r)
         } else {
           nargs.push(arg)
         }
