@@ -137,7 +137,6 @@ class Bridge {
     this.ipc.send({ r, val: true })
   }
 
-  
   make (r, ffid) {
     ++this.ffid
     const proxy = this.pyi.makePyObject(this.ffid)
@@ -215,7 +214,7 @@ const ipc = {
     data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
   },
-  write(data, cb) {
+  write (data, cb) {
     handlers[data.r] = cb
     this.send(data)
   }

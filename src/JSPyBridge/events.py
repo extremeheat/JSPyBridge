@@ -198,12 +198,10 @@ class EventLoop:
             for inbound in inbounds:
                 r = inbound["r"]
                 cbid = inbound["cb"] if "cb" in inbound else None
-                if 'c' in inbound and inbound['c'] == 'pyi':
+                if "c" in inbound and inbound["c"] == "pyi":
                     j = inbound
                     # self.pyi.onMessage(j['r'], j['action'], j['ffid'], j['key'], j['val'])
-                    self.callbackExecutor.add_job(
-                        r, cbid, self.pyi.inbound, inbound
-                    )
+                    self.callbackExecutor.add_job(r, cbid, self.pyi.inbound, inbound)
                 if r in self.requests:
                     lock, timeout = self.requests[r]
                     self.responses[r] = inbound

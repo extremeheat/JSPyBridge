@@ -10,7 +10,7 @@ class DemoClass extends EventEmitter {
   increment () {
     this.y++
     setInterval(() => {
-      this.emit('increment', this.y++, { a: { y: this.y } })
+      this.emit('increment', () => 3, this.y++, { a: { y: this.y } })
     }, 150)
   }
 
@@ -30,9 +30,9 @@ class DemoClass extends EventEmitter {
     return () => 3
   }
 
-  async callback(cb) {
-    console.log('CALLBACK CALLED', cb)
-    await cb('It works 🚀')
+  async callback (cb) {
+    console.log('callback from JS', cb)
+    await cb('It works !')
   }
 
   complex () {

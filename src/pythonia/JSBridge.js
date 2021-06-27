@@ -188,5 +188,4 @@ class JSBridge {
   }
 }
 
-
 module.exports = { JSBridge }

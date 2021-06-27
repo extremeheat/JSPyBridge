@@ -3,6 +3,7 @@ const { join } = require('path')
 
 const log = process.env.DEBUG ? console.log : () => {}
 
+// TODO: are dangling handlers an issue?
 class StdioCom {
   constructor (ver = 3) {
     this.python = ver === 3 ? 'python3' : 'python2'

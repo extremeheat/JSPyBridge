@@ -16,15 +16,29 @@ for i in demo.array():
     print("i", i)
 
 
-def onIncrement(num, obj):
+def onIncrement(self, num, obj):
     print("Increment", num, obj.a.y)
     if num == 7:
         off(demo, "increment", onIncrement)
 
 
+def some_method(*args):
+    print("Callback called with", args)
+
+
 on(demo, "increment", onIncrement)
 demo.increment()
 
+demo.callback(some_method)
+
+
+def handler(self, *args):
+    print("Handler caled", args)
+    demo.off("increment", handler)
+
+
+demo.on("increment", handler)
+time.sleep(1)
 
 # This should throw for now :
 # demo.x = 3

@@ -89,26 +89,28 @@ class Executor:
         return self.loop.remove_listener(what, event, handler)
 
     def new_ffid(self, what):
-        r = self.ipc('make', '', '')
-        ffid = r['val']
+        r = self.ipc("make", "", "")
+        ffid = r["val"]
         self.bridge.m[ffid] = what
         return ffid
+
 
 INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid, prop_ffid=None, prop_name=''):
+    def __init__(self, exe, ffid, prop_ffid=None, prop_name=""):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
-        # 
+        #
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
 
     def _call(self, method, methodType, val):
         this = self
+
         def instantiatable(*args):
             mT, v = self._exe.initProp(self.ffid, method, args)
             # when we call "new" keyword we always get object back
@@ -133,12 +135,12 @@ class Proxy(object):
     def __call__(self, *args):
         nargs = []
         for arg in args:
-            if (not hasattr(arg, 'ffid')) and callable(arg):
+            if (not hasattr(arg, "ffid")) and callable(arg):
                 ffid = self._exe.new_ffid(arg)
-                setattr(arg, 'ffid', ffid)
-                nargs.append({ 'ffid': ffid })
-            elif hasattr(arg, 'ffid'):
-                nargs.append({ 'ffid': arg.ffid })
+                setattr(arg, "ffid", ffid)
+                nargs.append({"ffid": ffid})
+            elif hasattr(arg, "ffid"):
+                nargs.append({"ffid": arg.ffid})
             else:
                 # print('nc', arg)
                 nargs.append(arg)
@@ -152,7 +154,7 @@ class Proxy(object):
     def __getattr__(self, attr):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
-            return self._call(attr if self._pffid == self.ffid else '', "class", self._pffid)
+            return self._call(attr if self._pffid == self.ffid else "", "class", self._pffid)
         methodType, val = self._exe.getProp(self._pffid, attr)
         return self._call(attr, methodType, val)
 

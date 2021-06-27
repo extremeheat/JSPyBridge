@@ -4,7 +4,8 @@
   "scripts": {
     "install": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
-    "test": "standard --fix && mocha"
+    "fix": "standard --fix",
+    "test": "mocha"
   },
   "devDependencies": {
     "mocha": "^9.0.0",

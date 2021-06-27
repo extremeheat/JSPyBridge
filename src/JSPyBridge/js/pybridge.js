@@ -3,14 +3,14 @@ const REQ_TIMEOUT = 10000
 const log = () => {}
 
 class BridgeException extends Error {
-  constructor(...a) {
+  constructor (...a) {
     super(...a)
     this.message += ` Python didn't respond in time (${REQ_TIMEOUT}ms), look above for any Python errors. If no errors, the API call hung.`
     // We'll fix the stack trace once this is shipped.
   }
 }
 
-async function waitFor(cb, withTimeout, onTimeout) {
+async function waitFor (cb, withTimeout, onTimeout) {
   let t
   const ret = await Promise.race([
     new Promise(resolve => cb(resolve)),
@@ -24,7 +24,7 @@ async function waitFor(cb, withTimeout, onTimeout) {
 const nextReq = () => (performance.now() * 10) | 0
 
 class PyBridge {
-  constructor(com, jsi) {
+  constructor (com, jsi) {
     this.com = com
     // This is a ref map used so Python can call back JS APIs
     this.jrefs = {}
@@ -38,14 +38,14 @@ class PyBridge {
     })
   }
 
-  request(req, cb) {
+  request (req, cb) {
     // When we call Python functions with Proxy paramaters, we need to just send the FFID
     // so it can be mapped on the python side.
     req.c = 'pyi'
     this.com.write(req, cb)
   }
 
-  async len(ffid, stack) {
+  async len (ffid, stack) {
     const req = { r: nextReq(), action: 'length', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -53,7 +53,7 @@ class PyBridge {
     return resp.val
   }
 
-  async get(ffid, stack, args) {
+  async get (ffid, stack, args) {
     const req = { r: nextReq(), action: 'get', ffid: ffid, key: stack, val: args }
 
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
@@ -72,8 +72,8 @@ class PyBridge {
   }
 
   // icall paramater means the first argument holds a `this` refrence
-  async call(ffid, stack, args, icall) {
-    let nargs = []
+  async call (ffid, stack, args, icall) {
+    const nargs = []
     for (const arg of args) {
       // console.log('arg', arg, typeof arg)
       if (icall) {
@@ -110,7 +110,7 @@ class PyBridge {
     }
   }
 
-  async inspect(ffid, stack) {
+  async inspect (ffid, stack) {
     const req = { r: nextReq(), action: 'inspect', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -118,7 +118,7 @@ class PyBridge {
     return resp.val
   }
 
-  async free(ffid) {
+  async free (ffid) {
     const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       // Allow a GC time out, it's probably because the Python process died
@@ -127,7 +127,7 @@ class PyBridge {
     return resp.val
   }
 
-  async pyFn(fn) {
+  async pyFn (fn) {
     const req = { r: nextReq(), action: 'make', ffid: '', key: fn.name ?? fn.constructor.name, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt create function '${fn.name}' failed.`)
@@ -138,21 +138,22 @@ class PyBridge {
     return ffid
   }
 
-  queueForCollection(ffid, val) {
+  queueForCollection (ffid, val) {
     this.finalizer.register(val, ffid)
   }
 
-  makePyObject(ffid, inspectString) {
+  makePyObject (ffid, inspectString) {
     // "Intermediate" objects are returned while chaining. If the user tries to log
     // an Intermediate then we know they forgot to use await, as if they were to use
     // await, then() would be implicitly called where we wouldn't return a Proxy, but
     // a Promise. Must extend Function to be a "callable" object in JS for the Proxy.
     class Intermediate extends Function {
-      constructor(callstack) {
+      constructor (callstack) {
         super()
         this.callstack = [...callstack]
       }
-      [util.inspect.custom]() {
+
+      [util.inspect.custom] () {
         return '\n[You must use await when calling a Python API]\n'
       }
     }
@@ -177,7 +178,7 @@ class PyBridge {
         }
         if (typeof prop === 'symbol') {
           console.log('Get symbol', next.callstack, prop)
-          if (prop == Symbol.asyncIterator) {
+          if (prop === Symbol.asyncIterator) {
             // todo
           }
           return
@@ -210,7 +211,8 @@ class PyBridge {
         super()
         this.callstack = []
       }
-      [util.inspect.custom]() {
+
+      [util.inspect.custom] () {
         return inspectString || '(Some Python object)'
       }
     }
