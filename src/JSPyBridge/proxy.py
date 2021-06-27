@@ -9,6 +9,7 @@ class Executor:
         self.loop = loop
         self.queue = loop.queue_request
         self.i = 0
+        self.bridge = self.loop.pyi
 
     def ipc(self, action, ffid, attr, args=None):
         if action == "free":  # GC
@@ -30,6 +31,8 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
         if action == "free":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
+        if action == "make":
+            l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
 
         if not l.wait(10):
             print("Timed out", action, ffid, attr)
@@ -84,6 +87,11 @@ class Executor:
     def off(self, what, event, handler=None):
         return self.loop.remove_listener(what, event, handler)
 
+    def new_ffid(self, what):
+        r = self.ipc('make', '', '')
+        ffid = r['val']
+        self.bridge.m[ffid] = what
+        return ffid
 
 INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
 
@@ -122,9 +130,17 @@ class Proxy(object):
             return val
 
     def __call__(self, *args):
-        mT, v = self._exe.callProp(self._pffid, self._pname, args)
-        # bleh, functions inside functions cause inf recursion
-        # can we avoid from JS? --done, with { call } wrapper
+        nargs = []
+        # print("CALL")
+        for arg in args:
+            if (not hasattr(arg, 'ffid')) and callable(arg):
+                ffid = self._exe.new_ffid(arg)
+                nargs.append({ 'ffid': ffid })
+            else:
+                # print('nc', arg)
+                nargs.append(arg)
+        # print('ARGS', args, nargs)
+        mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
         if mT == "fn":
             return Proxy(self._exe, v)
         # print('Callres', self.ffid, args, mT, v)

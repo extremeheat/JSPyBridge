@@ -1,4 +1,5 @@
 const util = require('util')
+const { PyBridge } = require('./pybridge')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
 
@@ -46,6 +47,7 @@ class Bridge {
       }
     }
     this.ipc = ipc
+    this.pyi = new PyBridge(this.ipc)
     this.eventMap = {}
 
     if (process.env.DEBUG) {
@@ -135,6 +137,15 @@ class Bridge {
     this.ipc.send({ r, val: true })
   }
 
+  
+  make (r, ffid) {
+    ++this.ffid
+    const proxy = this.pyi.makePyObject(this.ffid)
+    this.m[this.ffid] = new WeakRef(proxy)
+    this.pyi.queueForCollection(ffid, proxy)
+    this.ipc.send({ r, val: this.ffid })
+  }
+
   onMessage ({ r, action, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
     const nargs = []
@@ -143,12 +154,14 @@ class Bridge {
       // or objects, which we need to convert.
       for (const arg of args) {
         if (arg.ffid) {
-          nargs.push(this.m[arg.ffid])
+          const r = this.m[arg.ffid]
+          nargs.push(r instanceof WeakRef ? r.deref() : r)
         } else {
           nargs.push(arg)
         }
       }
     }
+    // console.log('ac', action)
     this[action](r, ffid, key, nargs)
   }
 
@@ -194,11 +207,17 @@ Object.assign(util.inspect.styles, {
   undefined: 'grey'
 })
 
+const handlers = {}
+
 const ipc = {
   send: data => {
     debug('js -> py', data)
     data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
+  },
+  write(data, cb) {
+    handlers[data.r] = cb
+    this.send(data)
   }
 }
 
@@ -208,7 +227,11 @@ process.stdin.on('data', data => {
   debug('py -> js', d)
   for (const line of d.split('\n')) {
     try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
-    bridge.onMessage(j)
+    if (j.c === 'pyi') {
+      handlers[j.r]?.(j)
+    } else {
+      bridge.onMessage(j)
+    }
   }
 })
 

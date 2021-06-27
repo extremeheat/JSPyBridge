@@ -1,5 +1,5 @@
 import time, threading, json, sys
-from . import connection, config
+from . import connection, config, bridge
 from queue import Queue
 
 
@@ -68,6 +68,7 @@ class EventLoop:
 
     def __init__(self):
         self.callbackExecutor.start()
+        self.pyi = bridge.Bridge(self, config.executor)
 
     # === THREADING ===
     def newTaskThread(self, handler, *args):
@@ -116,6 +117,10 @@ class EventLoop:
         self.requests[request_id] = [lock, timeout]
         self.queue.put("send")
         return lock
+
+    def queue_payload(self, payload):
+        self.outbound.append(payload)
+        self.queue.put("send")
 
     def add_listener(self, polling_id, handler, on_object, on_event, ref):
         self.callbacks[polling_id] = {
@@ -193,6 +198,12 @@ class EventLoop:
             for inbound in inbounds:
                 r = inbound["r"]
                 cbid = inbound["cb"] if "cb" in inbound else None
+                if 'c' in inbound and inbound['c'] == 'pyi':
+                    j = inbound
+                    # self.pyi.onMessage(j['r'], j['action'], j['ffid'], j['key'], j['val'])
+                    self.callbackExecutor.add_job(
+                        r, cbid, self.pyi.inbound, inbound
+                    )
                 if r in self.requests:
                     lock, timeout = self.requests[r]
                     self.responses[r] = inbound

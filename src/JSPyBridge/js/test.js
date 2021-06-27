@@ -30,6 +30,11 @@ class DemoClass extends EventEmitter {
     return () => 3
   }
 
+  async callback(cb) {
+    console.log('CALLBACK CALLED', cb)
+    await cb('It works 🚀')
+  }
+
   complex () {
     return {
       y: () => 2,
