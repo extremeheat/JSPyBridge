@@ -7,6 +7,7 @@ from . import config, json_patch
 class Executor:
     def __init__(self, loop):
         self.loop = loop
+        loop.pyi.executor = self
         self.queue = loop.queue_request
         self.i = 0
         self.bridge = self.loop.pyi
@@ -131,11 +132,13 @@ class Proxy(object):
 
     def __call__(self, *args):
         nargs = []
-        # print("CALL")
         for arg in args:
             if (not hasattr(arg, 'ffid')) and callable(arg):
                 ffid = self._exe.new_ffid(arg)
+                setattr(arg, 'ffid', ffid)
                 nargs.append({ 'ffid': ffid })
+            elif hasattr(arg, 'ffid'):
+                nargs.append({ 'ffid': arg.ffid })
             else:
                 # print('nc', arg)
                 nargs.append(arg)

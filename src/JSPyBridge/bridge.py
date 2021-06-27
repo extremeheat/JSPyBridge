@@ -100,7 +100,7 @@ class Bridge:
     def make(self, r, ffid, key, args):
         self.cur_ffid += 1
         self.m[self.cur_ffid] = Proxy(self.executor, self.cur_ffid)
-        self.ipc.queue({ 'r': r, 'val': self.cur_ffid })
+        self.ipc.queue_payload({ 'c': 'pyi', 'r': r, 'val': self.cur_ffid })
 
     def read(self):
         data = apiin.readline()

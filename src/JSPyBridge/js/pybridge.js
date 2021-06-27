@@ -24,10 +24,11 @@ async function waitFor(cb, withTimeout, onTimeout) {
 const nextReq = () => (performance.now() * 10) | 0
 
 class PyBridge {
-  constructor(com) {
+  constructor(com, jsi) {
     this.com = com
     // This is a ref map used so Python can call back JS APIs
     this.jrefs = {}
+    this.jsi = jsi
 
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
@@ -70,19 +71,28 @@ class PyBridge {
     }
   }
 
-  async call(ffid, stack, args) {
+  // icall paramater means the first argument holds a `this` refrence
+  async call(ffid, stack, args, icall) {
     let nargs = []
     for (const arg of args) {
-      if (arg.ffid) {
+      // console.log('arg', arg, typeof arg)
+      if (icall) {
+        icall = false
+        const jfid = await this.pyFn(arg)
+        nargs.push({ ffid: jfid })
+        arg.ffid = jfid
+      } else if (arg.ffid) {
         nargs.push({ ffid: arg.ffid })
       } else if (typeof arg === 'function') {
         const jfid = await this.pyFn(arg)
         nargs.push({ ffid: jfid })
+        arg.ffid = ffid
       } else {
+        // console.log('fb')
         nargs.push(arg)
       }
     }
-    // console.log('nargs', nargs)
+    // console.log('---nargs', nargs)
     const req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -177,7 +187,17 @@ class PyBridge {
         return new Proxy(next, handler) // no $ and not fn call, continue chaining
       },
       apply: (target, self, args) => { // Called for function call
-        const ret = this.call(ffid, target.callstack, args)
+        const final = target.callstack[target.callstack.length - 1]
+        let icall
+        if (final === 'apply') {
+          target.callstack.pop()
+          icall = true
+          args = [args[0], ...args[1]]
+        } else if (final === 'call') {
+          target.callstack.pop()
+          icall = true
+        }
+        const ret = this.call(ffid, target.callstack, args, icall)
         target.callstack = [] // Flush callstack to py
         return ret
       }

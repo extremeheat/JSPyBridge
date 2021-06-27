@@ -47,7 +47,7 @@ class Bridge {
       }
     }
     this.ipc = ipc
-    this.pyi = new PyBridge(this.ipc)
+    this.pyi = new PyBridge(this.ipc, this)
     this.eventMap = {}
 
     if (process.env.DEBUG) {
