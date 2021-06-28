@@ -56,7 +56,7 @@ class Bridge {
       this.free(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
       delete this.jsi.m[ffid]
-      console.log('Freed', this.jsi.m)
+      // console.log('Freed', this.jsi.m)
     })
 
     this.jsi = new JSBridge(null, this)

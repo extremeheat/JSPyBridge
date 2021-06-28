@@ -74,7 +74,7 @@ class PyInterface:
         if typ is list:
             self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
             return
-        if repr(typ).startswith("<class"):  # numpy generator for some reason can't be picked up...
+        if hasattr(v, '__class__'):  # numpy generator for some reason can't be picked up...
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
         # print("VOID", v, '\n', type(v), isinstance(v, (type)), inspect.isgenerator(v), inspect.isgeneratorfunction(v), inspect.isclass(v),inspect.ismethod(v), inspect.isfunction(v))

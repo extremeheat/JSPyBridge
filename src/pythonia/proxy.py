@@ -13,10 +13,6 @@ class Executor:
         self.i = 0
 
     def ipc(self, action, ffid, attr, args=None):
-        # if action == "free":  # GC
-        #     # print('ML',config,is_main_loop_active)
-        #     if not is_main_loop_active or not is_main_loop_active():
-        #         return {"val": True}  # Event loop is dead, no need for GC
         self.i += 1
         r = self.i  # unique request ts, acts as ID for response
         l = None  # the lock
@@ -40,7 +36,6 @@ class Executor:
 
         # Listen for a response
         while True:
-            # print("READDDDIN")
             j = self.loop.read()
             # print(j)
             if j["r"] == r:  # if this is a message for us, OK, return to Python calle

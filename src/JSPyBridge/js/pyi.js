@@ -124,7 +124,7 @@ class PyBridge {
 
   async free (ffid) {
     const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })

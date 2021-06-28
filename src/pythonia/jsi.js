@@ -122,9 +122,7 @@ class JSBridge {
 
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
-    // console.log('INSPECT', await this.m[ffid])
     const s = util.inspect(await this.m[ffid], { colors: true })
-    // console.log(JSON.stringify(s))
     this.ipc.send({ r, val: s })
   }
 
