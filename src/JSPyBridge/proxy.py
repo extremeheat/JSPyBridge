@@ -2,6 +2,9 @@ import time, threading
 from .config import debug, is_main_loop_active
 from . import config, json_patch
 
+class JavaScriptError(Exception):
+    pass
+
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
 class Executor:
@@ -40,6 +43,8 @@ class Executor:
             raise Exception("Execution timed out")
         res = self.loop.responses[r]
         del self.loop.responses[r]
+        if 'error' in res:
+            raise JavaScriptError(f"Access to {attr} failed:\n{res['error']}\n")
         return res
 
     def getProp(self, ffid, method):

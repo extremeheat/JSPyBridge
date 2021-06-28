@@ -2,6 +2,12 @@ def add(demoClas1, demoClas2):
     # print("dc", demoClas1, demoClas2)
     return demoClas1.var + demoClas2.var
 
+def throw():
+    raise Exception('hey I crashed!')
+
+def special(pos1, pos2, /, kwarg1=None, **kwargs):
+    print("Fn call", pos1, pos2, kwarg1, kwargs)
+
 class DemoClass:
     """Some doc"""
 

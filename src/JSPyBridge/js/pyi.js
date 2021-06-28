@@ -14,6 +14,12 @@ class BridgeException extends Error {
   }
 }
 
+class PythonException extends Error {
+  constructor(stack, error) {
+    super(`Call to '${stack.join('.')}' failed: \n\n${error}`)
+  }
+}
+
 async function waitFor (cb, withTimeout, onTimeout) {
   let t
   const ret = await Promise.race([
@@ -76,29 +82,50 @@ class PyBridge {
   }
 
   // icall paramater means the first argument holds a `this` refrence
-  async call (ffid, stack, args, icall) {
-    const nargs = []
+  async call(ffid, stack, args, kwargs, icall, timeout) {
+    let nargs = []
     for (const arg of args) {
-      // console.log('arg', arg, typeof arg)
-      if (icall) {
+      if (icall && !arg.ffid) {
         icall = false
         const jfid = await this.pyFn(arg)
         nargs.push({ ffid: jfid })
-        arg.ffid = jfid
+        // arg.ffid = jfid
       } else if (arg.ffid) {
         nargs.push({ ffid: arg.ffid })
       } else if (typeof arg === 'function') {
         const jfid = await this.pyFn(arg)
         nargs.push({ ffid: jfid })
-        arg.ffid = ffid
+        // arg.ffid = jfid
       } else {
-        // console.log('fb')
         nargs.push(arg)
       }
     }
-    // console.log('---nargs', nargs)
-    const req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
-    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+    if (kwargs) {
+      for (const kwarg in kwargs) {
+        const arg = kwargs[kwarg]
+        if (icall && !arg.ffid) {
+          icall = false
+          const jfid = await this.pyFn(arg)
+          kwargs[kwarg] = { ffid: jfid }
+          // arg.ffid = jfid
+        } else if (arg.ffid) {
+          kwargs[kwarg] = { ffid: arg.ffid }
+        } else if (typeof arg === 'function') {
+          const jfid = await this.pyFn(arg)
+          kwargs[kwarg] = { ffid: jfid }
+          // arg.ffid = jfid
+        }
+      }
+    }
+    
+    // console.log('nargs', nargs)
+    if (kwargs) {
+      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] }
+    } else {
+      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
+    }
+
+    const resp = await waitFor(cb => this.request(req, cb), timeout || REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     log('call', ffid, stack, args, resp)
@@ -106,6 +133,8 @@ class PyBridge {
       case 'string':
       case 'int':
         return resp.val // Primitives don't need wrapping
+        case 'error':
+          throw new PythonException(stack, resp.sig)
       default: {
         const py = this.makePyObject(resp.val, resp.sig)
         this.queueForCollection(resp.val, py)
@@ -193,7 +222,7 @@ class PyBridge {
       },
       apply: (target, self, args) => { // Called for function call
         const final = target.callstack[target.callstack.length - 1]
-        let icall
+        let icall, kwargs, timeout
         if (final === 'apply') {
           target.callstack.pop()
           icall = true
@@ -201,8 +230,13 @@ class PyBridge {
         } else if (final === 'call') {
           target.callstack.pop()
           icall = true
+        } else if (final?.endsWith('$')) {
+          kwargs = args.pop()
+          timeout = kwargs.$timeout
+          delete kwargs.$timeout
+          target.callstack[target.callstack.length - 1] = final.slice(0, -1)
         }
-        const ret = this.call(ffid, target.callstack, args, icall)
+        const ret = this.call(ffid, target.callstack, args, kwargs, icall, timeout)
         target.callstack = [] // Flush callstack to py
         return ret
       }

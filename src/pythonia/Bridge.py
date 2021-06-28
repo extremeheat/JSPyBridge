@@ -1,7 +1,7 @@
 # from .
 import util
 import inspect, importlib
-import os, sys, json, types
+import os, sys, json, types, traceback
 import socket
 from proxy import Executor, Proxy
 from weakref import WeakValueDictionary
@@ -47,7 +47,7 @@ class Bridge:
         ffid = self.assign_ffid(v)
         self.q(r, "inst", ffid)
 
-    def call(self, r, ffid, keys, args, invoke=True):
+    def call(self, r, ffid, keys, args, kwargs, invoke=True):
         v = self.m[ffid]
         # print("r=>", v, ffid, keys, args)
         for key in keys:
@@ -64,7 +64,7 @@ class Bridge:
         if invoke:
             if inspect.isclass(v):
                 was_class = True
-            v = v(*args)
+            v = v(*args, **kwargs)
         typ = type(v)
         # print("typ", v, typ, inspect.isclass(v), inspect.ismodule(v))
         if typ is str:
@@ -94,12 +94,12 @@ class Bridge:
 
     # Same as call just without invoking anything, and args
     # would be null
-    def get(self, r, ffid, keys, args):
+    def get(self, r, ffid, keys, args, extra):
         o = self.call(r, ffid, keys, [], invoke=False)
         # print("Got", self, r, ffid, keys, args, o)
         return o
 
-    def inspect(self, r, ffid, keys, args):
+    def inspect(self, r, ffid, keys, args, extra):
         v = self.m[ffid]
         for key in keys:
             # print("ke, v", key, v)
@@ -107,7 +107,7 @@ class Bridge:
         s = util.make_signature(v)
         self.q(r, "", s)
 
-    def free(self, r, ffid, key, args):
+    def free(self, r, ffid, key, args, extra):
         # print("Free", ffid, key, args)
         if ffid not in self.m:
             # OK, we already GC'ed
@@ -116,7 +116,7 @@ class Bridge:
         del self.m[ffid]
         self.q(r, "", True)
 
-    def make(self, r, ffid, key, args):
+    def make(self, r, ffid, key, args, extra):
         self.cur_ffid += 1
         p = Proxy(self.executor, self.cur_ffid)
         # We need to put into both WeakMap and map to prevent immedate GC
@@ -137,7 +137,11 @@ class Bridge:
 
     def onMessage(self, r, action, ffid, key, args):
         nargs = []
+        kwargs = {}
         if args:
+            if action == 'acall':
+                args, kwargs = args
+                action = 'call'
             for arg in args:
                 if isinstance(arg, dict) and ("ffid" in arg):
                     f = arg["ffid"]
@@ -148,8 +152,23 @@ class Bridge:
                         nargs.append(self.m[f])
                 else:
                     nargs.append(arg)
-        # print("Calling....", action)
-        return getattr(self, action)(r, ffid, key, nargs)
+            for kwarg in kwargs:
+                arg = kwargs[kwarg]
+                if isinstance(arg, dict) and ("ffid" in arg):
+                    f = arg["ffid"]
+                    if f in self.weakmap:
+                        kwargs[kwarg] = self.weakmap[f]
+                        del self.m[f]
+                    else:
+                        kwargs[kwarg] = self.m[f]
+                else:
+                    kwargs[kwarg] = arg
+        # print("Calling....", action,ffid, key, nargs, kwargs)
+        try:
+            return getattr(self, action)(r, ffid, key, nargs, kwargs)
+        except Exception:
+            self.q(r, "error", '', traceback.format_exc())
+            pass
 
 
 class Ipc:

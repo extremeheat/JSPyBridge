@@ -35,6 +35,18 @@ await it('consumes classes', async function () {
   console.log(demoInst)
 })
 
+await it('catches errors', async function () {
+  try {
+    await demo.throw()
+  } catch (e) {
+    console.log('OK!')
+  }
+})
+
+await it('calls functions with special args', async function () {
+  await demo.special$(1, 2, { kwarg1: 3, extra: 77, xx: Math.random() })
+})
+
 // process.exit(0)
 
 python.exit()

@@ -2,6 +2,7 @@
   "name": "JSPyBridge",
   "author": "extremeheat",
   "main": "./src/pythonia/index.js",
+  "types": "./src/pythonia/index.d.ts",
   "scripts": {
     "install": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",

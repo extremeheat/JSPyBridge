@@ -106,7 +106,6 @@ class PyInterface:
         # We need to put into both WeakMap and map to prevent immedate GC
         self.weakmap[self.cur_ffid] = p
         self.m[self.cur_ffid] = p
-        print("FFID ADDED", self.cur_ffid)
         self.ipc.queue_payload({"c": "pyi", "r": r, "val": self.cur_ffid})
 
     def read(self):
@@ -130,9 +129,12 @@ class PyInterface:
                         nargs.append(self.m[f])
                 else:
                     nargs.append(arg)
-                # print("\nj", args)
         # print("Calling....", action, r, ffid, key, nargs)
-        return getattr(self, action)(r, ffid, key, nargs)
+        try:
+            return getattr(self, action)(r, ffid, key, nargs)
+        except Exception:
+            self.q(r, "error", '', traceback.format_exc())
+            pass
 
     def inbound(self, j):
         return self.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])

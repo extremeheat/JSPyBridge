@@ -95,10 +95,14 @@ class Bridge {
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
     // console.debug('call', r, ffid, attr, args)
-    if (attr) {
-      var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
-    } else {
-      var v = await this.m[ffid](...args) // eslint-disable-line
+    try {
+      if (attr) {
+        var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
+      } else {
+        var v = await this.m[ffid](...args) // eslint-disable-line
+      }
+    } catch (e) {
+      return this.ipc.send({ r, key: 'error', error: e.stack })
     }
     const type = getType(v)
     // console.log('GetType', type, v)
