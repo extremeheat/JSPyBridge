@@ -1,3 +1,5 @@
+# THe Python Interface for JavaScript
+
 from . import util
 import inspect, importlib
 import os, sys, json, types
@@ -6,7 +8,7 @@ from .proxy import Proxy
 from weakref import WeakValueDictionary
 
 
-class Bridge:
+class PyInterface:
     m = {0: {}}
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
@@ -100,7 +102,11 @@ class Bridge:
 
     def make(self, r, ffid, key, args):
         self.cur_ffid += 1
-        self.m[self.cur_ffid] = Proxy(self.executor, self.cur_ffid)
+        p = Proxy(self.executor, self.cur_ffid)
+        # We need to put into both WeakMap and map to prevent immedate GC
+        self.weakmap[self.cur_ffid] = p
+        self.m[self.cur_ffid] = p
+        print("FFID ADDED", self.cur_ffid)
         self.ipc.queue_payload({"c": "pyi", "r": r, "val": self.cur_ffid})
 
     def read(self):
@@ -117,11 +123,11 @@ class Bridge:
                 # print("-ARG", arg)
                 if isinstance(arg, dict) and ("ffid" in arg):
                     f = arg["ffid"]
-                    if arg["ffid"] in self.m:
-                        nargs.append(self.m[f])
-                    else:
+                    if f in self.weakmap:
                         nargs.append(self.weakmap[f])
                         del self.m[f]
+                    else:
+                        nargs.append(self.m[f])
                 else:
                     nargs.append(arg)
                 # print("\nj", args)

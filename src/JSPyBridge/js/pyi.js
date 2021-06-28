@@ -1,3 +1,7 @@
+/**
+ * The Python Interface for JavaScript
+ */
+
 const util = require('util')
 const REQ_TIMEOUT = 10000
 const log = () => {}

@@ -66,7 +66,6 @@ class Executor:
         this = self
         self.i += 1
         pollingId = self.i
-        # print("Event Listener", what, event, handler)
 
         def handleCallback(data):
             ffid = data["val"]
@@ -82,7 +81,6 @@ class Executor:
             return False
 
         self.loop.add_listener(pollingId, handleCallback, object, event, handler)
-        # print("Added Listener", pollingId)
         return pollingId
 
     def off(self, what, event, handler=None):
@@ -118,10 +116,8 @@ class Proxy(object):
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
-            # print("ret fn", method)
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            # print("ret cls", method)
             return instantiatable
         if methodType == "obj":
             return Proxy(self._exe, val)
@@ -142,13 +138,10 @@ class Proxy(object):
             elif hasattr(arg, "ffid"):
                 nargs.append({"ffid": arg.ffid})
             else:
-                # print('nc', arg)
                 nargs.append(arg)
-        # print('ARGS', args, nargs)
         mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
         if mT == "fn":
             return Proxy(self._exe, v)
-        # print('Callres', self.ffid, args, mT, v)
         return self._call(self._pname, mT, v)
 
     def __getattr__(self, attr):

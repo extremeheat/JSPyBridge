@@ -1,5 +1,8 @@
+/**
+ * The JavaScript Interface for Python
+ */
 const util = require('util')
-const { PyBridge } = require('./pybridge')
+const { PyBridge } = require('./pyi')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
 

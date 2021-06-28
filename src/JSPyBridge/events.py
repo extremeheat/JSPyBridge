@@ -1,5 +1,5 @@
 import time, threading, json, sys
-from . import connection, config, bridge
+from . import connection, config, pyi
 from queue import Queue
 
 
@@ -68,7 +68,7 @@ class EventLoop:
 
     def __init__(self):
         self.callbackExecutor.start()
-        self.pyi = bridge.Bridge(self, config.executor)
+        self.pyi = pyi.PyInterface(self, config.executor)
 
     # === THREADING ===
     def newTaskThread(self, handler, *args):
