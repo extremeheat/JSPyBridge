@@ -1,7 +1,7 @@
 const { StdioCom } = require('./IpcPipeCom')
 const { resolve } = require('path')
 const util = require('util')
-const { JSBridge } = require('./JSBridge')
+const { JSBridge } = require('./jsi')
 const log = () => {}
 
 const REQ_TIMEOUT = 10000
@@ -56,15 +56,13 @@ class Bridge {
       this.free(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
       delete this.jsi.m[ffid]
+      console.log('Freed', this.jsi.m)
     })
 
-    this.jsi = new JSBridge()
+    this.jsi = new JSBridge(null, this)
     this.jsi.ipc = {
       send: async req => {
-        const resp = await waitFor(cb => this.com.write(req, cb), REQ_TIMEOUT, () => {
-          throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
-        })
-        return this.jsi.onMessage(resp)
+        this.com.write(req)
       },
       makePyObject: ffid => this.makePyObject(ffid)
     }
@@ -154,7 +152,7 @@ class Bridge {
 
   async free(ffid) {
     const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })
@@ -256,9 +254,6 @@ const com = new StdioCom()
 const bridge = new Bridge(com)
 const root = bridge.makePyObject(0)
 
-// async function load() {
-// }
-
 module.exports = {
   PyClass,
   root,
@@ -273,3 +268,4 @@ module.exports = {
   },
   com
 }
+module.exports.python.exit = () => com.end()

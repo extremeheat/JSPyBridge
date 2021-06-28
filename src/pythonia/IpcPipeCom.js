@@ -12,11 +12,16 @@ class StdioCom {
   }
 
   start () {
-    this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
+    this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['ignore', 'pipe', 'inherit', 'ipc'] })
     this.proc.on('message', data => {
       log('py>js data', data)
       this.recieve(data)
     })
+    this.proc.on('error', console.warn)
+  }
+
+  end () {
+    this.proc.kill()
   }
 
   recieve (j) {

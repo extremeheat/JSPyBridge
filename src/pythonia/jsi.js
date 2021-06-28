@@ -1,3 +1,6 @@
+/**
+ * The JavaScript Interface for Python
+ */
 const util = require('util')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
@@ -29,10 +32,11 @@ function getType (obj) {
 }
 
 class JSBridge {
-  constructor (ipc) {
+  constructor (ipc, pyi) {
     // This is an ID that increments each time a new object is returned
     // to Python.
     this.ffid = 0
+    this.pyi = pyi
     // This contains a refrence map of FFIDs to JS objects.
     // TODO: figure out gc, maybe weakmaps
     this.m = {
@@ -138,8 +142,10 @@ class JSBridge {
   }
 
   make (r, ffid) {
-    this.m[ffid] = new WeakRef(this.ipc.makePyObject(ffid))
-    this.ipc.send({ r, val: true })
+    const proxy = this.pyi.makePyObject(ffid)
+    this.m[ffid] = new WeakRef(proxy)
+    this.pyi.queueForCollection(ffid, proxy)
+    this.ipc.send({ r, val: ffid })
   }
 
   onMessage ({ r, action, ffid, key, args }) {

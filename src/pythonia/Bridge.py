@@ -18,39 +18,9 @@ def fileImport(moduleName, absolutePath):
     return foo
 
 
-class DemoClass:
-    """Some doc"""
-
-    def __init__(self, var):
-        self.var = var
-
-    def get(self, update):
-        return self.var + update
-
-    def nested(self):
-        def some():
-            return 3
-
-        return some
-
-    def arr(self):
-        return [1, 2, 4]
-
-    def barr(self):
-        return bytearray()
-
-    def dic(self):
-        return {"x": {"y": 4, "z": [5, 6, 7, 8, None]}}
-
-
-def add(demoClas1, demoClas2):
-    # print("dc", demoClas1, demoClas2)
-    return demoClas1.var + demoClas2.var
-
-
 class Bridge:
     m = {
-        0: {"python": python, "demo": DemoClass, "add": add, "open": open, "fileImport": fileImport}
+        0: {"python": python, "open": open, "fileImport": fileImport}
     }
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
@@ -139,6 +109,10 @@ class Bridge:
 
     def free(self, r, ffid, key, args):
         # print("Free", ffid, key, args)
+        if ffid not in self.m:
+            # OK, we already GC'ed
+            self.q(r, "", True)
+            return
         del self.m[ffid]
         self.q(r, "", True)
 
@@ -165,17 +139,15 @@ class Bridge:
         nargs = []
         if args:
             for arg in args:
-                # print("-ARG", arg)
                 if isinstance(arg, dict) and ("ffid" in arg):
                     f = arg["ffid"]
-                    if arg["ffid"] in self.m:
-                        nargs.append(self.m[f])
-                    else:
+                    if f in self.weakmap:
                         nargs.append(self.weakmap[f])
                         del self.m[f]
+                    else:
+                        nargs.append(self.m[f])
                 else:
                     nargs.append(arg)
-                # print("\nj", args)
         # print("Calling....", action)
         return getattr(self, action)(r, ffid, key, nargs)
 
