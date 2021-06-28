@@ -138,18 +138,18 @@ class Bridge {
           icall = false
           const jfid = await this.pyFn(arg)
           kwargs[kwarg] = { ffid: jfid }
-          arg.ffid = jfid
+          // arg.ffid = jfid
         } else if (arg.ffid) {
           kwargs[kwarg] = { ffid: arg.ffid }
         } else if (typeof arg === 'function') {
           const jfid = await this.pyFn(arg)
           kwargs[kwarg] = { ffid: jfid }
-          arg.ffid = jfid
+          // arg.ffid = jfid
         } else if (arg instanceof PyClass) {
           await arg.waitForReady()
           const jfid = await this.pyFn(arg)
           kwargs[kwarg] = { ffid: jfid }
-          arg.ffid = jfid
+          // arg.ffid = jfid
         }
       }
     }
@@ -246,7 +246,7 @@ class Bridge {
         }
         if (typeof prop === 'symbol') {
           console.log('Get symbol', next.callstack, prop)
-          if (prop == Symbol.asyncIterator) {
+          if (prop === Symbol.asyncIterator) {
             // todo
           }
           return

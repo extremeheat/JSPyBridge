@@ -4,6 +4,9 @@ import json_patch
 debug = lambda *a: a
 # debug = print
 
+class JavaScriptError(Exception):
+    pass
+
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
 class Executor:
@@ -42,6 +45,8 @@ class Executor:
                 break
             else:  # The JS API we called wants to call a Python API... so let the loop handle it.
                 self.loop.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
+        if 'error' in j:
+            raise JavaScriptError(f"Access to '{attr}' failed:\n{j['error']}\n")
         return j
 
     def getProp(self, ffid, method):

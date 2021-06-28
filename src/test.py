@@ -32,12 +32,21 @@ demo.increment()
 demo.callback(some_method)
 
 
-def handler(self, *args):
-    print("Handler caled", args)
-    demo.off("increment", handler)
+def handler(this, fn, num, obj):
+    print("Handler caled", fn, num, obj)
+    if num == 7:
+        this.off("increment", handler)
 
 
 demo.on("increment", handler)
+
+try:
+    demo.error()
+    print("Failed to error")
+    exit(1)
+except Exception as e:
+    print("OK, captured error")
+
 time.sleep(1)
 
 # This should throw for now :

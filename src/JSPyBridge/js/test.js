@@ -41,6 +41,10 @@ class DemoClass extends EventEmitter {
       x: 3
     }
   }
+
+  error () {
+    throw Error('This should fail')
+  }
 }
 
 module.exports = { DemoClass }

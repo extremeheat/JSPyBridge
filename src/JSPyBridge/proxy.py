@@ -44,7 +44,7 @@ class Executor:
         res = self.loop.responses[r]
         del self.loop.responses[r]
         if 'error' in res:
-            raise JavaScriptError(f"Access to {attr} failed:\n{res['error']}\n")
+            raise JavaScriptError(f"Access to '{attr}' failed:\n{res['error']}\n")
         return res
 
     def getProp(self, ffid, method):
@@ -190,3 +190,4 @@ class Proxy(object):
 
     def __del__(self):
         self._exe.free(self.ffid)
+        # print("FREEself", self.ffid)

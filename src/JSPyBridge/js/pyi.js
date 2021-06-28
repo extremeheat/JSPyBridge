@@ -22,6 +22,7 @@ class PythonException extends Error {
 
 async function waitFor (cb, withTimeout, onTimeout) {
   let t
+  if (withTimeout === Infinity) return new Promise(resolve => cb(resolve))
   const ret = await Promise.race([
     new Promise(resolve => cb(resolve)),
     new Promise(resolve => { t = setTimeout(() => resolve('timeout'), withTimeout) })
