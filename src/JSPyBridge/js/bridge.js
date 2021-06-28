@@ -5,6 +5,7 @@ const util = require('util')
 const { PyBridge } = require('./pyi')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
+const colors = process.env.FORCE_COLOR === '0' ? false : true
 
 function getType (obj) {
   debug('type', typeof obj)
@@ -127,7 +128,7 @@ class Bridge {
 
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
-    const s = util.inspect(await this.m[ffid], { colors: true })
+    const s = util.inspect(await this.m[ffid], { colors })
     this.ipc.send({ r, val: s })
   }
 

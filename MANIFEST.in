@@ -1,0 +1,2 @@
+include src/JSPyBridge/js/bridge.js
+include src/JSPyBridge/js/pyi.js

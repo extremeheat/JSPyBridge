@@ -3,10 +3,26 @@ import atexit, os, sys
 from . import config
 from .config import debug
 
-os.environ["FORCE_COLOR"] = "1"
+def supports_color():
+    """
+    Returns True if the running system's terminal supports color, and False
+    otherwise.
+    """
+    plat = sys.platform
+    supported_platform = plat != 'Pocket PC' and (plat != 'win32' or
+                                                  'ANSICON' in os.environ)
+    # isatty is not always implemented, #6223.
+    is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+    return supported_platform and is_a_tty
+
+if supports_color():
+    os.environ["FORCE_COLOR"] = "1"
+else:
+    os.environ["FORCE_COLOR"] = "0"
 
 # Currently this uses process standard input & standard error pipes
 # to communicate with JS, but this can be turned to a socket later on
+# ^^ Looks like custom FDs don't work on Windows, so let's keep using STDIO.
 
 dn = os.path.dirname(__file__)
 
