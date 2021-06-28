@@ -37,3 +37,7 @@ def handle(*args):
         pos = target.position
         bot.pathfinder.setMovements(movements)
         bot.pathfinder.setGoal(pathfinder.goals.GoalNear(pos.x, pos.y, pos.z, RANGE_GOAL))
+
+@On(bot, "end")
+def handle(*args):
+  print("Bot ended!", args)

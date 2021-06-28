@@ -1,12 +1,5 @@
 const cp = require('child_process')
-
-// function serialize(key, val) {
-//   console.log('ser',key,val)
-//   if (val?.ffid) {
-//     return { ffid: val.ffid }
-//   }
-//   return val
-// }
+const { join } = require('path')
 
 class StdioCom {
   constructor (ver = 3) {
@@ -16,7 +9,7 @@ class StdioCom {
   }
 
   start () {
-    this.proc = cp.spawn(this.python, ['Bridge.py'], { stdio: ['pipe', 'inherit', 'pipe'] })
+    this.proc = cp.spawn(this.python, [join(__dirname, 'Bridge.py')], { stdio: ['pipe', 'inherit', 'pipe'] })
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
       console.log('py>js data', data)
@@ -37,8 +30,12 @@ class StdioCom {
   recieve (j) {
     if (typeof (j) === 'object') {
       console.log('[py -> js]', j)
-      this.handlers[j.r]?.(j)
-      delete this.handlers[j.r]
+      if (j.action) { // Python wants to execute JavaScript
+        this.handlers.jsi(j)
+      } else {
+        this.handlers[j.r]?.(j)
+        delete this.handlers[j.r]
+      }
     } else {
       console.warn('[PyE]', j)
     }
