@@ -124,8 +124,17 @@ class Bridge {
         nargs.push({ ffid: jfid })
         arg.ffid = jfid
       } else if (arg instanceof PyClass) {
+        const proxy = new Proxy(arg, {
+          get(target, prop, reciever) {
+            if (target[prop]) {
+              return target[prop]
+            } else {
+              return target.superclass()[prop]
+            }
+          }
+        })
         await arg.waitForReady()
-        const jfid = await this.pyFn(arg)
+        const jfid = await this.pyFn(proxy)
         nargs.push({ ffid: jfid })
         arg.ffid = jfid
       } else {

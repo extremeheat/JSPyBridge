@@ -1,4 +1,6 @@
-# Must run with "DEBUG=true python3 test.py"
+import os
+if 'DEBUG' not in os.environ:
+    os.environ["DEBUG"] = "1"
 import time
 from JSPyBridge import require, console, on, off, DemoClass
 
@@ -47,7 +49,7 @@ try:
 except Exception as e:
     print("OK, captured error")
 
-
+exit(0)
 # This should throw for now :
 # demo.x = 3
 # print(demo)
