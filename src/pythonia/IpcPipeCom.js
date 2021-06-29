@@ -13,8 +13,18 @@ class StdioCom {
 
   start () {
     this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
+    // BAD HACK: since the channel is not exposed, and we need to send JSON with a
+    // custom serializer, we basically have two choices: 
+    // 1) either JSON.stringify it with a custom encoder in our lib, then have it JSON.stringified 
+    //    *again* in the Node.js standard lib, then unwrapped twice in Python, or
+    // 2) use a hack to get the low level IPC API and write raw strings to it.
+    // There is no 'string' serialization option for IPC. It's either JSON or 'Advanced' which uses
+    // internal V8 serialization APIs; fast but unusable in Python.
+    const symbols = Object.getOwnPropertySymbols(this.proc)
+    const symbol = symbols.find(sym => sym.toString() === 'Symbol(kChannelHandle)')
+    const channel = this.proc[symbol]
+    this._writeRaw = data => channel.writeUtf8String({}, data)
     this.proc.on('message', data => {
-      log('py>js data', data)
       this.recieve(data)
     })
     this.proc.on('error', console.warn)
@@ -25,13 +35,17 @@ class StdioCom {
   }
 
   recieve (j) {
-    log('[py -> js]', j)
+    log('[py -> js]', j, this.handlers)
     if (this.handlers[j.c]) {
       return this.handlers[j.c](j)
     }
-    this.handlers[j.r]?.(j)
-    // console.log(this.handlers)
-    delete this.handlers[j.r]
+    if (this.handlers[j.r]) {
+      if (this.handlers[j.r](j)) {
+        return
+      }
+      delete this.handlers[j.r]
+    }
+
   }
 
   register (eventId, cb) {
@@ -43,40 +57,12 @@ class StdioCom {
     this.proc.send(what)
     this.register(what.r, cb)
   }
+
+  writeRaw (what, r, cb) {
+    log('[js -> py]', what)
+    this._writeRaw(what + '\n')
+    this.register(r, cb)
+  }
 }
 
 module.exports = { StdioCom }
-
-// class Bridge {
-//   outbound = []
-
-//   constructor(com) {
-//     this.com = com
-//   }
-
-//   request(req, cb) {
-//     this.com.write(req, cb)
-//   }
-// }
-
-// // Proxy is an "exotic object" that cannot be extended
-
-// class ChainPromise extends Promise {
-
-// }
-
-// function PyObject() {
-//   const handler = {
-//     async get(target, key, reciever) {
-//       const chain = new ChainPromise()
-//       return new Proxy(chain, {
-//         get(t, k) {
-
-//         }
-//       })
-//     }
-//   }
-//   return new Proxy({}, handler)
-// }
-
-// const PyObject = {}

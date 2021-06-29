@@ -18,6 +18,9 @@ await it('does function calls', async function () {
 
 await it('declares classes', async function () {
   class MyClas extends PyClass {
+    constructor() {
+      super(demo.DemoClass(4))
+    }
     someMethod() {
       return 3
     }

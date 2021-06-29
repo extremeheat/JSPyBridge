@@ -62,12 +62,13 @@ class JSBridge {
 
   async get (r, ffid, attr) {
     const v = await this.m[ffid][attr]
-    const type = getType(v)
+    const type = v.ffid ? 'py' : getType(v)
     // debug('TYP', this.m, ffid, attr, await this.m[ffid][attr], type)
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
+      case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
         // We do not need to increment FFID here because Python will return
         // an instanciable function. The FFID can be ignored.

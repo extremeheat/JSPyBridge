@@ -94,12 +94,12 @@ class Bridge:
 
     # Same as call just without invoking anything, and args
     # would be null
-    def get(self, r, ffid, keys, args, extra):
-        o = self.call(r, ffid, keys, [], invoke=False)
+    def get(self, r, ffid, keys, args):
+        o = self.call(r, ffid, keys, [], {}, invoke=False)
         # print("Got", self, r, ffid, keys, args, o)
         return o
 
-    def inspect(self, r, ffid, keys, args, extra):
+    def inspect(self, r, ffid, keys, args):
         v = self.m[ffid]
         for key in keys:
             # print("ke, v", key, v)
@@ -107,7 +107,7 @@ class Bridge:
         s = util.make_signature(v)
         self.q(r, "", s)
 
-    def free(self, r, ffid, key, args, extra):
+    def free(self, r, ffid, key, args):
         # print("Free", ffid, key, args)
         if ffid not in self.m:
             # OK, we already GC'ed
@@ -116,7 +116,7 @@ class Bridge:
         del self.m[ffid]
         self.q(r, "", True)
 
-    def make(self, r, ffid, key, args, extra):
+    def make(self, r, ffid, key, args):
         self.cur_ffid += 1
         p = Proxy(self.executor, self.cur_ffid)
         # We need to put into both WeakMap and map to prevent immedate GC
@@ -135,37 +135,46 @@ class Bridge:
         j = json.loads(data)
         return j
 
+    def pcall(self, r, ffid, key, args):
+        created = {}
+        # Convert special JSON objects to Python methods
+        def process(json_input, lookup_key):
+            if isinstance(json_input, dict):
+                for k, v in json_input.items():
+                    if isinstance(v, dict) and (lookup_key in v):
+                        lookup = v[lookup_key]
+                        if lookup == '':
+                            self.cur_ffid += 1
+                            self.m[self.cur_ffid] = Proxy(self.executor, self.cur_ffid)
+                            json_input[k] = self.m[self.cur_ffid]
+                            created[v['r']] = self.cur_ffid
+                        else:
+                            json_input[k] = self.m[lookup]
+                    else:
+                        process(v, lookup_key)
+            elif isinstance(json_input, list):
+                for k, v in enumerate(json_input):
+                    if isinstance(v, dict) and (lookup_key in v):
+                        lookup = v[lookup_key]
+                        if lookup == '':
+                            self.cur_ffid += 1
+                            p = Proxy(self.executor, self.cur_ffid)
+                            self.m[self.cur_ffid] = p
+                            json_input[k] = self.m[self.cur_ffid]
+                            created[v['r']] = self.cur_ffid
+                        else:
+                            json_input[k] = self.m[lookup]
+                    else:
+                        process(v, lookup_key)
+        process(args, 'ffid')
+        pargs, kwargs = args
+        self.q(r, "pre", created)
+        self.call(r, ffid, key, pargs, kwargs or {})
+
     def onMessage(self, r, action, ffid, key, args):
-        nargs = []
-        kwargs = {}
-        if args:
-            if action == 'acall':
-                args, kwargs = args
-                action = 'call'
-            for arg in args:
-                if isinstance(arg, dict) and ("ffid" in arg):
-                    f = arg["ffid"]
-                    if f in self.weakmap:
-                        nargs.append(self.weakmap[f])
-                        del self.m[f]
-                    else:
-                        nargs.append(self.m[f])
-                else:
-                    nargs.append(arg)
-            for kwarg in kwargs:
-                arg = kwargs[kwarg]
-                if isinstance(arg, dict) and ("ffid" in arg):
-                    f = arg["ffid"]
-                    if f in self.weakmap:
-                        kwargs[kwarg] = self.weakmap[f]
-                        del self.m[f]
-                    else:
-                        kwargs[kwarg] = self.m[f]
-                else:
-                    kwargs[kwarg] = arg
         # print("Calling....", action,ffid, key, nargs, kwargs)
         try:
-            return getattr(self, action)(r, ffid, key, nargs, kwargs)
+            return getattr(self, action)(r, ffid, key, args)
         except Exception:
             self.q(r, "error", '', traceback.format_exc())
             pass

@@ -4,7 +4,7 @@ const util = require('util')
 const { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
 const log = () => {}
-
+// const log = console.log
 const REQ_TIMEOUT = 10000
 
 class BridgeException extends Error {
@@ -24,7 +24,7 @@ class PythonException extends Error {
 class PyClass {
   #supers = []
   #waits = []
-  constructor (exts = []) {
+  constructor (...exts) {
     for (const ext of exts) {
       this.#waits.push(ext.then(ex => this.#supers.push(ex)))
     }
@@ -51,7 +51,7 @@ async function waitFor (cb, withTimeout, onTimeout) {
   return ret
 }
 
-const nextReq = () => (performance.now() * 10) | 0
+const nextReq = () => (performance.now() * 100) | 0
 
 class Bridge {
   constructor (com) {
@@ -88,6 +88,7 @@ class Bridge {
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
     return resp.val
   }
 
@@ -97,6 +98,7 @@ class Bridge {
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
     switch (resp.key) {
       case 'string':
       case 'int':
@@ -110,70 +112,52 @@ class Bridge {
   }
 
   async call (ffid, stack, args, kwargs, icall, timeout) {
-    const nargs = []
-    for (const arg of args) {
-      if (icall && !arg.ffid) {
-        icall = false
-        const jfid = await this.pyFn(arg)
-        nargs.push({ ffid: jfid })
-        arg.ffid = jfid
-      } else if (arg.ffid) {
-        nargs.push({ ffid: arg.ffid })
-      } else if (typeof arg === 'function') {
-        const jfid = await this.pyFn(arg)
-        nargs.push({ ffid: jfid })
-        arg.ffid = jfid
-      } else if (arg instanceof PyClass) {
-        const proxy = new Proxy(arg, {
-          get(target, prop, reciever) {
-            if (target[prop]) {
-              return target[prop]
-            } else {
-              return target.superclass()[prop]
+    const made = {}
+    const r = nextReq()
+    const req = { r, action: 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
+    const payload = JSON.stringify(req, (k, v) => {
+      if (!k) return v
+      if (v && !v.r) {
+        if (v.ffid) return { ffid: v.ffid }
+        if (typeof v === 'function' || v.class) {
+          const r = nextReq()
+          made[r] = v
+          return { r, ffid: '' }
+        }
+        if (v instanceof PyClass) {
+          const r = nextReq()
+          const proxy = new Proxy(v, {
+            get(target, prop, reciever) {
+              if (target[prop]) {
+                return target[prop]
+              } else {
+                return target.superclass()?.[prop]
+              }
             }
-          }
-        })
-        await arg.waitForReady()
-        const jfid = await this.pyFn(proxy)
-        nargs.push({ ffid: jfid })
-        arg.ffid = jfid
-      } else {
-        nargs.push(arg)
-      }
-    }
-    if (kwargs) {
-      for (const kwarg in kwargs) {
-        const arg = kwargs[kwarg]
-        if (icall && !arg.ffid) {
-          icall = false
-          const jfid = await this.pyFn(arg)
-          kwargs[kwarg] = { ffid: jfid }
-          // arg.ffid = jfid
-        } else if (arg.ffid) {
-          kwargs[kwarg] = { ffid: arg.ffid }
-        } else if (typeof arg === 'function') {
-          const jfid = await this.pyFn(arg)
-          kwargs[kwarg] = { ffid: jfid }
-          // arg.ffid = jfid
-        } else if (arg instanceof PyClass) {
-          await arg.waitForReady()
-          const jfid = await this.pyFn(arg)
-          kwargs[kwarg] = { ffid: jfid }
-          // arg.ffid = jfid
+          })
+          made[r] = proxy
+          return { r, ffid: '' }
         }
       }
-    }
+      return v
+    })
 
-    // console.log('nargs', nargs)
-    if (kwargs) {
-      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] } // eslint-disable-line
-    } else {
-      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs } // eslint-disable-line
-    }
-
-    const resp = await waitFor(cb => this.request(req, cb), timeout || REQ_TIMEOUT, () => {
+    const resp = await waitFor(resolve => this.com.writeRaw(payload, r, pre => {
+      if (pre.key === 'pre') {
+        for (const r in pre.val) {
+          const ffid = pre.val[r]
+          this.jsi.m[ffid] = made[r]
+          this.queueForCollection(ffid, made[r])
+        }
+        return true
+      } else {
+        resolve(pre)
+      }
+    }), timeout || REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    
     log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
@@ -194,6 +178,7 @@ class Bridge {
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
     return resp.val
   }
 
@@ -203,19 +188,10 @@ class Bridge {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
     return resp.val
   }
 
-  async pyFn (fn) {
-    const req = { r: nextReq(), action: 'make', ffid: '', key: fn.name ?? fn.constructor.name, val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
-      throw new BridgeException(`Attempt create function '${fn.name}' failed.`)
-    })
-    const ffid = resp.val
-    this.jsi.m[ffid] = fn
-    this.queueForCollection(ffid, fn)
-    return ffid
-  }
 
   queueForCollection (ffid, val) {
     this.finalizer.register(val, ffid)
@@ -272,10 +248,12 @@ class Bridge {
         if (final === 'apply') {
           target.callstack.pop()
           icall = true
+          args[0].class = true
           args = [args[0], ...args[1]]
         } else if (final === 'call') {
           target.callstack.pop()
           icall = true
+          args[0].class = true
         } else if (final?.endsWith('$')) {
           kwargs = args.pop()
           timeout = kwargs.$timeout

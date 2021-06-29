@@ -101,6 +101,9 @@ class Executor:
         resp = self.ipc("make", self.loop.cur_ffid, "")
         return self.loop.cur_ffid
 
+    def get(self, ffid):
+        return self.loop.m[ffid]
+
 
 INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
 
@@ -136,6 +139,8 @@ class Proxy(object):
             return Proxy(self._exe, val)
         if methodType == "void":
             return None
+        if methodType == 'py':
+            return self._exe.get(val)
         else:
             return val
 

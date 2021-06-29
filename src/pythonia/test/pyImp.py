@@ -11,5 +11,5 @@ def inner():
     return 3
 
 def some_event(cb, vfn):
-    print("CB", cb, vfn, vfn.someMethod())
+    print("CB", cb, vfn, vfn.someMethod(), vfn.get(3))
     cb('from python', inner)
