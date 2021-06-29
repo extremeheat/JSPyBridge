@@ -8,6 +8,7 @@ Interoperate Node.js with Python. Work in progress.
 * Native garbage collection
 * Callbacks
 * Events
+* Exception handling
 
 ### Work in progress
 * Object mutation from JavaScript. You cannot update properties right now, so add setter methods in JS instead. This may be fixed later on.

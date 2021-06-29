@@ -47,7 +47,6 @@ try:
 except Exception as e:
     print("OK, captured error")
 
-time.sleep(1)
 
 # This should throw for now :
 # demo.x = 3

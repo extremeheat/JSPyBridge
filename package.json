@@ -12,5 +12,11 @@
   "devDependencies": {
     "mocha": "^9.0.0",
     "standard": "^16.0.3"
+  },
+  "dependencies": {
+    "babel-eslint": "^10.1.0"
+  },
+  "standard": {
+    "parser": "babel-eslint"
   }
 }

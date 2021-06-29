@@ -1,13 +1,14 @@
 const { StdioCom } = require('./IpcPipeCom')
 const { resolve } = require('path')
 const util = require('util')
+const { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
 const log = () => {}
 
 const REQ_TIMEOUT = 10000
 
 class BridgeException extends Error {
-  constructor(...a) {
+  constructor (...a) {
     super(...a)
     this.message += ` Python didn't respond in time (${REQ_TIMEOUT}ms), look above for any Python errors. If no errors, the API call hung.`
     // We'll fix the stack trace once this is shipped.
@@ -15,7 +16,7 @@ class BridgeException extends Error {
 }
 
 class PythonException extends Error {
-  constructor(stack, error) {
+  constructor (stack, error) {
     super(`Call to '${stack.join('.')}' failed: \n\n${error}`)
   }
 }
@@ -23,22 +24,22 @@ class PythonException extends Error {
 class PyClass {
   #supers = []
   #waits = []
-  constructor(exts = []) {
+  constructor (exts = []) {
     for (const ext of exts) {
-      this.#waits.push( ext.then(ex => this.#supers.push(ex)) )
+      this.#waits.push(ext.then(ex => this.#supers.push(ex)))
     }
   }
 
-  async waitForReady() {
+  async waitForReady () {
     return Promise.all(this.#waits)
   }
 
-  superclass(ix = 0) {
+  superclass (ix = 0) {
     return this.#supers[ix]
   }
 }
 
-async function waitFor(cb, withTimeout, onTimeout) {
+async function waitFor (cb, withTimeout, onTimeout) {
   let t
   if (withTimeout === Infinity) return new Promise(resolve => cb(resolve))
   const ret = await Promise.race([
@@ -53,7 +54,7 @@ async function waitFor(cb, withTimeout, onTimeout) {
 const nextReq = () => (performance.now() * 10) | 0
 
 class Bridge {
-  constructor(com) {
+  constructor (com) {
     this.com = com
     // This is a ref map used so Python can call back JS APIs
     this.jrefs = {}
@@ -76,13 +77,13 @@ class Bridge {
     this.com.register('jsi', this.jsi.onMessage.bind(this.jsi))
   }
 
-  request(req, cb) {
+  request (req, cb) {
     // When we call Python functions with Proxy paramaters, we need to just send the FFID
     // so it can be mapped on the python side.
     this.com.write(req, cb)
   }
 
-  async len(ffid, stack) {
+  async len (ffid, stack) {
     const req = { r: nextReq(), action: 'length', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -90,7 +91,7 @@ class Bridge {
     return resp.val
   }
 
-  async get(ffid, stack, args) {
+  async get (ffid, stack, args) {
     const req = { r: nextReq(), action: 'get', ffid: ffid, key: stack, val: args }
 
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
@@ -108,8 +109,8 @@ class Bridge {
     }
   }
 
-  async call(ffid, stack, args, kwargs, icall, timeout) {
-    let nargs = []
+  async call (ffid, stack, args, kwargs, icall, timeout) {
+    const nargs = []
     for (const arg of args) {
       if (icall && !arg.ffid) {
         icall = false
@@ -153,12 +154,12 @@ class Bridge {
         }
       }
     }
-    
+
     // console.log('nargs', nargs)
     if (kwargs) {
-      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] }
+      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] } // eslint-disable-line
     } else {
-      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
+      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs } // eslint-disable-line
     }
 
     const resp = await waitFor(cb => this.request(req, cb), timeout || REQ_TIMEOUT, () => {
@@ -179,7 +180,7 @@ class Bridge {
     }
   }
 
-  async inspect(ffid, stack) {
+  async inspect (ffid, stack) {
     const req = { r: nextReq(), action: 'inspect', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
@@ -187,7 +188,7 @@ class Bridge {
     return resp.val
   }
 
-  async free(ffid) {
+  async free (ffid) {
     const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
     const resp = await waitFor(cb => this.request(req, cb), 500, () => {
       // Allow a GC time out, it's probably because the Python process died
@@ -196,7 +197,7 @@ class Bridge {
     return resp.val
   }
 
-  async pyFn(fn) {
+  async pyFn (fn) {
     const req = { r: nextReq(), action: 'make', ffid: '', key: fn.name ?? fn.constructor.name, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt create function '${fn.name}' failed.`)
@@ -207,21 +208,22 @@ class Bridge {
     return ffid
   }
 
-  queueForCollection(ffid, val) {
+  queueForCollection (ffid, val) {
     this.finalizer.register(val, ffid)
   }
 
-  makePyObject(ffid, inspectString) {
+  makePyObject (ffid, inspectString) {
     // "Intermediate" objects are returned while chaining. If the user tries to log
     // an Intermediate then we know they forgot to use await, as if they were to use
     // await, then() would be implicitly called where we wouldn't return a Proxy, but
     // a Promise. Must extend Function to be a "callable" object in JS for the Proxy.
     class Intermediate extends Function {
-      constructor(callstack) {
+      constructor (callstack) {
         super()
         this.callstack = [...callstack]
       }
-      [util.inspect.custom]() {
+
+      [util.inspect.custom] () {
         return '\n[You must use await when calling a Python API]\n'
       }
     }
@@ -284,7 +286,8 @@ class Bridge {
         super()
         this.callstack = []
       }
-      [util.inspect.custom]() {
+
+      [util.inspect.custom] () {
         return inspectString || '(Some Python object)'
       }
     }
@@ -299,7 +302,7 @@ const root = bridge.makePyObject(0)
 module.exports = {
   PyClass,
   root,
-  python(file) {
+  python (file) {
     if (file.startsWith('/') || file.startsWith('./') || file.includes(':')) {
       const importPath = resolve(file)
       const fname = file.split('/').pop() || file

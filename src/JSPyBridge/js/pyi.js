@@ -3,6 +3,7 @@
  */
 
 const util = require('util')
+const { performance } = require('perf_hooks')
 const REQ_TIMEOUT = 10000
 const log = () => {}
 
@@ -15,7 +16,7 @@ class BridgeException extends Error {
 }
 
 class PythonException extends Error {
-  constructor(stack, error) {
+  constructor (stack, error) {
     super(`Call to '${stack.join('.')}' failed: \n\n${error}`)
   }
 }
@@ -83,8 +84,8 @@ class PyBridge {
   }
 
   // icall paramater means the first argument holds a `this` refrence
-  async call(ffid, stack, args, kwargs, icall, timeout) {
-    let nargs = []
+  async call (ffid, stack, args, kwargs, icall, timeout) {
+    const nargs = []
     for (const arg of args) {
       if (icall && !arg.ffid) {
         icall = false
@@ -118,12 +119,12 @@ class PyBridge {
         }
       }
     }
-    
+
     // console.log('nargs', nargs)
     if (kwargs) {
-      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] }
+      var req = { r: nextReq(), action: 'acall', ffid: ffid, key: stack, val: [nargs, kwargs] } // eslint-disable-line
     } else {
-      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs }
+      var req = { r: nextReq(), action: 'call', ffid: ffid, key: stack, val: nargs } // eslint-disable-line
     }
 
     const resp = await waitFor(cb => this.request(req, cb), timeout || REQ_TIMEOUT, () => {
@@ -134,8 +135,8 @@ class PyBridge {
       case 'string':
       case 'int':
         return resp.val // Primitives don't need wrapping
-        case 'error':
-          throw new PythonException(stack, resp.sig)
+      case 'error':
+        throw new PythonException(stack, resp.sig)
       default: {
         const py = this.makePyObject(resp.val, resp.sig)
         this.queueForCollection(resp.val, py)

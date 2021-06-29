@@ -4,7 +4,7 @@
 const util = require('util')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
-const colors = process.env.FORCE_COLOR === '0' ? false : true
+const colors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
   debug('type', typeof obj)

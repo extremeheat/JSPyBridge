@@ -36,7 +36,7 @@ def On(emitter, event, handler=None):
         return on(emitter, event, handler)
 
     def decor(fn):
-        on(emitter, event, fn)
+        emitter.on(event, fn)
         return fn
 
     return decor
