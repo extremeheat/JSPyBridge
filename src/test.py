@@ -1,6 +1,6 @@
 import os
 if 'DEBUG' not in os.environ:
-    os.environ["DEBUG"] = "1"
+    os.environ["DEBUG"] = "jspybridge"
 import time
 from JSPyBridge import require, console, on, off, DemoClass
 
