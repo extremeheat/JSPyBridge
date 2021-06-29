@@ -7,7 +7,7 @@
     "install": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
-    "test": "mocha"
+    "test": "mocha --debug"
   },
   "devDependencies": {
     "mocha": "^9.0.0",
