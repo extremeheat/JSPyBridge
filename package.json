@@ -7,10 +7,10 @@
     "install": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
-    "test": "mocha --debug"
+    "test": "jest"
   },
   "devDependencies": {
-    "mocha": "^9.0.0",
+    "jest": "latest",
     "standard": "^16.0.3"
   },
   "dependencies": {
