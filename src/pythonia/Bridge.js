@@ -232,6 +232,14 @@ class Bridge {
           return this.len(ffid, next.callstack, [])
         }
         if (typeof prop === 'symbol') {
+          if (prop === Symbol.iterator) {
+            return function *iter () {
+              for (let i = 0; i < Infinity; i++) {
+                const next = new Intermediate([...target.callstack, i])
+                yield new Proxy(next, handler)
+              }
+            }
+          }
           console.log('Get symbol', next.callstack, prop)
           if (prop === Symbol.asyncIterator) {
             // todo

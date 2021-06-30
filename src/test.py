@@ -49,7 +49,7 @@ try:
 except Exception as e:
     print("OK, captured error")
 
-exit(0)
+time.sleep(0.1)
 # This should throw for now :
 # demo.x = 3
 # print(demo)
