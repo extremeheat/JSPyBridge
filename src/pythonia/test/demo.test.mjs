@@ -1,5 +1,4 @@
-import { python, PyClass } from '../Bridge.js'
-
+import { py, python, PyClass }  from '../Bridge.js'
 const f = await python('./pyImp.py')
 const demo = await python('./demo.py')
 
@@ -48,6 +47,12 @@ await it('catches errors', async function () {
 
 await it('calls functions with special args', async function () {
   await demo.special$(1, 2, { kwarg1: 3, extra: 77, xx: Math.random() })
+})
+
+await it('can add Python numbers', async function () {
+  const num = py`3j`
+  const num2 = py`2j`
+  console.log('3 + 3', await py`3+3 + ${num} + ${num2}`)
 })
 
 // process.exit(0)

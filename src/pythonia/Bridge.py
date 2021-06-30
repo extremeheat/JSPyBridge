@@ -20,7 +20,7 @@ def fileImport(moduleName, absolutePath):
 
 class Bridge:
     m = {
-        0: {"python": python, "open": open, "fileImport": fileImport}
+        0: {"python": python, "open": open, "fileImport": fileImport, "eval": eval}
     }
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
