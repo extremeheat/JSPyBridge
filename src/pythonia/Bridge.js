@@ -218,6 +218,7 @@ class Bridge {
         // log('```prop', next.callstack, prop)
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
+        if (prop === 'toJSON') return () => ({ ffid })
         if (prop === 'then') {
           // Avoid .then loops
           if (!next.callstack.length) {
@@ -295,7 +296,7 @@ const bridge = new Bridge(com)
 const root = bridge.makePyObject(0)
 
 async function py(tokens, ...replacements) {
-  console.log(tokens, replacements)
+  // console.log(tokens, replacements)
   const vars = {} // List of locals
   let nstr = ''
   for (let i = 0; i < tokens.length; i++) {
@@ -309,7 +310,6 @@ async function py(tokens, ...replacements) {
       nstr += token
     }
   }
-
   return root.eval(nstr, null, vars)
 }
 
