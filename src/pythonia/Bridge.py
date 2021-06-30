@@ -199,11 +199,13 @@ apiin = apiout = None
 # recieve different messages at the same time.
 def com_io():
     global apiin, apiout
-    fd = int(os.environ["NODE_CHANNEL_FD"])
     if sys.platform == "win32":
-        apiin = os.fdopen(fd, "r")
-        apiout = os.fdopen(fd + 1, "w")
+        # apiin = os.fdopen(fd, "r")
+        # apiout = os.fdopen(fd + 1, "w")
+        apiin = sys.stdin
+        apiout = sys.stderr
     else:
+        fd = int(os.environ["NODE_CHANNEL_FD"])
         api = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
         apiin = api.makefile("r")
         apiout = api.makefile("w")

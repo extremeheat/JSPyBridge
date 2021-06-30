@@ -1,4 +1,4 @@
-const { StdioCom } = require('./IpcPipeCom')
+const { StdioCom } = process.platform == 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
 const { resolve } = require('path')
 const util = require('util')
 const { performance } = require('perf_hooks')

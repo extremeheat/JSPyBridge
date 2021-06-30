@@ -1,6 +1,8 @@
 const cp = require('child_process')
 const { join } = require('path')
 
+const log = process.env.DEBUG ? console.log : () => {}
+
 class StdioCom {
   constructor (ver = 3) {
     this.python = ver === 3 ? 'python3' : 'python2'
@@ -9,35 +11,40 @@ class StdioCom {
   }
 
   start () {
-    this.proc = cp.spawn(this.python, [join(__dirname, 'Bridge.py')], { stdio: ['pipe', 'inherit', 'pipe'] })
+    this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['pipe', 'inherit', 'pipe'] })
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
-      console.log('py>js data', data)
-      // returnx
       for (const line of data.split('\n')) {
         let recv = line
         try {
-          if (line.startsWith('{')) {
+          if (line.startsWith('{"r"')) {
             recv = JSON.parse(line)
+            this.recieve(recv)
+          } else if (line) {
+            console.warn('[PyE]', line)
           }
-        } catch {}
-        this.recieve(recv)
+        } catch {
+          console.warn('[PyE]', line)
+        }
       }
     })
-    // this.proc.stdout.pipe(process.stdout)
+    this.proc.on('error', console.warn)
+  }
+
+  end () {
+    this.proc.kill()
   }
 
   recieve (j) {
-    if (typeof (j) === 'object') {
-      console.log('[py -> js]', j)
-      if (j.action) { // Python wants to execute JavaScript
-        this.handlers.jsi(j)
-      } else {
-        this.handlers[j.r]?.(j)
-        delete this.handlers[j.r]
+    log('[py -> js]', j)
+    if (this.handlers[j.c]) {
+      return this.handlers[j.c](j)
+    }
+    if (this.handlers[j.r]) {
+      if (this.handlers[j.r](j)) {
+        return
       }
-    } else {
-      console.warn('[PyE]', j)
+      delete this.handlers[j.r]
     }
   }
 
@@ -46,46 +53,17 @@ class StdioCom {
   }
 
   write (what, cb) {
-    console.log('[js -> py]', what)
+    log('[js -> py]', what)
     const fb = JSON.stringify(what)
-    console.log('fb', fb)
     this.proc.stdin.write(fb + '\n')
     this.register(what.r, cb)
+  }
+
+  writeRaw (what, r, cb) {
+    log('[js -> py]', what)
+    this.proc.stdin.write(what + '\n')
+    this.register(r, cb)
   }
 }
 
 module.exports = { StdioCom }
-
-// class Bridge {
-//   outbound = []
-
-//   constructor(com) {
-//     this.com = com
-//   }
-
-//   request(req, cb) {
-//     this.com.write(req, cb)
-//   }
-// }
-
-// // Proxy is an "exotic object" that cannot be extended
-
-// class ChainPromise extends Promise {
-
-// }
-
-// function PyObject() {
-//   const handler = {
-//     async get(target, key, reciever) {
-//       const chain = new ChainPromise()
-//       return new Proxy(chain, {
-//         get(t, k) {
-
-//         }
-//       })
-//     }
-//   }
-//   return new Proxy({}, handler)
-// }
-
-// const PyObject = {}
