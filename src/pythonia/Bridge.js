@@ -22,11 +22,11 @@ class PythonException extends Error {
 }
 
 class PyClass {
-  #supers = []
+  _Supers = []
   #waits = []
   constructor (...exts) {
     for (const ext of exts) {
-      this.#waits.push(ext.then(ex => this.#supers.push(ex)))
+      this.#waits.push(ext.then(ex => this._Supers.push(ex)))
     }
   }
 
@@ -35,7 +35,7 @@ class PyClass {
   }
 
   superclass (ix = 0) {
-    return this.#supers[ix]
+    return this._Supers[ix]
   }
 }
 
@@ -111,10 +111,10 @@ class Bridge {
     }
   }
 
-  async call (ffid, stack, args, kwargs, icall, timeout) {
+  async call (ffid, stack, args, kwargs, set, timeout) {
     const made = {}
     const r = nextReq()
-    const req = { r, action: 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
+    const req = { r, action: set ? 'setval' : 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
     const payload = JSON.stringify(req, (k, v) => {
       if (!k) return v
       if (v && !v.r) {
@@ -269,8 +269,13 @@ class Bridge {
           delete kwargs.$timeout
           target.callstack[target.callstack.length - 1] = final.slice(0, -1)
         }
-        const ret = this.call(ffid, target.callstack, args, kwargs, icall, timeout)
+        const ret = this.call(ffid, target.callstack, args, kwargs, false, timeout)
         target.callstack = [] // Flush callstack to py
+        return ret
+      },
+      set: (target, prop, val) => {
+        if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
+        const ret = this.call(ffid, [...target.callstack], [prop, val], {}, true)
         return ret
       }
     }

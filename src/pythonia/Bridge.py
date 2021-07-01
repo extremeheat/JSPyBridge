@@ -20,7 +20,7 @@ def fileImport(moduleName, absolutePath):
 
 class Bridge:
     m = {
-        0: {"python": python, "open": open, "fileImport": fileImport, "eval": eval}
+        0: {"python": python, "open": open, "fileImport": fileImport, "eval": eval, "setattr": setattr, "getattr": getattr}
     }
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
@@ -49,15 +49,22 @@ class Bridge:
 
     def call(self, r, ffid, keys, args, kwargs, invoke=True):
         v = self.m[ffid]
-        # print("r=>", v, ffid, keys, args)
-        for key in keys:
-            # print("V", type(v), key)
-            t = getattr(v, str(key), None)
-            # print('v',v)
-            if t is None:
-                v = v[key]  # 🚨 If you get an error here, you called an undefined property
-            else:
-                v = t
+        if invoke:
+            for key in keys:
+                t = getattr(v, str(key), None)
+                if t is None:
+                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                else:
+                    v = t
+        else:
+            for key in keys:
+                if (type(v) in (dict, tuple, list)):
+                    v = v[key]
+                elif hasattr(v, str(key)):
+                    v = getattr(v, str(key))
+                else:
+                    v = v[key] # 🚨 If you get an error here, you called an undefined property
+
         # Classes when called will return void, but we need to return
         # object to JS.
         was_class = False
@@ -99,6 +106,23 @@ class Bridge:
         # print("Got", self, r, ffid, keys, args, o)
         return o
 
+    def Set(self, r, ffid, keys, args):
+        v = self.m[ffid]
+        on, val = args
+        for key in keys:
+            if (type(v) in (dict, tuple, list)):
+                v = v[key]
+            elif hasattr(v, str(key)):
+                v = getattr(v, str(key))
+            else:
+                v = v[key] # 🚨 If you get an error here, you called an undefined property
+        print("V", v, on, val, type(v))
+        if (type(v) in (dict, tuple, list, set)):
+            v[on] = val
+        else:
+            setattr(v, on, val)
+        self.q(r, "void", self.cur_ffid)
+
     def inspect(self, r, ffid, keys, args):
         v = self.m[ffid]
         for key in keys:
@@ -135,7 +159,7 @@ class Bridge:
         j = json.loads(data)
         return j
 
-    def pcall(self, r, ffid, key, args):
+    def pcall(self, r, ffid, key, args, set_attr=False):
         created = {}
         # Convert special JSON objects to Python methods
         def process(json_input, lookup_key):
@@ -169,7 +193,13 @@ class Bridge:
         process(args, 'ffid')
         pargs, kwargs = args
         self.q(r, "pre", created)
-        self.call(r, ffid, key, pargs, kwargs or {})
+        if set_attr:
+            self.Set(r, ffid, key, pargs)
+        else:
+            self.call(r, ffid, key, pargs, kwargs or {})
+
+    def setval(self, r, ffid, key, args):
+        return self.pcall(r, ffid, key, args, set_attr=True)
 
     def onMessage(self, r, action, ffid, key, args):
         # print("Calling....", action,ffid, key, nargs, kwargs)

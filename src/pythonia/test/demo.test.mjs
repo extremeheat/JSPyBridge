@@ -55,6 +55,15 @@ await it('can add Python numbers', async function () {
   console.log('3 + 3', await py`3+3 + ${num} + ${num2}`)
 })
 
+await it('can set variables', async function () {
+  f.x[2] = 4
+  console.log(await f.x)
+  f.y.b = 'meow'
+  console.log(await f.y)
+  f.a.prop = 44
+  console.log(await f.a.prop)
+})
+
 // process.exit(0)
 
 python.exit()

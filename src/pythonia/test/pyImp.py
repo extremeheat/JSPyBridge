@@ -13,3 +13,10 @@ def inner():
 def some_event(cb, vfn):
     print("CB", cb, vfn, vfn.someMethod(), vfn.get(3))
     cb('from python', inner)
+
+x = [ 1, 2, 3 ]
+y = { 'a': 'wow', 'b': 'naw' }
+class A:
+    prop = 3
+
+a = A()
