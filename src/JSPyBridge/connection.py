@@ -108,8 +108,6 @@ def com_io():
             stderr=subprocess.PIPE,
         )
     except Exception as e:
-        # v = subprocess.check_output(['npm', 'version'])
-        # print(v.decode())
         print(
             "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 15 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
         )
@@ -135,5 +133,3 @@ def kill_proc():
 
 # Make sure out child process is killed if the parent one is exiting
 atexit.register(kill_proc)
-
-# print("Got", command(100, { "r": 100, "ffid": 0, "action": "get", "key": "console" }))

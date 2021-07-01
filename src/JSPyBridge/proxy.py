@@ -67,30 +67,6 @@ class Executor:
         resp = self.ipc("free", ffid, "")
         return resp["val"]
 
-    def on(self, object, event, handler):
-        this = self
-        self.i += 1
-        pollingId = self.i
-
-        def handleCallback(data):
-            ffid = data["val"]
-            if not ffid:
-                # no paramater shortcut
-                handler()
-            else:
-                args = Proxy(this, ffid)
-                e = []
-                for arg in args:
-                    e.append(arg)
-                handler(*e)
-            return False
-
-        self.loop.add_listener(pollingId, handleCallback, object, event, handler)
-        return pollingId
-
-    def off(self, what, event, handler=None):
-        return self.loop.remove_listener(what, event, handler)
-
     def new_ffid(self, what):
         r = self.ipc("make", "", "")
         ffid = r["val"]
@@ -143,7 +119,8 @@ class Proxy(object):
         for arg in args:
             if (not hasattr(arg, "ffid")) and callable(arg):
                 ffid = self._exe.new_ffid(arg)
-                setattr(arg, "ffid", ffid)
+                # Need a better way to handle emitters
+                setattr(arg, "iffid", ffid)
                 nargs.append({"ffid": ffid})
             elif hasattr(arg, "ffid"):
                 nargs.append({"ffid": arg.ffid})

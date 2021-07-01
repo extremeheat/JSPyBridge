@@ -43,11 +43,7 @@ class Bridge {
     this.m = {
       0: {
         console,
-        require,
-
-        // Event Polling until we support callbacks
-        startEventPolling: this.startEventPolling.bind(this),
-        stopEventPolling: this.stopEventPolling.bind(this)
+        require
       }
     }
     this.ipc = ipc
@@ -64,7 +60,6 @@ class Bridge {
   async get (r, ffid, attr) {
     const v = await this.m[ffid][attr]
     const type = getType(v)
-    // debug('TYP', this.m, ffid, attr, await this.m[ffid][attr], type)
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
@@ -96,7 +91,6 @@ class Bridge {
 
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
-    // console.debug('call', r, ffid, attr, args)
     try {
       if (attr) {
         var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
@@ -104,7 +98,6 @@ class Bridge {
         var v = await this.m[ffid](...args) // eslint-disable-line
       }
     } catch (e) {
-      // console.log('err', e)
       return this.ipc.send({ r, key: 'error', error: e.stack })
     }
     const type = getType(v)
@@ -173,32 +166,6 @@ class Bridge {
     // console.log('ac', action)
     this[action](r, ffid, key, nargs)
   }
-
-  // Accessory methods
-
-  // Events accumulate here, then they have to be polled by the Python event loop
-  async startEventPolling (ffid, eventName, pollingId) {
-    const what = await this.m[ffid]
-
-    const handler = (...args) => {
-      // console.log('GOT event', ffid, pollingId, eventName, args)
-      this.m[++this.ffid] = args
-      this.ipc.send({ r: Date.now(), cb: pollingId, val: this.ffid })
-    }
-    // console.log('POLLING', what, pollingId, eventName)
-    what.on(eventName, handler)
-    what._pollingId = pollingId
-    this.eventMap[pollingId] = { handler, what, eventName, id: this.ffid }
-    return true
-  }
-
-  stopEventPolling (pollingId) {
-    const e = this.eventMap[pollingId]
-    if (e) {
-      e.what.off(e.eventName, e.handler)
-      delete this.eventMap[pollingId]
-    }
-  }
 }
 
 Object.assign(util.inspect.styles, {
@@ -223,7 +190,7 @@ const ipc = {
     debug('js -> py', data)
     data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
-  },
+  }, 
   writeRaw: (data, r, cb) => {
     debug('js -> py', data)
     handlers[r] = cb

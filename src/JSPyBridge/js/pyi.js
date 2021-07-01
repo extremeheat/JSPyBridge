@@ -86,7 +86,6 @@ class PyBridge {
   }
 
   async call (ffid, stack, args, kwargs, set, timeout) {
-    const made = {}
     const r = nextReq()
     const req = { r, c: 'pyi', action: set ? 'setval' : 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
     const payload = JSON.stringify(req, (k, v) => {
@@ -94,26 +93,16 @@ class PyBridge {
       if (v && !v.r) {
         if (v.ffid) return { ffid: v.ffid }
         if (typeof v === 'function' || v.class) {
-          const r = nextReq()
-          made[r] = v
-          return { r, ffid: '' }
+          const ffid = ++this.jsi.ffid
+          this.jsi.m[ffid] = v
+          this.queueForCollection(ffid, v)
+          return { ffid }
         }
       }
       return v
     })
 
-    const resp = await waitFor(resolve => this.com.writeRaw(payload, r, pre => {
-      if (pre.key === 'pre') {
-        for (const r in pre.val) {
-          const ffid = pre.val[r]
-          this.jsi.m[ffid] = made[r]
-          this.queueForCollection(ffid, made[r])
-        }
-        return true
-      } else {
-        resolve(pre)
-      }
-    }), timeout || REQ_TIMEOUT, () => {
+    const resp = await waitFor(resolve => this.com.writeRaw(payload, r, resolve), timeout || REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     if (resp.key === 'error') throw new PythonException(stack, resp.sig)

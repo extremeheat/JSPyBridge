@@ -1,6 +1,7 @@
 import time, threading, json, sys
 from . import connection, config, pyi
 from queue import Queue
+from weakref import WeakValueDictionary
 
 
 class TaskState:
@@ -19,7 +20,6 @@ class TaskState:
 class EventExecutorThread(threading.Thread):
     running = True
     jobs = Queue()
-    completed = []
     doing = []
 
     def __init__(self):
@@ -36,8 +36,6 @@ class EventExecutorThread(threading.Thread):
         while self.running:
             request_id, cb_id, job, args = self.jobs.get()
             ok = job(args)
-            if ok:
-                self.completed.append(cb_id)
             if self.jobs.empty():
                 self.doing = []
 
@@ -47,13 +45,16 @@ class EventExecutorThread(threading.Thread):
 # only one thread can run Python at a time, so no race conditions to worry about.
 class EventLoop:
     active = True
-    sleepSeconds = 0.01
     queue = Queue()
 
     callbackExecutor = EventExecutorThread()
 
-    # This contains a map of callback request IDs to an object that can execute the callback.
-    callbacks = {}
+    # This contains a map of active callbacks that we're tracking. 
+    # As it's a WeakRef dict, we can add stuff here without blocking GC.
+    # Once this list is empty (and a CB has been GC'ed) we can exit.
+    # Looks like someone else had the same idea :)
+    # https://stackoverflow.com/questions/21826700/using-python-weakset-to-enable-a-callback-functionality
+    callbacks = WeakValueDictionary()
 
     # The threads created managed by this event loop.
     threads = []
@@ -122,48 +123,6 @@ class EventLoop:
         self.outbound.append(payload)
         self.queue.put("send")
 
-    def add_listener(self, polling_id, handler, on_object, on_event, ref):
-        self.callbacks[polling_id] = {
-            "internal": handler,
-            "what": on_object,
-            "event": on_event,
-            "ref": ref,
-        }
-        self.outbound.append(
-            {
-                "r": polling_id - 1,
-                "action": "call",
-                "ffid": 0,
-                "key": "startEventPolling",
-                "args": [on_object.ffid, on_event, polling_id],
-            }
-        )
-        self.queue.put("outbound")
-
-    def remove_listener(self, what, event, ref=None):
-        ids = []
-        for pollingId in self.callbacks:
-            cb = self.callbacks[pollingId]
-            if cb["what"] == what and cb["event"] == event:
-                if ref:
-                    if cb["ref"] == ref:
-                        ids.append(pollingId)
-                else:
-                    ids.append(pollingId)
-
-        for pollingId in ids:
-            del self.callbacks[pollingId]
-            self.outbound.append(
-                {
-                    "r": int(time.time() * 1000),
-                    "action": "call",
-                    "ffid": 0,
-                    "key": "stopEventPolling",
-                    "args": [pollingId],
-                }
-            )
-        self.queue.put("outbound")
-
     def on_exit(self):
         if len(self.callbacks):
             config.debug("cannot exit because active callback", self.callbacks)
@@ -188,11 +147,6 @@ class EventLoop:
             # remove them from self.threads
             self.threads = [x for x in self.threads if x[2].is_alive()]
 
-            # Clear the completed callbacks
-            for r in self.callbackExecutor.completed:
-                del self.callbacks[r]
-            self.callbackExecutor.completed = []
-
             # Read the inbound data and route it to correct handler
             inbounds = connection.readAll()
             for inbound in inbounds:
@@ -200,14 +154,9 @@ class EventLoop:
                 cbid = inbound["cb"] if "cb" in inbound else None
                 if "c" in inbound and inbound["c"] == "pyi":
                     j = inbound
-                    # self.pyi.onMessage(j['r'], j['action'], j['ffid'], j['key'], j['val'])
                     self.callbackExecutor.add_job(r, cbid, self.pyi.inbound, inbound)
                 if r in self.requests:
                     lock, timeout = self.requests[r]
                     self.responses[r] = inbound
                     del self.requests[r]
                     lock.set()  # release, allow calling thread to resume
-                if cbid in self.callbacks:
-                    self.callbackExecutor.add_job(
-                        r, cbid, self.callbacks[cbid]["internal"], inbound
-                    )

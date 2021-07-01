@@ -1,8 +1,8 @@
 import os
 if 'DEBUG' not in os.environ:
-    os.environ["DEBUG"] = "jspybridge"
+    os.environ["DEBUG"] = "1"
 import time
-from JSPyBridge import require, console, on, off, DemoClass
+from JSPyBridge import require, console, On, Once, off, DemoClass
 
 chalk, fs = require("chalk"), require("fs")
 
@@ -18,29 +18,22 @@ for i in demo.array():
     print("i", i)
 
 
-def onIncrement(self, num, obj):
-    print("Increment", num, obj.a.y)
-    if num == 7:
-        off(demo, "increment", onIncrement)
-
-
 def some_method(*args):
     print("Callback called with", args)
 
-
-on(demo, "increment", onIncrement)
-demo.increment()
-
 demo.callback(some_method)
 
-
+@On(demo, 'increment')
 def handler(this, fn, num, obj):
     print("Handler caled", fn, num, obj)
     if num == 7:
-        this.off("increment", handler)
+        off(demo, "increment", handler)
 
+@Once(demo, 'increment')
+def onceIncrement(this, *args):
+    print("Hey, I'm only called once !")
 
-demo.on("increment", handler)
+demo.increment()
 
 try:
     demo.error()
