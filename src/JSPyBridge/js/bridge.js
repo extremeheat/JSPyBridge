@@ -69,6 +69,7 @@ class Bridge {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
+      case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
         // We do not need to increment FFID here because Python will return
         // an instanciable function. The FFID can be ignored.
@@ -103,6 +104,7 @@ class Bridge {
         var v = await this.m[ffid](...args) // eslint-disable-line
       }
     } catch (e) {
+      // console.log('err', e)
       return this.ipc.send({ r, key: 'error', error: e.stack })
     }
     const type = getType(v)
@@ -221,6 +223,11 @@ const ipc = {
     debug('js -> py', data)
     data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
+  },
+  writeRaw: (data, r, cb) => {
+    debug('js -> py', data)
+    handlers[r] = cb
+    process.stderr.write(data + '\n')
   },
   write (data, cb) {
     handlers[data.r] = cb

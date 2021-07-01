@@ -103,7 +103,6 @@ class Bridge:
     # would be null
     def get(self, r, ffid, keys, args):
         o = self.call(r, ffid, keys, [], {}, invoke=False)
-        # print("Got", self, r, ffid, keys, args, o)
         return o
 
     def Set(self, r, ffid, keys, args):
@@ -116,7 +115,6 @@ class Bridge:
                 v = getattr(v, str(key))
             else:
                 v = v[key] # 🚨 If you get an error here, you called an undefined property
-        print("V", v, on, val, type(v))
         if (type(v) in (dict, tuple, list, set)):
             v[on] = val
         else:
