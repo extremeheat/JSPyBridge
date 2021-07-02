@@ -35,6 +35,11 @@ def onceIncrement(this, *args):
 
 demo.increment()
 
+demo.arr[1] = 5
+demo.obj[1] = 5
+demo.obj[2] = some_method
+print("Demo array and object", demo.arr, demo.obj)
+
 try:
     demo.error()
     print("Failed to error")

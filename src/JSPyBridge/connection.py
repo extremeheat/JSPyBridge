@@ -79,7 +79,10 @@ sendQ = []
 # but it could be a websocket (slower) or other generic pipe.
 def writeAll(objs):
     for obj in objs:
-        j = json.dumps(obj) + "\n"
+        if type(obj) == str:
+            j = obj + '\n'
+        else:
+            j = json.dumps(obj) + "\n"
         debug("[py -> js]", int(time.time() * 1000), j)
         if not proc:
             sendQ.append(j.encode())

@@ -123,6 +123,12 @@ class EventLoop:
         self.outbound.append(payload)
         self.queue.put("send")
 
+    def await_response(self, request_id, timeout=None):
+        lock = threading.Event()
+        self.requests[request_id] = [lock, timeout]
+        self.queue.put("send")
+        return lock
+
     def on_exit(self):
         if len(self.callbacks):
             config.debug("cannot exit because active callback", self.callbacks)

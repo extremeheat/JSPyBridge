@@ -82,13 +82,13 @@ class Bridge {
     }
   }
 
-  set (r, ffid, attr, [val]) {
+  set (r, ffid, attr, val) {
     try {
       this.m[ffid][attr] = val      
     } catch (e) {
       return this.ipc.send({ r, key: 'error', error: e.stack }) 
     }
-    this.ipc.send({ r, val: true })
+    this.ipc.send({ r, key: '', val: true })
   }
 
   // Call property with new keyword to construct classes
@@ -130,6 +130,36 @@ class Bridge {
     }
   }
 
+  pcall (r, ffid, attr, args) {
+    const made = {}
+    const parse = input => {
+      if (typeof input != 'object') return
+      for (const k in input) {
+        const v = input[k]
+        if (v && typeof v === 'object') {
+          if (v.r && v.ffid === '') {
+            ++this.ffid
+            const proxy = this.pyi.makePyObject(this.ffid)
+            this.m[this.ffid] = proxy
+            made[input[k].r] = this.ffid
+            input[k] = proxy
+          } else if (v.ffid) {
+            input[k] = this.m[v.ffid]
+          }
+        } else {
+          parse(v)
+        }
+      }
+    }
+    parse(args)
+    this.ipc.send({ r, key: 'pre', val: made })
+    if (attr === '$set') {
+      this.set(r + 1, ffid, args[0], args[1])
+    } else {
+      this.call(r + 1, ffid, attr, args)
+    }
+  }
+
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
     const s = util.inspect(await this.m[ffid], { colors })
@@ -159,21 +189,8 @@ class Bridge {
 
   onMessage ({ r, action, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
-    const nargs = []
-    if (args) {
-      // Sometimes function arguments might contain classes,
-      // or objects, which we need to convert.
-      for (const arg of args) {
-        if (arg.ffid) {
-          const r = this.m[arg.ffid]
-          nargs.push(r instanceof WeakRef ? r.deref() : r)
-        } else {
-          nargs.push(arg)
-        }
-      }
-    }
     // console.log('ac', action)
-    this[action](r, ffid, key, nargs)
+    this[action](r, ffid, key, args)
   }
 }
 

@@ -1,4 +1,4 @@
-import time, threading
+import time, threading, json
 from .config import debug, is_main_loop_active
 from . import config, json_patch
 
@@ -27,8 +27,8 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
         if action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
-        if action == "call":  # return await obj[prop]
-            l = self.queue(r, {"r": r, "action": "call", "ffid": ffid, "key": attr, "args": args})
+        if action == "pcall":  # return await obj[prop]
+            l = self.queue(r, {"r": r, "action": "pcall", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
@@ -54,12 +54,70 @@ class Executor:
         return resp["key"], resp["val"]
 
     def setProp(self, ffid, method, val):
-        resp = self.ipc("set", ffid, method, val)
+        self.pcall(ffid, '$set', [method, val])
         return True
 
     def callProp(self, ffid, method, args):
         resp = self.ipc("call", ffid, method, args)
         return resp["key"], resp["val"]
+
+    def pcall(self, ffid, attr, args):
+        """
+        This function does a two-part call to JavaScript. First, a preliminary request is made to JS
+        with the function ID, attribute and arguments that Python would like to call. For each of the
+        non-primitive objects in the arguments, in the preliminary request we "request" an FFID from JS
+        which is the autoriatative side for FFIDs. Only it may assign them; we must request them. Once
+        JS recieves the pcall, it searches the arguments and assigns FFIDs for everything, then returns
+        the IDs in a response. We use these IDs to store the non-primitive values into our ref map. 
+        On the JS side, it creates Proxy classes for each of the requests in the pcall, once they get
+        destroyed, a free call is sent to Python where the ref is removed from our ref map to allow for
+        normal GC by Python. Finally, on the JS side it executes the function call without waiting for 
+        Python. A set operation on a JS object also uses pcall as the semantics are the same.
+        """
+        wanted = {}
+        self.ctr = 0
+        self.i += 1
+        pi = self.i
+        packet = {"r": self.i, "action": "pcall", "ffid": ffid, "key": attr, "args": args}
+        
+        def ser(arg):
+            if hasattr(arg, "ffid"):
+                return { "ffid": arg.ffid }
+            else:
+                # Anything we don't know how to serialize -- exotic or not -- treat it as an object
+                self.ctr += 1
+                wanted[self.ctr] = arg
+                return {"r": self.ctr, "ffid": ""}
+
+        payload = json.dumps(packet, default=ser)
+
+        self.i += 1
+        fi = self.i
+        l2 = self.loop.await_response(fi)
+        l = self.loop.queue_request(pi, payload)
+
+        if not l.wait(10):
+            raise Exception("Execution timed out")
+        
+        pre = self.loop.responses[pi]
+        del self.loop.responses[pi]
+    
+        if 'error' in pre:
+            raise JavaScriptError(f"Call to '{attr}' failed:\n{pre['error']}\n")
+
+        for requestId in pre["val"]:
+            ffid = pre["val"][requestId]
+            self.bridge.m[ffid] = wanted[int(requestId)]
+            setattr(self.bridge.m[ffid], 'iffid', ffid)
+
+        if not l2.wait(10):
+            raise Exception(f"Call to '{attr}' timed out")
+
+        res = self.loop.responses[fi]
+        del self.loop.responses[fi]
+        if 'error' in res:
+            raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
+        return res['key'], res['val']
 
     def initProp(self, ffid, method, args):
         resp = self.ipc("init", ffid, method, args)
@@ -121,22 +179,10 @@ class Proxy(object):
             return val
 
     def _prepare_args(self, args):
-        nargs = []
-        for arg in args:
-            if (not hasattr(arg, "ffid")) and callable(arg):
-                ffid = self._exe.new_ffid(arg)
-                # Need a better way to handle emitters
-                setattr(arg, "iffid", ffid)
-                nargs.append({"ffid": ffid})
-            elif hasattr(arg, "ffid"):
-                nargs.append({"ffid": arg.ffid})
-            else:
-                nargs.append(arg)
-        return nargs
+        return args
 
     def __call__(self, *args):
-        nargs = self._prepare_args(args)
-        mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
+        mT, v = self._exe.pcall(self._pffid, self._pname, args)
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -168,12 +214,10 @@ class Proxy(object):
         if name in INTERNAL_VARS:
             object.__setattr__(self, name, value)
         else:
-            nargs = self._prepare_args([value])
-            return self._exe.setProp(self.ffid, name, nargs)
+            return self._exe.setProp(self.ffid, name, value)
 
     def __setitem__(self, name, value):
-            nargs = self._prepare_args([value])
-            return self._exe.setProp(self.ffid, name, nargs)
+            return self._exe.setProp(self.ffid, name, value)
 
     def __str__(self):
         return self._exe.inspect(self.ffid)

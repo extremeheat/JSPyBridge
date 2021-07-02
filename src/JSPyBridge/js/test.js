@@ -5,6 +5,8 @@ class DemoClass extends EventEmitter {
     super()
     this.color = color
     this.y = a
+    this.arr = [ 1, 2, 3 ]
+    this.obj = { a: 'ay', b: 'be', c: 'ce' }
   }
 
   increment () {
@@ -22,8 +24,8 @@ class DemoClass extends EventEmitter {
     return [[], 5, 6, 7, 8, { a: this.y }]
   }
 
-  other (clas) {
-    return clas.y + 2
+  async other (clas) {
+    return (await clas.y) + 2
   }
 
   moreComplex () {
