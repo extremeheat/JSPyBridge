@@ -4,7 +4,6 @@ const cp = require('child_process')
 const fs = require('fs')
 const d = __dirname
 
-process.env.DEBUG = 'bridge'
 
 it('runs test', function () {
   const ret = cp.execSync(`python3 ${d}/../src/test.py`)

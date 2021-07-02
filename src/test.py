@@ -1,8 +1,7 @@
 import os
-if 'DEBUG' not in os.environ:
-    os.environ["DEBUG"] = "1"
 import time
-from JSPyBridge import require, console, On, Once, off, DemoClass
+from JSPyBridge import require, console, On, Once, off
+DemoClass = require('./test').DemoClass
 
 chalk, fs = require("chalk"), require("fs")
 

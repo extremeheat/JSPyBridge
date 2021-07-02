@@ -50,10 +50,6 @@ class Bridge {
     this.pyi = new PyBridge(this.ipc, this)
     this.eventMap = {}
 
-    if (process.env.DEBUG) {
-      Object.assign(this.m[0], require('./test'))
-    }
-
     // ipc.on('message', this.onMessage)
   }
 

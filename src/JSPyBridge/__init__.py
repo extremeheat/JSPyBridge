@@ -20,7 +20,6 @@ def require(name):
 
 
 console = config.global_jsi.console
-DemoClass = config.global_jsi.DemoClass
 
 def AsyncTask(fn):
     fn.is_async_task = True

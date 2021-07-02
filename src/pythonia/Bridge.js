@@ -1,5 +1,3 @@
-const { StdioCom } = process.platform == 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
-const { resolve } = require('path')
 const util = require('util')
 const { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
@@ -296,41 +294,4 @@ class Bridge {
   }
 }
 
-const com = new StdioCom()
-const bridge = new Bridge(com)
-const root = bridge.makePyObject(0)
-
-async function py(tokens, ...replacements) {
-  // console.log(tokens, replacements)
-  const vars = {} // List of locals
-  let nstr = ''
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i]
-    const repl = await replacements[i]
-    if (repl) {
-      const v = '__' + i
-      vars[v] = (repl.ffid ? ({ ffid: repl.ffid }) : repl)
-      nstr += token + v
-    } else {
-      nstr += token
-    }
-  }
-  return root.eval(nstr, null, vars)
-}
-
-module.exports = {
-  PyClass,
-  root,
-  py,
-  python (file) {
-    if (file.startsWith('/') || file.startsWith('./') || file.includes(':')) {
-      const importPath = resolve(file)
-      const fname = file.split('/').pop() || file
-      // console.log('Loading', fname)
-      return root.fileImport(fname, importPath)
-    }
-    return root.python(file)
-  },
-  com
-}
-module.exports.python.exit = () => com.end()
+module.exports = { PyClass, Bridge }

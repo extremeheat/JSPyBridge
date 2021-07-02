@@ -14,7 +14,9 @@
     "standard": "^16.0.3"
   },
   "dependencies": {
-    "babel-eslint": "^10.1.0"
+    "babel-eslint": "^10.1.0",
+    "caller": "^1.0.1",
+    "JSPyBridge": "file:."
   },
   "standard": {
     "parser": "babel-eslint"
