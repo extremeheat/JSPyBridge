@@ -43,11 +43,7 @@ class JSBridge {
     this.m = {
       0: {
         console,
-        require,
-
-        // Event Polling until we support callbacks
-        startEventPolling: this.startEventPolling.bind(this),
-        stopEventPolling: this.stopEventPolling.bind(this)
+        require
       }
     }
     this.ipc = ipc
@@ -84,6 +80,15 @@ class JSBridge {
         return this.ipc.send({ r, key: 'obj', val: this.ffid })
       default: return this.ipc.send({ r, key: 'void', val: this.ffid })
     }
+  }
+
+  set (r, ffid, attr, val) {
+    try {
+      this.m[ffid][attr] = val      
+    } catch (e) {
+      return this.ipc.send({ r, key: 'error', error: e.stack }) 
+    }
+    this.ipc.send({ r, key: '', val: true })
   }
 
   // Call property with new keyword to construct classes
@@ -126,6 +131,30 @@ class JSBridge {
     }
   }
 
+  pcall (r, ffid, attr, args) {
+    const parse = input => {
+      if (typeof input != 'object') return
+      for (const k in input) {
+        const v = input[k]
+        if (v && typeof v === 'object') {
+          if (v.ffid) {
+            const proxy = this.pyi.makePyObject(v.ffid)
+            this.m[v.ffid] = proxy
+            input[k] = proxy
+          }
+        } else {
+          parse(v)
+        }
+      }
+    }
+    parse(args)
+    if (attr === '$set') {
+      this.set(r, ffid, args[0], args[1])
+    } else {
+      this.call(r, ffid, attr, args)
+    }
+  }
+
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
     const s = util.inspect(await this.m[ffid], { colors })
@@ -139,8 +168,6 @@ class JSBridge {
   }
 
   free (r, ffid) {
-    // Make sure we don't keep any emitter refs around to avoid blocking GC
-    if (this.m[ffid]._pollingId) delete this.eventMap[this.m[ffid]._pollingId]
     delete this.m[ffid]
     this.ipc.send({ r, val: true })
   }
@@ -154,48 +181,10 @@ class JSBridge {
 
   onMessage ({ r, action, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
-    const nargs = []
-    if (args) {
-      // Sometimes function arguments might contain classes,
-      // or objects, which we need to convert.
-      for (const arg of args) {
-        if (arg.ffid) {
-          const r = this.m[arg.ffid]
-          nargs.push(r instanceof WeakRef ? r.deref() : r)
-        } else {
-          nargs.push(arg)
-        }
-      }
-    }
     // console.log(this)
-    this[action](r, ffid, key, nargs)
+    this[action](r, ffid, key, args)
   }
 
-  // Accessory methods
-
-  // Events accumulate here, then they have to be polled by the Python event loop
-  async startEventPolling (ffid, eventName, pollingId) {
-    const what = await this.m[ffid]
-
-    const handler = (...args) => {
-      // console.log('GOT event', ffid, pollingId, eventName, args)
-      this.m[++this.ffid] = args
-      this.ipc.send({ r: Date.now(), cb: pollingId, val: this.ffid })
-    }
-    // console.log('POLLING', what, pollingId, eventName)
-    what.on(eventName, handler)
-    what._pollingId = pollingId
-    this.eventMap[pollingId] = { handler, what, eventName, id: this.ffid }
-    return true
-  }
-
-  stopEventPolling (pollingId) {
-    const e = this.eventMap[pollingId]
-    if (e) {
-      e.what.off(e.eventName, e.handler)
-      delete this.eventMap[pollingId]
-    }
-  }
 }
 
 module.exports = { JSBridge }

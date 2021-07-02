@@ -27,8 +27,6 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
         if action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
-        if action == "pcall":  # return await obj[prop]
-            l = self.queue(r, {"r": r, "action": "pcall", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
@@ -66,7 +64,7 @@ class Executor:
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the
         non-primitive objects in the arguments, in the preliminary request we "request" an FFID from JS
-        which is the autoriatative side for FFIDs. Only it may assign them; we must request them. Once
+        which is the authoritative side for FFIDs. Only it may assign them; we must request them. Once
         JS recieves the pcall, it searches the arguments and assigns FFIDs for everything, then returns
         the IDs in a response. We use these IDs to store the non-primitive values into our ref map. 
         On the JS side, it creates Proxy classes for each of the requests in the pcall, once they get
@@ -177,9 +175,6 @@ class Proxy(object):
             return self._exe.get(val)
         else:
             return val
-
-    def _prepare_args(self, args):
-        return args
 
     def __call__(self, *args):
         mT, v = self._exe.pcall(self._pffid, self._pname, args)

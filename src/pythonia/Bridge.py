@@ -150,6 +150,9 @@ class Bridge:
         payload["c"] = "jsi"
         self.ipc.queue(payload)
 
+    def queue_request_raw(self, request_id, payload, timeout=None):
+        self.ipc.queue(payload)
+
     def read(self):
         data = apiin.readline()
         if not data:
@@ -211,8 +214,11 @@ class Bridge:
 class Ipc:
     def queue(self, what):
         # print("Sending", what)
+        if type(what) == str:
+            apiout.write(what + "\n")
+        else:
+            apiout.write(json.dumps(what) + "\n")
         # sys.stderr.write(json.dumps(what) + '\n')
-        apiout.write(json.dumps(what) + "\n")
         apiout.flush()
 
 

@@ -1,4 +1,4 @@
-import time, threading
+import time, threading, json
 import json_patch
 
 debug = lambda *a: a
@@ -23,24 +23,23 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
         if action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
-        if action == "call":  # return await obj[prop]
-            l = self.queue(r, {"r": r, "action": "call", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
-        if action == "make":
-            l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
         if action == "free":  # return JSON.stringify(obj[prop])
             try:  # Event loop is dead, no need for GC
                 l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
             except ValueError:
                 return {"val": True}
+        if action == "raw":
+            # (not really a FFID, but request ID)
+            r = ffid
+            l = self.loop.queue_request_raw(ffid, args)
 
         # Listen for a response
         while True:
             j = self.loop.read()
-            # print(j)
             if j["r"] == r:  # if this is a message for us, OK, return to Python calle
                 break
             else:  # The JS API we called wants to call a Python API... so let the loop handle it.
@@ -53,9 +52,39 @@ class Executor:
         resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
 
+    def setProp(self, ffid, method, val):
+        self.pcall(ffid, '$set', [method, val])
+        return True
+
     def callProp(self, ffid, method, args):
         resp = self.ipc("call", ffid, method, args)
         return resp["key"], resp["val"]
+
+    def pcall(self, ffid, attr, args):
+        """
+        This function does a one-pass call to JavaScript. Since we assign the FFIDs, we do not
+        need to send any preliminary call to JS. We simply iterate over the arguments, and for
+        the non-primitive values, we create new FFIDs for them, then use them as a replacement
+        for the non-primitive arg objects. We can then send the request to JS and expect one
+        response back.
+        """
+        self.ctr = 0
+        self.i += 1
+        requestId = self.i
+        packet = {"r": self.i, "c": "jsi", "action": "pcall", "ffid": ffid, "key": attr, "args": args}
+        
+        def ser(arg):
+            if hasattr(arg, "ffid"):
+                return { "ffid": arg.ffid }
+            else:
+                # Anything we don't know how to serialize -- exotic or not -- treat it as an object
+                return {"ffid": self.new_ffid(arg)}
+
+        payload = json.dumps(packet, default=ser)
+
+        res = self.ipc("raw", requestId, attr, payload)
+
+        return res['key'], res['val']
 
     def initProp(self, ffid, method, args):
         resp = self.ipc("init", ffid, method, args)
@@ -69,36 +98,9 @@ class Executor:
         resp = self.ipc("free", ffid, "")
         return resp["val"]
 
-    def on(self, object, event, handler):
-        this = self
-        self.i += 1
-        pollingId = self.i
-        # print("Event Listener", what, event, handler)
-
-        def handleCallback(data):
-            ffid = data["val"]
-            if not ffid:
-                # no paramater shortcut
-                handler()
-            else:
-                args = Proxy(this, ffid)
-                e = []
-                for arg in args:
-                    e.append(arg)
-                handler(*e)
-            return False
-
-        self.loop.add_listener(pollingId, handleCallback, object, event, handler)
-        # print("Added Listener", pollingId)
-        return pollingId
-
-    def off(self, what, event, handler=None):
-        return self.loop.remove_listener(what, event, handler)
-
     def new_ffid(self, for_object):
         self.loop.cur_ffid += 1
         self.loop.m[self.loop.cur_ffid] = for_object
-        resp = self.ipc("make", self.loop.cur_ffid, "")
         return self.loop.cur_ffid
 
     def get(self, ffid):
@@ -128,10 +130,8 @@ class Proxy(object):
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
-            # print("ret fn", method)
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            # print("ret cls", method)
             return instantiatable
         if methodType == "obj":
             return Proxy(self._exe, val)
@@ -145,22 +145,9 @@ class Proxy(object):
             return val
 
     def __call__(self, *args):
-        # print("Call", args)
-        nargs = []
-        for arg in args:
-            if (not hasattr(arg, "ffid")) and callable(arg):
-                ffid = self._exe.new_ffid(arg)
-                setattr(arg, "ffid", ffid)
-                nargs.append({"ffid": ffid})
-            elif hasattr(arg, "ffid"):
-                nargs.append({"ffid": arg.ffid})
-            else:
-                # print('nc', arg)
-                nargs.append(arg)
-        mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
+        mT, v = self._exe.pcall(self._pffid, self._pname, args)
         if mT == "fn":
             return Proxy(self._exe, v)
-        # print('Callres', self.ffid, args, mT, v)
         return self._call(self._pname, mT, v)
 
     def __getattr__(self, attr):
@@ -190,7 +177,10 @@ class Proxy(object):
         if name in INTERNAL_VARS:
             object.__setattr__(self, name, value)
         else:
-            raise Exception("Sorry, all JS objects are immutable right now")
+            return self._exe.setProp(self.ffid, name, value)
+
+    def __setitem__(self, name, value):
+            return self._exe.setProp(self.ffid, name, value)
 
     def __str__(self):
         return self._exe.inspect(self.ffid)
