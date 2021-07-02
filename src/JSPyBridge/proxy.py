@@ -37,6 +37,8 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
         if action == "make":
             l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
+        if action == 'set':
+            l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
 
         if not l.wait(10):
             print("Timed out", action, ffid, attr)
@@ -50,6 +52,10 @@ class Executor:
     def getProp(self, ffid, method):
         resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
+
+    def setProp(self, ffid, method, val):
+        resp = self.ipc("set", ffid, method, val)
+        return True
 
     def callProp(self, ffid, method, args):
         resp = self.ipc("call", ffid, method, args)
@@ -74,7 +80,7 @@ class Executor:
         return ffid
 
     def get(self, ffid):
-        return self.loop.m[ffid]
+        return self.bridge.m[ffid]
 
 
 INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
@@ -114,7 +120,7 @@ class Proxy(object):
         else:
             return val
 
-    def __call__(self, *args):
+    def _prepare_args(self, args):
         nargs = []
         for arg in args:
             if (not hasattr(arg, "ffid")) and callable(arg):
@@ -126,6 +132,10 @@ class Proxy(object):
                 nargs.append({"ffid": arg.ffid})
             else:
                 nargs.append(arg)
+        return nargs
+
+    def __call__(self, *args):
+        nargs = self._prepare_args(args)
         mT, v = self._exe.callProp(self._pffid, self._pname, nargs)
         if mT == "fn":
             return Proxy(self._exe, v)
@@ -158,7 +168,12 @@ class Proxy(object):
         if name in INTERNAL_VARS:
             object.__setattr__(self, name, value)
         else:
-            raise Exception("Sorry, all JS objects are immutable right now")
+            nargs = self._prepare_args([value])
+            return self._exe.setProp(self.ffid, name, nargs)
+
+    def __setitem__(self, name, value):
+            nargs = self._prepare_args([value])
+            return self._exe.setProp(self.ffid, name, nargs)
 
     def __str__(self):
         return self._exe.inspect(self.ffid)

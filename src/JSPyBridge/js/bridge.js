@@ -59,7 +59,7 @@ class Bridge {
 
   async get (r, ffid, attr) {
     const v = await this.m[ffid][attr]
-    const type = getType(v)
+    const type = v.ffid ? 'py' : getType(v)
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
@@ -80,6 +80,15 @@ class Bridge {
         return this.ipc.send({ r, key: 'obj', val: this.ffid })
       default: return this.ipc.send({ r, key: 'void', val: this.ffid })
     }
+  }
+
+  set (r, ffid, attr, [val]) {
+    try {
+      this.m[ffid][attr] = val      
+    } catch (e) {
+      return this.ipc.send({ r, key: 'error', error: e.stack }) 
+    }
+    this.ipc.send({ r, val: true })
   }
 
   // Call property with new keyword to construct classes
