@@ -37,13 +37,12 @@ module.exports = {
     if (file.startsWith('/') || file.startsWith('./') || file.startsWith('../') || file.includes(':')) {
       if (file.startsWith('.')) {
         const caller = getCaller(1)
-        const callerDir = caller.replace('file://', '').split('/').slice(0, -1).join('/')
-        // console.log('Caller', caller, callerDir)
+        const prefix = process.platform == 'win32' ? 'file:///' : 'file://'
+        const callerDir = caller.replace(prefix, '').split('/').slice(0, -1).join('/')
         file = join(callerDir, file)
       }
       const importPath = resolve(file)
       const fname = file.split('/').pop() || file
-      // console.log('Loading', fname, importPath)
       return root.fileImport(fname, importPath)
     }
     return root.python(file)

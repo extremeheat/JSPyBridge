@@ -62,7 +62,6 @@ function reinstall() {
 }
 
 async function $require(what, version, relativeTo) {
-  console.log('Require', arguments)
   if (relativeTo) {
     return await import('file://' + join(relativeTo, what))
   }
