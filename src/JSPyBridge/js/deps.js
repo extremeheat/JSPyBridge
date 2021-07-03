@@ -36,14 +36,14 @@ function processPackage(name, desiredVersion) {
   } else if (!desiredVersion) {
     // savePackages()
     log(`Installing '${name}' version 'latest'... This will only happen once.`)
-    cp.execSync(`${NODE_PM} install ${finalName}`, { stdio: 'inherit' })
+    cp.execSync(`${NODE_PM} install ${finalName}`, { stdio: 'inherit', cwd: __dirname })
     loadPackages()
     packages.dependencies[name] = 'latest'
     savePackages()
     log('OK.')
   } else if (desiredVersion) {
     log(`Installing '${name}' version '${desiredVersion}'... This will only happen once.`)
-    cp.execSync(`${NODE_PM} install ${finalName}@npm:${name}@${desiredVersion}`, { stdio: 'inherit' })
+    cp.execSync(`${NODE_PM} install ${finalName}@npm:${name}@${desiredVersion}`, { stdio: 'inherit', cwd: __dirname })
     log('OK.')
     // savePackages()
   }
@@ -57,7 +57,7 @@ function reinstall() {
   fs.rmdirSync('./node_modules')
   console.info('OK')
   console.info('Installing...')
-  cp.execSync(`npm install`, { stdio: 'inherit' })
+  cp.execSync(`npm install`, { stdio: 'inherit', cwd: __dirname })
   console.info('OK')
 }
 
@@ -68,9 +68,11 @@ async function $require(what, version, relativeTo) {
   let modPath
   if (!version) {
     try { modPath = require.resolve(what) } catch {}
-    // It's already installed, just use that.
-    const mod = await import(what)
-    if (modPath) return mod.default ?? mod
+    if (modPath) {
+      // It's already installed, just use that.
+      const mod = await import(what)
+      return mod.default ?? mod
+    }
   }
   const newpath = processPackage(what, version)
   const mod = await import(newpath)
