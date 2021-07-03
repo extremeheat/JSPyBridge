@@ -1,5 +1,5 @@
 import util
-import inspect, importlib
+import inspect, importlib, importlib.util
 import json, types, traceback
 from proxy import Executor, Proxy
 from weakref import WeakValueDictionary

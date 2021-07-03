@@ -5,7 +5,7 @@ let packages
 try {
   packages = require('./package.json')
 } catch (e) {
-  fs.writeFileSync('package.json', `{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}`)
+  fs.writeFileSync(join(__dirname, './package.json'), `{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}`)
   packages = require('./package.json')
 }
 
