@@ -24,7 +24,7 @@ def require(name, version=None):
         abs_path = os.path.join(cwd,rel_path)
         calling_dir = os.path.dirname(abs_path)
 
-    return config.global_jsi.require(name, version, calling_dir)
+    return config.global_jsi.require(name, version, calling_dir, timeout=900)
 
 
 console = config.global_jsi.console

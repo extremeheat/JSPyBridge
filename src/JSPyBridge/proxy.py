@@ -59,7 +59,7 @@ class Executor:
         resp = self.ipc("call", ffid, method, args)
         return resp["key"], resp["val"]
 
-    def pcall(self, ffid, attr, args):
+    def pcall(self, ffid, attr, args, timeout=10):
         """
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the
@@ -94,7 +94,7 @@ class Executor:
         l2 = self.loop.await_response(fi)
         l = self.loop.queue_request(pi, payload)
 
-        if not l.wait(10):
+        if not l.wait(timeout):
             raise Exception("Execution timed out")
         
         pre = self.loop.responses[pi]
@@ -108,7 +108,7 @@ class Executor:
             self.bridge.m[ffid] = wanted[int(requestId)]
             setattr(self.bridge.m[ffid], 'iffid', ffid)
 
-        if not l2.wait(10):
+        if not l2.wait(timeout):
             raise Exception(f"Call to '{attr}' timed out")
 
         res = self.loop.responses[fi]
@@ -176,8 +176,8 @@ class Proxy(object):
         else:
             return val
 
-    def __call__(self, *args):
-        mT, v = self._exe.pcall(self._pffid, self._pname, args)
+    def __call__(self, *args, timeout=10):
+        mT, v = self._exe.pcall(self._pffid, self._pname, args, timeout)
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
