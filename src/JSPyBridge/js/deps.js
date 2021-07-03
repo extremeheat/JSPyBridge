@@ -5,8 +5,9 @@ let packages
 try {
   packages = require('./package.json')
 } catch (e) {
-  fs.writeFileSync(join(__dirname, './package.json'), `{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}`)
-  packages = require('./package.json')
+  const p = join(__dirname, './package.json')
+  fs.writeFileSync(p, `{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}`)
+  packages = JSON.parse(fs.readFileSync(p, 'utf-8'))
 }
 
 const NODE_PM = process.env.NODE_PM || 'npm'
