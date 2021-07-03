@@ -1,7 +1,6 @@
 # This file contains all the exposed modules
 from . import config, proxy, events
-import threading, time, atexit
-
+import threading, time, atexit, os, sys
 
 def init():
     config.event_loop = events.EventLoop()
@@ -15,8 +14,17 @@ def init():
 init()
 
 
-def require(name):
-    return config.global_jsi.require(name)
+def require(name, version=None):
+    calling_dir = None
+    if name.startswith('.'):
+        # Some code to extract the caller's file path, needed for relative imports
+        namespace = sys._getframe(1).f_globals
+        cwd = os.getcwd()
+        rel_path = namespace['__file__']
+        abs_path = os.path.join(cwd,rel_path)
+        calling_dir = os.path.dirname(abs_path)
+
+    return config.global_jsi.require(name, version, calling_dir)
 
 
 console = config.global_jsi.console

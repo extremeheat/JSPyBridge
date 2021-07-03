@@ -3,16 +3,12 @@
  */
 const util = require('util')
 const { PyBridge } = require('./pyi')
+const { $require } = require('./deps')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
 const colors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
-  debug('type', typeof obj)
-  if (typeof obj === 'bigint') return 'big'
-  if (!isNaN(obj)) return 'num'
-  if (typeof obj === 'object') return 'obj'
-  if (typeof obj === 'string') return 'string'
   if (typeof obj === 'function') {
     // Some tricks to check if we have a function, class or object
     if (obj.prototype) {
@@ -31,6 +27,10 @@ function getType (obj) {
 
     return 'fn'
   }
+  if (typeof obj === 'bigint') return 'big'
+  if (typeof obj === 'object') return 'obj'
+  if (!isNaN(obj)) return 'num'
+  if (typeof obj === 'string') return 'string'
 }
 
 class Bridge {
@@ -43,7 +43,9 @@ class Bridge {
     this.m = {
       0: {
         console,
-        require
+        require: $require,
+        _require: require,
+        globalThis
       }
     }
     this.ipc = ipc
