@@ -1,5 +1,5 @@
 const util = require('util')
-const { performance } = require('perf_hooks')
+if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
 const log = () => {}
 // const log = console.log
@@ -287,6 +287,10 @@ class Bridge {
       }
 
       [util.inspect.custom] () {
+        return inspectString || '(Some Python object)'
+      }
+
+      inspect () {
         return inspectString || '(Some Python object)'
       }
     }

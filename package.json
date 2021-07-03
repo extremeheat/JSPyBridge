@@ -11,12 +11,14 @@
   },
   "devDependencies": {
     "mocha": "latest",
-    "standard": "^16.0.3"
+    "standard": "^16.0.3",
+    "JSPyBridge": "file:.",
+    "browserify": "^17.0.0"
   },
   "dependencies": {
     "babel-eslint": "^10.1.0",
     "caller": "^1.0.1",
-    "JSPyBridge": "file:."
+    "ws": "^7.5.1"
   },
   "standard": {
     "parser": "babel-eslint"

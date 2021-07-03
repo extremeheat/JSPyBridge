@@ -1,4 +1,9 @@
-const { StdioCom } = process.platform == 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
+if (typeof window !== 'undefined') {
+  var { StdioCom } = require('./WebsocketCom')
+} else {
+  var { StdioCom } = process.platform == 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
+}
+
 const { join, resolve } = require('path')
 const { PyClass, Bridge } = require('./Bridge')
 const getCaller = require('caller')
@@ -46,3 +51,17 @@ module.exports = {
   com
 }
 module.exports.python.exit = () => com.end()
+
+if (typeof window != 'undefined') {
+  window.Python = module.exports
+
+  console._log = console.log
+  console.log = (...args) => {
+    const nargs = []
+    for (const arg of args) {
+      if (arg.ffid) nargs.push(arg.$$.inspect())
+      else nargs.push(arg)
+    }
+    console._log(...nargs)
+  }
+}

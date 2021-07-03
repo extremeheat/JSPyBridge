@@ -1,11 +1,8 @@
-# from .
 import util
 import inspect, importlib
-import os, sys, json, types, traceback
-import socket
+import json, types, traceback
 from proxy import Executor, Proxy
 from weakref import WeakValueDictionary
-
 
 def python(method):
     return importlib.import_module(method, package=None)
@@ -16,7 +13,6 @@ def fileImport(moduleName, absolutePath):
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
     return foo
-
 
 class Bridge:
     m = {
@@ -154,7 +150,7 @@ class Bridge:
         self.ipc.queue(payload)
 
     def read(self):
-        data = apiin.readline()
+        data = self.ipc.readline()
         if not data:
             exit()
         j = json.loads(data)
@@ -211,47 +207,12 @@ class Bridge:
             pass
 
 
-class Ipc:
-    def queue(self, what):
-        # print("Sending", what)
-        if type(what) == str:
-            apiout.write(what + "\n")
-        else:
-            apiout.write(json.dumps(what) + "\n")
-        # sys.stderr.write(json.dumps(what) + '\n')
-        apiout.flush()
 
 
-ipc = Ipc()
-bridge = Bridge(ipc)
-apiin = apiout = None
-# print("FD", os.environ['NODE_CHANNEL_FD'])
-
-# The communication stuffs
-
-# This is the communication thread which allows us to send and
-# recieve different messages at the same time.
-def com_io():
-    global apiin, apiout
-    if sys.platform == "win32":
-        # apiin = os.fdopen(fd, "r")
-        # apiout = os.fdopen(fd + 1, "w")
-        apiin = sys.stdin
-        apiout = sys.stderr
-    else:
-        fd = int(os.environ["NODE_CHANNEL_FD"])
-        api = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
-        apiin = api.makefile("r")
-        apiout = api.makefile("w")
-    while True:
-        data = apiin.readline()
-        if not data:
-            break
-        j = json.loads(data)
-        bridge.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
+# com_io()
+# ws_io()
+# com_thread = threading.Thread(target=ws_io, args=(), daemon=False)
 
 
-com_io()
 
-# com_thread = threading.Thread(target=com_io, args=(), daemon=False)
 # com_thread.start()

@@ -1,4 +1,4 @@
-import { py, python, PyClass }  from '../Bridge.js'
+import { py, python, PyClass }  from '../index.js'
 const f = await python('./pyImp.py')
 const demo = await python('./demo.py')
 
