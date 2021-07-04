@@ -198,7 +198,7 @@ class Bridge {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') throw new PythonException('', resp.sig)
     return resp.val
   }
 
@@ -244,17 +244,30 @@ class Bridge {
         }
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
+            // This is just for destructuring arrays
             return function *iter () {
-              for (let i = 0; i < Infinity; i++) {
+              for (let i = 0; i < 100; i++) {
                 const next = new Intermediate([...target.callstack, i])
                 yield new Proxy(next, handler)
+              }
+              throw SyntaxError('You must use `for await` when iterating over a Python object in a for-of loop')
+            }
+          }
+          if (prop === Symbol.asyncIterator) {
+            const self = this
+            return async function *iter () {
+              const it = await self.call(0, ['Iterate'], [{ ffid }])
+              while (true) {
+                const val = await it.Next()
+                if (val === '$$STOPITER') {
+                  return
+                } else {
+                  yield val
+                }
               }
             }
           }
           console.log('Get symbol', next.callstack, prop)
-          if (prop === Symbol.asyncIterator) {
-            // todo
-          }
           return
         }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)

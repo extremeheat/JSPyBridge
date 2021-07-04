@@ -77,6 +77,16 @@ await it('can return primitive values', async function () {
   assert.strictEqual(arr.toString(), '1,2,4')
 })
 
+await it('can iterate asynchronously', async function () {
+  const array = await f.x
+  let v = 0
+  for await (const entry of array) {
+    console.log(entry)
+    v += entry
+  }
+  assert.strictEqual(v, 7)
+})
+
 // process.exit(0)
 
 after(() => {
