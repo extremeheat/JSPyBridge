@@ -117,11 +117,6 @@ class Bridge {
       if (!k) return v
       if (v && !v.r) {
         if (v.ffid) return { ffid: v.ffid }
-        if (typeof v === 'function' || v.class) {
-          const r = nextReq()
-          made[r] = v
-          return { r, ffid: '' }
-        }
         if (v instanceof PyClass) {
           const r = nextReq()
           const proxy = new Proxy(v, {
@@ -134,6 +129,14 @@ class Bridge {
             }
           })
           made[r] = proxy
+          return { r, ffid: '' }
+        }
+        if (
+          typeof v === 'function' ||
+          typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array')
+        ) {
+          const r = nextReq()
+          made[r] = v
           return { r, ffid: '' }
         }
       }
@@ -255,12 +258,10 @@ class Bridge {
         if (final === 'apply') {
           target.callstack.pop()
           icall = true
-          args[0].class = true
           args = [args[0], ...args[1]]
         } else if (final === 'call') {
           target.callstack.pop()
           icall = true
-          args[0].class = true
         } else if (final?.endsWith('$')) {
           kwargs = args.pop()
           timeout = kwargs.$timeout
@@ -287,10 +288,6 @@ class Bridge {
       }
 
       [util.inspect.custom] () {
-        return inspectString || '(Some Python object)'
-      }
-
-      inspect () {
         return inspectString || '(Some Python object)'
       }
     }

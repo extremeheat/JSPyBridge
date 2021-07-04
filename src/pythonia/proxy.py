@@ -48,19 +48,7 @@ class Executor:
             raise JavaScriptError(f"Access to '{attr}' failed:\n{j['error']}\n")
         return j
 
-    def getProp(self, ffid, method):
-        resp = self.ipc("get", ffid, method)
-        return resp["key"], resp["val"]
-
-    def setProp(self, ffid, method, val):
-        self.pcall(ffid, '$set', [method, val])
-        return True
-
-    def callProp(self, ffid, method, args):
-        resp = self.ipc("call", ffid, method, args)
-        return resp["key"], resp["val"]
-
-    def pcall(self, ffid, attr, args):
+    def pcall(self, ffid, action, attr, args, timeout=10):
         """
         This function does a one-pass call to JavaScript. Since we assign the FFIDs, we do not
         need to send any preliminary call to JS. We simply iterate over the arguments, and for
@@ -71,7 +59,7 @@ class Executor:
         self.ctr = 0
         self.i += 1
         requestId = self.i
-        packet = {"r": self.i, "c": "jsi", "action": "pcall", "ffid": ffid, "key": attr, "args": args}
+        packet = {"r": self.i, "c": "jsi", "p": 1, "action": action, "ffid": ffid, "key": attr, "args": args}
         
         def ser(arg):
             if hasattr(arg, "ffid"):
@@ -86,9 +74,21 @@ class Executor:
 
         return res['key'], res['val']
 
-    def initProp(self, ffid, method, args):
-        resp = self.ipc("init", ffid, method, args)
+    def getProp(self, ffid, method):
+        resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
+
+    def setProp(self, ffid, method, val):
+        self.pcall(ffid, 'set', method, [val])
+        return True
+
+    def callProp(self, ffid, method, args, timeout=None):
+        resp = self.pcall(ffid, "call", method, args, timeout)
+        return resp
+
+    def initProp(self, ffid, method, args):
+        resp = self.pcall(ffid, "init", method, args)
+        return resp
 
     def inspect(self, ffid):
         resp = self.ipc("inspect", ffid, "")
@@ -107,32 +107,28 @@ class Executor:
         return self.loop.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid, prop_ffid=None, prop_name=""):
+    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", es6=False):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
         #
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
+        self._es6 = es6
 
     def _call(self, method, methodType, val):
         this = self
-
-        def instantiatable(*args):
-            mT, v = self._exe.initProp(self.ffid, method, args)
-            # when we call "new" keyword we always get object back
-            return self._call(self.ffid, mT, v)
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return instantiatable
+            return Proxy(self._exe, val, self.ffid, method, True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -144,8 +140,8 @@ class Proxy(object):
         else:
             return val
 
-    def __call__(self, *args):
-        mT, v = self._exe.pcall(self._pffid, self._pname, args)
+    def __call__(self, *args, timeout=10):
+        mT, v = self._exe.initProp(self._pffid, self._pname, args) if self._es6 else self._exe.callProp(self._pffid, self._pname, args, timeout)
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -153,7 +149,7 @@ class Proxy(object):
     def __getattr__(self, attr):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
-            return self._call(attr if self._pffid == self.ffid else "", "class", self._pffid)
+            return self._call(self._pname if self._pffid == self.ffid else "", "class", self._pffid)
         methodType, val = self._exe.getProp(self._pffid, attr)
         return self._call(attr, methodType, val)
 
@@ -189,7 +185,6 @@ class Proxy(object):
         return self._exe.inspect(self.ffid)
 
     def __json__(self):
-        # important ref
         return {"ffid": self.ffid}
 
     def __del__(self):

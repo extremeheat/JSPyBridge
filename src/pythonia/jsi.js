@@ -7,11 +7,6 @@ const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => 
 const colors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
-  debug('type', typeof obj)
-  if (typeof obj === 'bigint') return 'big'
-  if (!isNaN(obj)) return 'num'
-  if (typeof obj === 'object') return 'obj'
-  if (typeof obj === 'string') return 'string'
   if (typeof obj === 'function') {
     // Some tricks to check if we have a function, class or object
     if (obj.prototype) {
@@ -30,6 +25,10 @@ function getType (obj) {
 
     return 'fn'
   }
+  if (typeof obj === 'bigint') return 'big'
+  if (typeof obj === 'object') return 'obj'
+  if (!isNaN(obj)) return 'num'
+  if (typeof obj === 'string') return 'string'
 }
 
 class JSBridge {
@@ -49,17 +48,12 @@ class JSBridge {
     this.ipc = ipc
     this.eventMap = {}
 
-    if (process.env.DEBUG) {
-      // Object.assign(this.m[0], require('./test.js'))
-    }
-
     // ipc.on('message', this.onMessage)
   }
 
   async get (r, ffid, attr) {
     const v = await this.m[ffid][attr]
     const type = v.ffid ? 'py' : getType(v)
-    // debug('TYP', this.m, ffid, attr, await this.m[ffid][attr], type)
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
@@ -82,7 +76,7 @@ class JSBridge {
     }
   }
 
-  set (r, ffid, attr, val) {
+  set (r, ffid, attr, [val]) {
     try {
       this.m[ffid][attr] = val      
     } catch (e) {
@@ -100,7 +94,6 @@ class JSBridge {
 
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
-    // console.debug('call', r, ffid, attr, args)
     try {
       if (attr) {
         var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
@@ -131,30 +124,7 @@ class JSBridge {
     }
   }
 
-  pcall (r, ffid, attr, args) {
-    const parse = input => {
-      if (typeof input != 'object') return
-      for (const k in input) {
-        const v = input[k]
-        if (v && typeof v === 'object') {
-          if (v.ffid) {
-            const proxy = this.pyi.makePyObject(v.ffid)
-            this.m[v.ffid] = proxy
-            input[k] = proxy
-          }
-        } else {
-          parse(v)
-        }
-      }
-    }
-    parse(args)
-    if (attr === '$set') {
-      this.set(r, ffid, args[0], args[1])
-    } else {
-      this.call(r, ffid, attr, args)
-    }
-  }
-
+  
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
     const s = util.inspect(await this.m[ffid], { colors })
@@ -179,10 +149,35 @@ class JSBridge {
     this.ipc.send({ r, val: ffid })
   }
 
-  onMessage ({ r, action, ffid, key, args }) {
+  process (r, args) {
+    const parse = input => {
+      if (typeof input != 'object') return
+      for (const k in input) {
+        const v = input[k]
+        if (v && typeof v === 'object') {
+          if (v.ffid) {
+            const proxy = this.pyi.makePyObject(v.ffid)
+            this.m[v.ffid] = proxy
+            input[k] = proxy
+          }
+        } else {
+          parse(v)
+        }
+      }
+    }
+    parse(args)
+  }
+
+  onMessage ({ r, action, p, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
-    // console.log(this)
-    this[action](r, ffid, key, args)
+    try {
+      if (p) {
+        this.process(r, args)
+      }
+      this[action](r, ffid, key, args)
+    } catch (e) {
+      return this.ipc.send({ r, key: 'error', error: e.stack })
+    }
   }
 
 }
