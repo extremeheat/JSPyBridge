@@ -81,7 +81,7 @@ class PyInterface:
         if typ is list:
             self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
             return
-        if hasattr(v, '__class__'):  # numpy generator for some reason can't be picked up without this..
+        if hasattr(v, '__class__'):  # numpy generator for some reason can't be picked up without this
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
         # print("VOID", v, '\n', type(v), isinstance(v, (type)), inspect.isgenerator(v), inspect.isgeneratorfunction(v), inspect.isclass(v),inspect.ismethod(v), inspect.isfunction(v))
@@ -157,6 +157,26 @@ class PyInterface:
 
     def setval(self, r, ffid, key, args):
         return self.pcall(r, ffid, key, args, set_attr=True)
+
+    # This returns a primitive version (JSON-serialized) of the object
+    # including arrays and dictionary/object maps, unlike what the .get
+    # and .call methods do where they only return numeric/strings as
+    # primitive values and everything else is an object refrence.
+    def value(self, r, ffid, keys, args):
+        v = self.m[ffid]
+    
+        for key in keys:
+            t = getattr(v, str(key), None)
+            if t is None:
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+            else:
+                v = t
+
+        # TODO: do we realy want to worry about functions/classes here?
+        # we're only supposed to send primitives, probably best to ignore
+        # everything else.
+        # payload = json.dumps(v, default=lambda arg: None)
+        self.q(r, "ser", v)
 
     def onMessage(self, r, action, ffid, key, args):
         try:

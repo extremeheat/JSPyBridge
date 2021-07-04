@@ -71,6 +71,12 @@ await it('can set variables', async function () {
   // console.log(await f.a.prop)
 })
 
+await it('can return primitive values', async function () {
+  const arr = await f.x.valueOf()
+  console.log(arr, typeof arr)
+  assert.strictEqual(arr.toString(), '1,2,4')
+})
+
 // process.exit(0)
 
 after(() => {

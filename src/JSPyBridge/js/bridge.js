@@ -56,8 +56,12 @@ class Bridge {
   }
 
   async get (r, ffid, attr) {
-    const v = await this.m[ffid][attr]
-    const type = v.ffid ? 'py' : getType(v)
+    try {
+      var v = await this.m[ffid][attr]
+      var type = v.ffid ? 'py' : getType(v)
+    } catch (e) {
+      return this.ipc.send({ r, key: 'void', val: this.ffid })
+    }
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
@@ -137,8 +141,8 @@ class Bridge {
 
   // for __dict__ in python (used in json.dumps)
   async serialize (r, ffid) {
-    const s = JSON.stringify(await this.m[ffid])
-    this.ipc.send({ r, val: s })
+    const v = await this.m[ffid]
+    this.ipc.send({ r, val: v.valueOf() })
   }
 
   free (r, ffid) {
@@ -179,14 +183,14 @@ class Bridge {
     this.ipc.send({ r, key: 'pre', val: made })
   }
 
-  onMessage ({ r, action, p, ffid, key, args }) {
+  async onMessage ({ r, action, p, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
     try {
       if (p) {
         this.process(r, args)
         r += 1
       }
-      this[action](r, ffid, key, args)
+      await this[action](r, ffid, key, args)
     } catch (e) {
       return this.ipc.send({ r, key: 'error', error: e.stack })
     }

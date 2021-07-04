@@ -45,6 +45,12 @@ class Bridge:
 
     def call(self, r, ffid, keys, args, kwargs, invoke=True):
         v = self.m[ffid]
+        # Subtle differences here depending on if we want to call or get a property. 
+        # Since in Python, items ([]) and attributes (.) function differently, 
+        # when calling first we want to try . then []
+        # For example with the .append function we don't want ['append'] taking
+        # precedence in a dict. However if we're only getting objects, we can 
+        # first try bracket for dicts, then attributes.
         if invoke:
             for key in keys:
                 t = getattr(v, str(key), None)
@@ -196,8 +202,27 @@ class Bridge:
     def setval(self, r, ffid, key, args):
         return self.pcall(r, ffid, key, args, set_attr=True)
 
+    # This returns a primitive version (JSON-serialized) of the object
+    # including arrays and dictionary/object maps, unlike what the .get
+    # and .call methods do where they only return numeric/strings as
+    # primitive values and everything else is an object refrence.
+    def value(self, r, ffid, keys, args):
+        v = self.m[ffid]
+    
+        for key in keys:
+            t = getattr(v, str(key), None)
+            if t is None:
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+            else:
+                v = t
+
+        # TODO: do we realy want to worry about functions/classes here?
+        # we're only supposed to send primitives, probably best to ignore
+        # everything else.
+        # payload = json.dumps(v, default=lambda arg: None)
+        self.q(r, "ser", v)
+
     def onMessage(self, r, action, ffid, key, args):
-        # print("Calling....", action,ffid, key, nargs, kwargs)
         try:
             return getattr(self, action)(r, ffid, key, args)
         except Exception:

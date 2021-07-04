@@ -215,6 +215,10 @@ class Proxy(object):
     def __setitem__(self, name, value):
             return self._exe.setProp(self.ffid, name, value)
 
+    def valueOf(self):
+        ser = self._exe.ipc("serialize", self.ffid, '')
+        return ser['val']
+
     def __str__(self):
         return self._exe.inspect(self.ffid)
 

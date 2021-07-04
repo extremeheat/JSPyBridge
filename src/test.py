@@ -46,6 +46,8 @@ try:
 except Exception as e:
     print("OK, captured error")
 
+print("Array", demo.arr.valueOf())
+
 time.sleep(0.1)
 # This should throw for now :
 # demo.x = 3

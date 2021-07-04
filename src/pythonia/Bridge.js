@@ -3,7 +3,7 @@ if (typeof performance === 'undefined') var { performance } = require('perf_hook
 const { JSBridge } = require('./jsi')
 const log = () => {}
 // const log = console.log
-const REQ_TIMEOUT = 10000
+const REQ_TIMEOUT = 100000
 
 class BridgeException extends Error {
   constructor (...a) {
@@ -174,6 +174,15 @@ class Bridge {
     }
   }
 
+  async value (ffid, stack) {
+    const req = { r: nextReq(), action: 'value', ffid: ffid, key: stack, val: '' }
+    const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
+      throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
+    })
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    return resp.val
+  }
+
   async inspect (ffid, stack) {
     const req = { r: nextReq(), action: 'inspect', ffid: ffid, key: stack, val: '' }
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
@@ -267,6 +276,10 @@ class Bridge {
           timeout = kwargs.$timeout
           delete kwargs.$timeout
           target.callstack[target.callstack.length - 1] = final.slice(0, -1)
+        } else if (final === 'valueOf') {
+          target.callstack.pop()
+          const ret = this.value(ffid, [...target.callstack])
+          return ret
         }
         const ret = this.call(ffid, target.callstack, args, kwargs, false, timeout)
         target.callstack = [] // Flush callstack to py
