@@ -47,19 +47,7 @@ class Executor:
             raise JavaScriptError(f"Access to '{attr}' failed:\n{res['error']}\n")
         return res
 
-    def getProp(self, ffid, method):
-        resp = self.ipc("get", ffid, method)
-        return resp["key"], resp["val"]
-
-    def setProp(self, ffid, method, val):
-        self.pcall(ffid, '$set', [method, val])
-        return True
-
-    def callProp(self, ffid, method, args):
-        resp = self.ipc("call", ffid, method, args)
-        return resp["key"], resp["val"]
-
-    def pcall(self, ffid, attr, args, timeout=10):
+    def pcall(self, ffid, action, attr, args, timeout=10):
         """
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the
@@ -70,13 +58,16 @@ class Executor:
         On the JS side, it creates Proxy classes for each of the requests in the pcall, once they get
         destroyed, a free call is sent to Python where the ref is removed from our ref map to allow for
         normal GC by Python. Finally, on the JS side it executes the function call without waiting for 
-        Python. A set operation on a JS object also uses pcall as the semantics are the same.
+        Python. A init/set operation on a JS object also uses pcall as the semantics are the same.
         """
         wanted = {}
         self.ctr = 0
         self.i += 1
         pi = self.i
-        packet = {"r": self.i, "action": "pcall", "ffid": ffid, "key": attr, "args": args}
+        expectReply = 1 if len(args) else 0
+        # p=1 means we expect a reply back, not used at the meoment, but
+        # in the future as an optimization we could skip the wait if not needed
+        packet = {"r": self.i, "p": 1, "action": action, "ffid": ffid, "key": attr, "args": args}
         
         def ser(arg):
             if hasattr(arg, "ffid"):
@@ -117,9 +108,21 @@ class Executor:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
         return res['key'], res['val']
 
-    def initProp(self, ffid, method, args):
-        resp = self.ipc("init", ffid, method, args)
+    def getProp(self, ffid, method):
+        resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
+
+    def setProp(self, ffid, method, val):
+        self.pcall(ffid, 'set', method, [val])
+        return True
+
+    def callProp(self, ffid, method, args, timeout=None):
+        resp = self.pcall(ffid, "call", method, args, timeout)
+        return resp
+
+    def initProp(self, ffid, method, args):
+        resp = self.pcall(ffid, "init", method, args)
+        return resp
 
     def inspect(self, ffid):
         resp = self.ipc("inspect", ffid, "")
@@ -177,7 +180,7 @@ class Proxy(object):
             return val
 
     def __call__(self, *args, timeout=10):
-        mT, v = self._exe.pcall(self._pffid, self._pname, args, timeout)
+        mT, v = self._exe.callProp(self._pffid, self._pname, args, timeout)
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -221,9 +224,7 @@ class Proxy(object):
         return self._exe.inspect(self.ffid)
 
     def __json__(self):
-        # important ref
         return {"ffid": self.ffid}
 
     def __del__(self):
         self._exe.free(self.ffid)
-        # print("FREEself", self.ffid)
