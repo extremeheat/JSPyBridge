@@ -163,6 +163,8 @@ class EventLoop:
                     self.callbackExecutor.add_job(r, cbid, self.pyi.inbound, inbound)
                 if r in self.requests:
                     lock, timeout = self.requests[r]
-                    self.responses[r] = inbound
+                    barrier = threading.Barrier(2, timeout=5)
+                    self.responses[r] = inbound, barrier
                     del self.requests[r]
                     lock.set()  # release, allow calling thread to resume
+                    barrier.wait()

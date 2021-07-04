@@ -40,9 +40,10 @@ class Executor:
 
         if not l.wait(10):
             print("Timed out", action, ffid, attr)
-            raise Exception("Execution timed out")
-        res = self.loop.responses[r]
+            raise Exception(f"Timed out accessing '{attr}'")
+        res, barrier = self.loop.responses[r]
         del self.loop.responses[r]
+        barrier.wait()
         if 'error' in res:
             raise JavaScriptError(f"Access to '{attr}' failed:\n{res['error']}\n")
         return res
@@ -84,11 +85,9 @@ class Executor:
         fi = self.i
         l2 = self.loop.await_response(fi)
         l = self.loop.queue_request(pi, payload)
-
         if not l.wait(timeout):
             raise Exception("Execution timed out")
-        
-        pre = self.loop.responses[pi]
+        pre, barrier = self.loop.responses[pi]
         del self.loop.responses[pi]
     
         if 'error' in pre:
@@ -99,11 +98,14 @@ class Executor:
             self.bridge.m[ffid] = wanted[int(requestId)]
             setattr(self.bridge.m[ffid], 'iffid', ffid)
 
+        barrier.wait()
+
         if not l2.wait(timeout):
             raise Exception(f"Call to '{attr}' timed out")
 
-        res = self.loop.responses[fi]
+        res, barrier = self.loop.responses[fi]
         del self.loop.responses[fi]
+        barrier.wait()
         if 'error' in res:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
         return res['key'], res['val']
@@ -142,32 +144,28 @@ class Executor:
         return self.bridge.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid, prop_ffid=None, prop_name=""):
+    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", es6=False):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
         #
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
+        self._es6 = es6
 
     def _call(self, method, methodType, val):
         this = self
-
-        def instantiatable(*args):
-            mT, v = self._exe.initProp(self.ffid, method, args)
-            # when we call "new" keyword we always get object back
-            return self._call(self.ffid, mT, v)
 
         debug("MT", method, methodType, val)
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return instantiatable
+            return Proxy(self._exe, val, self.ffid, method, True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -180,7 +178,7 @@ class Proxy(object):
             return val
 
     def __call__(self, *args, timeout=10):
-        mT, v = self._exe.callProp(self._pffid, self._pname, args, timeout)
+        mT, v = self._exe.initProp(self._pffid, self._pname, args) if self._es6 else self._exe.callProp(self._pffid, self._pname, args, timeout)
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -188,7 +186,7 @@ class Proxy(object):
     def __getattr__(self, attr):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
-            return self._call(attr if self._pffid == self.ffid else "", "class", self._pffid)
+            return self._call(self._pname if self._pffid == self.ffid else "", "class", self._pffid)
         methodType, val = self._exe.getProp(self._pffid, attr)
         return self._call(attr, methodType, val)
 

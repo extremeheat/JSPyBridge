@@ -142,8 +142,6 @@ class Bridge {
   }
 
   free (r, ffid) {
-    // Make sure we don't keep any emitter refs around to avoid blocking GC
-    if (this.m[ffid]._pollingId) delete this.eventMap[this.m[ffid]._pollingId]
     delete this.m[ffid]
     this.ipc.send({ r, val: true })
   }
