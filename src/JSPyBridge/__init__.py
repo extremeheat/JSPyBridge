@@ -31,8 +31,15 @@ console = config.global_jsi.console
 
 def AsyncTask(fn):
     fn.is_async_task = True
-    return config.event_loop.startThread(fn)
+    def decor(start):
+        t = config.event_loop.startThread(fn)
+        if start:
+            t.start()
+    return decor
 
+start = config.event_loop.startThread
+stop = config.event_loop.stopThread
+abort = config.event_loop.abortThread
 
 # You must use this Once decorator for an EventEmitter in Node.js, otherwise
 # you will not be able to off an emitter.

@@ -64,7 +64,8 @@ function reinstall() {
 
 async function $require(what, version, relativeTo) {
   if (relativeTo) {
-    return await import('file://' + join(relativeTo, what))
+    const mod = await import('file://' + join(relativeTo, what))
+    return mod.default ?? mod
   }
   let modPath
   if (!version) {

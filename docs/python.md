@@ -120,11 +120,11 @@ we will install `latest` version instead, or use the version that may already be
 * All function calls to JavaScript are thread synchronous
 * ES6 classes can be constructed without new
 * ES5 classes can be constructed with the .new psuedo method
-* Use `@On` decorator when binding event listeners. Use `off()` to disable it.
+* Use `@On` decorator when binding event listeners. Use `off` to disable it.
 * All callbacks run on a dedicated callback thread. DO NOT BLOCK in a callback or all other events will be blocked. Instead:
 * Use the @AsyncTask decorator when you need to spawn a new thread for an async JS task.
 
-For more, see docs/python.md.
+For more, see [docs/python.md](docs/python.md).
 
 ### Basic import
 
@@ -145,8 +145,6 @@ print(time.whatTimeIsIt())
 
 ### Event emitter
 
-*You must use the provided On, Once, decorator and off function over the normal dot methods.*
-
 emitter.js
 ```js
 const { EventEmitter } = require('events')
@@ -161,7 +159,7 @@ module.exports = { MyEmitter }
 
 listener.py
 ```py
-from javascript import require, On, off
+from javascript import require, On
 MyEmitter = require('./emitter.js')
 # New class instance
 myEmitter = MyEmitter()
@@ -170,7 +168,7 @@ myEmitter = MyEmitter()
 def handleIncrement(this, counter):
     print("Incremented", counter)
     # Stop listening. `this` is the this variable in JS.
-    off(myEmitter, 'increment', handleIncrement)
+    this.off('increment', handleIncrement)
 # Trigger the event handler
 myEmitter.inc()
 ```
@@ -184,7 +182,6 @@ function MyClass(num) {
 }
 module.exports = { MyClass }
 ```
-
 
 es5.py
 ```py
@@ -201,7 +198,7 @@ module.exports = { items: [5, 6, 7, 8] }
 
 items.py
 ```py
-items = require('./items.js')
+items = require('./items')
 for item in items:
     print(item)
 ```
@@ -241,7 +238,7 @@ and executed in Python.
     the final argument is evaluated as a kwarg dictionary. You can supply named arguments this way.
 * Property access with a $ at the end acts as a error suppression operator. 
   * Any errors will be ignored and instead undefined will be returned
-* See docs/javascript.md for more docs.
+* (TODO) See docs/javascript.md for more docs.
 
 ###  Usage
 

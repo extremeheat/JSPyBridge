@@ -76,12 +76,15 @@ class EventLoop:
         state = TaskState()
         t = threading.Thread(target=handler, args=(state, *args), daemon=True)
         self.threads.append([state, handler, t])
-        t.start()
         return t
 
     def startThread(self, method):
-        h = hash(method)
+        for state, handler, thread in self.threads:
+            if method == handler:
+                thread.start()
+                return
         self.newTaskThread(method)
+        t.start()
 
     # Signal to the thread that it should stop. No forcing.
     def stopThread(self, method):
