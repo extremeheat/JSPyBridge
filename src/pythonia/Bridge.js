@@ -242,7 +242,7 @@ class Bridge {
             return undefined
           }
           return (resolve, reject) => {
-            const suppressErrors = next.callstack[next.callstack.length - 1].endsWith('$')
+            const suppressErrors = next.callstack[next.callstack.length - 1].endsWith?.('$')
             if (suppressErrors) {
               next.callstack.push(next.callstack.pop().replace('$', ''))
             }
