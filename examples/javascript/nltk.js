@@ -2,8 +2,8 @@ import { python } from 'JSPyBridge'
 import fs from 'fs'
 const nltk = await python('nltk')
 
-// ** You can remove this if you already have it. Uncomment if you don't have book installed.
-// await nltk.download('book')
+// ** You can comment this if you already have it.
+await nltk.download('book')
 
 const monologue = fs.readFileSync('./shakesphere.txt', 'utf-8')
 
@@ -12,7 +12,6 @@ const sentences = await nltk.sent_tokenize(monologue).then(v => v.valueOf())
 const tokenized = await Promise.all(sentences.map(sentence => nltk.word_tokenize(sentence)))
 const tagged = await Promise.all(tokenized.map(tok => nltk.pos_tag(tok)))
 const chunked = await nltk.ne_chunk_sents$(tagged, { binary: true })
-// console.log('Chunked', chunked)
 
 // Some tree traversal logic to extract all the Named Entities (NE)
 async function extractEntityNames(t) {
@@ -44,6 +43,6 @@ const frequencies = entityNames.reduce((acc, curr) => (acc[curr] ??= 0, acc[curr
 // Turn it to an array and list by most common
 const result = Object.entries(frequencies).map(([k, v]) => [k, v]).sort((a, b) => b[1] - a[1])
 // Log it out, you should get [ [ 'Romeo', 5 ], [ 'Juliet', 2 ], [ 'Deny', 1 ], [ 'Montague', 1 ], ... ]
-// console.log(result)
+console.log(result)
 // Exit python
 python.exit()
