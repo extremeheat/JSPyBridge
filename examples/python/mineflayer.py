@@ -17,7 +17,6 @@ print("Started mineflayer")
 @On(bot, 'spawn')
 def handle(*args):
   print("I spawned 👋")
-  # global mcData, movements
   mcData = require('minecraft-data')(bot.version)
   movements = pathfinder.Movements(bot, mcData)
 

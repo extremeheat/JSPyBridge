@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "JSPyBridge": "extremeheat/jspybridge"
+  },
+  "type": "module"
+}
