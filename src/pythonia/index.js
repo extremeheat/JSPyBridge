@@ -12,7 +12,7 @@ const com = new StdioCom()
 const bridge = new Bridge(com)
 const root = bridge.makePyObject(0)
 
-async function py(tokens, ...replacements) {
+async function py (tokens, ...replacements) {
   const vars = {} // List of locals
   let nstr = ''
   for (let i = 0; i < tokens.length; i++) {
@@ -51,7 +51,7 @@ module.exports = {
 }
 module.exports.python.exit = () => com.end()
 
-if (typeof window != 'undefined') {
+if (typeof window !== 'undefined') {
   window.Python = module.exports
 
   console._log = console.log

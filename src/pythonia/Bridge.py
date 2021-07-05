@@ -4,6 +4,7 @@ import json, types, traceback
 from proxy import Executor, Proxy
 from weakref import WeakValueDictionary
 
+
 def python(method):
     return importlib.import_module(method, package=None)
 
@@ -14,6 +15,7 @@ def fileImport(moduleName, absolutePath):
     spec.loader.exec_module(foo)
     return foo
 
+
 class Iterate:
     def __init__(self, v):
         self.what = v
@@ -21,7 +23,7 @@ class Iterate:
         # If we have a normal iterator, we need to make it a generator
         if inspect.isgeneratorfunction(v):
             it = self.next_gen()
-        elif hasattr(v, '__iter__'):
+        elif hasattr(v, "__iter__"):
             it = self.next_iter()
 
         def next_iter():
@@ -29,6 +31,7 @@ class Iterate:
                 return next(it)
             except Exception:
                 return "$$STOPITER"
+
         self.Next = next_iter
 
     def next_iter(self):
@@ -39,9 +42,20 @@ class Iterate:
     def next_gen(self):
         yield self.what()
 
+
 class Bridge:
     m = {
-        0: {"python": python, "open": open, "fileImport": fileImport, "eval": eval, "setattr": setattr, "getattr": getattr, "Iterate": Iterate}
+        0: {
+            "python": python,
+            "open": open,
+            "fileImport": fileImport,
+            "eval": eval,
+            "setattr": setattr,
+            "getattr": getattr,
+            "Iterate": Iterate,
+            "tuple": tuple,
+            "set": set,
+        }
     }
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
@@ -70,11 +84,11 @@ class Bridge:
 
     def call(self, r, ffid, keys, args, kwargs, invoke=True):
         v = self.m[ffid]
-        # Subtle differences here depending on if we want to call or get a property. 
-        # Since in Python, items ([]) and attributes (.) function differently, 
+        # Subtle differences here depending on if we want to call or get a property.
+        # Since in Python, items ([]) and attributes (.) function differently,
         # when calling first we want to try . then []
         # For example with the .append function we don't want ['append'] taking
-        # precedence in a dict. However if we're only getting objects, we can 
+        # precedence in a dict. However if we're only getting objects, we can
         # first try bracket for dicts, then attributes.
         if invoke:
             for key in keys:
@@ -85,12 +99,12 @@ class Bridge:
                     v = t
         else:
             for key in keys:
-                if (type(v) in (dict, tuple, list)):
+                if type(v) in (dict, tuple, list):
                     v = v[key]
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
                 else:
-                    v = v[key] # 🚨 If you get an error here, you called an undefined property
+                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
 
         # Classes when called will return void, but we need to return
         # object to JS.
@@ -119,7 +133,9 @@ class Bridge:
         if typ is list:
             self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
             return
-        if hasattr(v, '__class__'):  # numpy generator for some reason can't be picked up without this
+        if hasattr(
+            v, "__class__"
+        ):  # numpy generator for some reason can't be picked up without this
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
         self.q(r, "void", self.cur_ffid)
@@ -134,13 +150,13 @@ class Bridge:
         v = self.m[ffid]
         on, val = args
         for key in keys:
-            if (type(v) in (dict, tuple, list)):
+            if type(v) in (dict, tuple, list):
                 v = v[key]
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
-                v = v[key] # 🚨 If you get an error here, you called an undefined property
-        if (type(v) in (dict, tuple, list, set)):
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+        if type(v) in (dict, tuple, list, set):
             v[on] = val
         else:
             setattr(v, on, val)
@@ -191,11 +207,11 @@ class Bridge:
                 for k, v in json_input.items():
                     if isinstance(v, dict) and (lookup_key in v):
                         lookup = v[lookup_key]
-                        if lookup == '':
+                        if lookup == "":
                             self.cur_ffid += 1
                             self.m[self.cur_ffid] = Proxy(self.executor, self.cur_ffid)
                             json_input[k] = self.m[self.cur_ffid]
-                            created[v['r']] = self.cur_ffid
+                            created[v["r"]] = self.cur_ffid
                         else:
                             json_input[k] = self.m[lookup]
                     else:
@@ -204,17 +220,18 @@ class Bridge:
                 for k, v in enumerate(json_input):
                     if isinstance(v, dict) and (lookup_key in v):
                         lookup = v[lookup_key]
-                        if lookup == '':
+                        if lookup == "":
                             self.cur_ffid += 1
                             p = Proxy(self.executor, self.cur_ffid)
                             self.m[self.cur_ffid] = p
                             json_input[k] = self.m[self.cur_ffid]
-                            created[v['r']] = self.cur_ffid
+                            created[v["r"]] = self.cur_ffid
                         else:
                             json_input[k] = self.m[lookup]
                     else:
                         process(v, lookup_key)
-        process(args, 'ffid')
+
+        process(args, "ffid")
         pargs, kwargs = args
         self.q(r, "pre", created)
         if set_attr:
@@ -231,7 +248,7 @@ class Bridge:
     # primitive values and everything else is an object refrence.
     def value(self, r, ffid, keys, args):
         v = self.m[ffid]
-    
+
         for key in keys:
             t = getattr(v, str(key), None)
             if t is None:
@@ -249,16 +266,5 @@ class Bridge:
         try:
             return getattr(self, action)(r, ffid, key, args)
         except Exception:
-            self.q(r, "error", '', traceback.format_exc())
+            self.q(r, "error", "", traceback.format_exc())
             pass
-
-
-
-
-# com_io()
-# ws_io()
-# com_thread = threading.Thread(target=ws_io, args=(), daemon=False)
-
-
-
-# com_thread.start()

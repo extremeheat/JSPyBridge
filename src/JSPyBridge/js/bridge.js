@@ -86,9 +86,9 @@ class Bridge {
 
   set (r, ffid, attr, [val]) {
     try {
-      this.m[ffid][attr] = val   
+      this.m[ffid][attr] = val
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack }) 
+      return this.ipc.send({ r, key: 'error', error: e.stack })
     }
     this.ipc.send({ r, key: '', val: true })
   }
@@ -132,7 +132,6 @@ class Bridge {
     }
   }
 
-
   // called for debug in JS, print() in python via __str__
   async inspect (r, ffid) {
     const s = util.inspect(await this.m[ffid], { colors })
@@ -161,7 +160,7 @@ class Bridge {
   process (r, args) {
     const made = {}
     const parse = input => {
-      if (typeof input != 'object') return
+      if (typeof input !== 'object') return
       for (const k in input) {
         const v = input[k]
         if (v && typeof v === 'object') {
@@ -219,7 +218,7 @@ const ipc = {
     debug('js -> py', data)
     data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
-  }, 
+  },
   writeRaw: (data, r, cb) => {
     debug('js -> py', data)
     handlers[r] = cb

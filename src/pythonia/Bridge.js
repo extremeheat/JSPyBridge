@@ -123,7 +123,7 @@ class Bridge {
         if (v instanceof PyClass) {
           const r = nextReq()
           const proxy = new Proxy(v, {
-            get(target, prop, reciever) {
+            get (target, prop, reciever) {
               if (target[prop]) {
                 return target[prop]
               } else {
@@ -161,7 +161,7 @@ class Bridge {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     if (resp.key === 'error') throw new PythonException(stack, resp.sig)
-    
+
     log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
@@ -204,7 +204,6 @@ class Bridge {
     if (resp.key === 'error') throw new PythonException('', resp.sig)
     return resp.val
   }
-
 
   queueForCollection (ffid, val) {
     this.finalizer.register(val, ffid)

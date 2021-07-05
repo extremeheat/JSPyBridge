@@ -4,8 +4,10 @@ import json_patch
 debug = lambda *a: a
 # debug = print
 
+
 class JavaScriptError(Exception):
     pass
+
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -44,7 +46,7 @@ class Executor:
                 break
             else:  # The JS API we called wants to call a Python API... so let the loop handle it.
                 self.loop.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
-        if 'error' in j:
+        if "error" in j:
             raise JavaScriptError(f"Access to '{attr}' failed:\n{j['error']}\n")
         return j
 
@@ -59,11 +61,19 @@ class Executor:
         self.ctr = 0
         self.i += 1
         requestId = self.i
-        packet = {"r": self.i, "c": "jsi", "p": 1, "action": action, "ffid": ffid, "key": attr, "args": args}
-        
+        packet = {
+            "r": self.i,
+            "c": "jsi",
+            "p": 1,
+            "action": action,
+            "ffid": ffid,
+            "key": attr,
+            "args": args,
+        }
+
         def ser(arg):
             if hasattr(arg, "ffid"):
-                return { "ffid": arg.ffid }
+                return {"ffid": arg.ffid}
             else:
                 # Anything we don't know how to serialize -- exotic or not -- treat it as an object
                 return {"ffid": self.new_ffid(arg)}
@@ -72,14 +82,14 @@ class Executor:
 
         res = self.ipc("raw", requestId, attr, payload)
 
-        return res['key'], res['val']
+        return res["key"], res["val"]
 
     def getProp(self, ffid, method):
         resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
 
     def setProp(self, ffid, method, val):
-        self.pcall(ffid, 'set', method, [val])
+        self.pcall(ffid, "set", method, [val])
         return True
 
     def callProp(self, ffid, method, args, timeout=None):
@@ -135,13 +145,17 @@ class Proxy(object):
             return Proxy(self._exe, val)
         if methodType == "void":
             return None
-        if methodType == 'py':
+        if methodType == "py":
             return self._exe.get(val)
         else:
             return val
 
     def __call__(self, *args, timeout=10):
-        mT, v = self._exe.initProp(self._pffid, self._pname, args) if self._es6 else self._exe.callProp(self._pffid, self._pname, args, timeout)
+        mT, v = (
+            self._exe.initProp(self._pffid, self._pname, args)
+            if self._es6
+            else self._exe.callProp(self._pffid, self._pname, args, timeout)
+        )
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -176,11 +190,11 @@ class Proxy(object):
             return self._exe.setProp(self.ffid, name, value)
 
     def __setitem__(self, name, value):
-            return self._exe.setProp(self.ffid, name, value)
+        return self._exe.setProp(self.ffid, name, value)
 
     def valueOf(self):
-        ser = self._exe.ipc("serialize", self.ffid, '')
-        return ser['val']
+        ser = self._exe.ipc("serialize", self.ffid, "")
+        return ser["val"]
 
     def __str__(self):
         return self._exe.inspect(self.ffid)

@@ -3,17 +3,18 @@ import atexit, os, sys
 from . import config
 from .config import debug
 
+
 def supports_color():
     """
     Returns True if the running system's terminal supports color, and False
     otherwise.
     """
     plat = sys.platform
-    supported_platform = plat != 'Pocket PC' and (plat == 'win32' or
-                                                  'ANSICON' in os.environ)
+    supported_platform = plat != "Pocket PC" and (plat == "win32" or "ANSICON" in os.environ)
     # isatty is not always implemented, #6223.
-    is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+    is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
     return supported_platform and is_a_tty
+
 
 if supports_color():
     os.environ["FORCE_COLOR"] = "1"
@@ -80,7 +81,7 @@ sendQ = []
 def writeAll(objs):
     for obj in objs:
         if type(obj) == str:
-            j = obj + '\n'
+            j = obj + "\n"
         else:
             j = json.dumps(obj) + "\n"
         debug("[py -> js]", int(time.time() * 1000), j)

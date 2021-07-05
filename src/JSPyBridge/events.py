@@ -49,7 +49,7 @@ class EventLoop:
 
     callbackExecutor = EventExecutorThread()
 
-    # This contains a map of active callbacks that we're tracking. 
+    # This contains a map of active callbacks that we're tracking.
     # As it's a WeakRef dict, we can add stuff here without blocking GC.
     # Once this list is empty (and a CB has been GC'ed) we can exit.
     # Looks like someone else had the same idea :)

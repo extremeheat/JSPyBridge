@@ -14,8 +14,8 @@ class StdioCom {
   start () {
     this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
     // BAD HACK: since the channel is not exposed, and we need to send JSON with a
-    // custom serializer, we basically have two choices: 
-    // 1) either JSON.stringify it with a custom encoder in our lib, then have it JSON.stringified 
+    // custom serializer, we basically have two choices:
+    // 1) either JSON.stringify it with a custom encoder in our lib, then have it JSON.stringified
     //    *again* in the Node.js standard lib, then unwrapped twice in Python, or
     // 2) use a hack to get the low level IPC API and write raw strings to it.
     // There is no 'string' serialization option for IPC. It's either JSON or 'Advanced' which uses
@@ -45,7 +45,6 @@ class StdioCom {
       }
       delete this.handlers[j.r]
     }
-
   }
 
   register (eventId, cb) {

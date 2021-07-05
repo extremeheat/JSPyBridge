@@ -5,6 +5,7 @@ import sys, os, socket, json
 
 apiin = apiout = None
 
+
 class Ipc:
     def queue(self, what):
         global apiout
@@ -13,6 +14,7 @@ class Ipc:
         else:
             apiout.write(json.dumps(what) + "\n")
         apiout.flush()
+
 
 ipc = Ipc()
 bridge = Bridge(ipc)
@@ -37,5 +39,6 @@ def com_io():
             break
         j = json.loads(data)
         bridge.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
+
 
 com_io()

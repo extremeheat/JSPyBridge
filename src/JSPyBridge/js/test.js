@@ -5,7 +5,7 @@ class DemoClass extends EventEmitter {
     super()
     this.color = color
     this.y = a
-    this.arr = [ 1, 2, 3 ]
+    this.arr = [1, 2, 3]
     this.obj = { a: 'ay', b: 'be', c: 'ce' }
   }
 

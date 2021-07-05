@@ -46,12 +46,12 @@ class PyInterface:
                     v = t
         else:
             for key in keys:
-                if (type(v) in (dict, tuple, list)):
+                if type(v) in (dict, tuple, list):
                     v = v[key]
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
                 else:
-                    v = v[key] # 🚨 If you get an error here, you called an undefined property
+                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
 
         # Classes when called will return void, but we need to return
         # object to JS.
@@ -81,7 +81,9 @@ class PyInterface:
         if typ is list:
             self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
             return
-        if hasattr(v, '__class__'):  # numpy generator for some reason can't be picked up without this
+        if hasattr(
+            v, "__class__"
+        ):  # numpy generator for some reason can't be picked up without this
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
         # print("VOID", v, '\n', type(v), isinstance(v, (type)), inspect.isgenerator(v), inspect.isgeneratorfunction(v), inspect.isclass(v),inspect.ismethod(v), inspect.isfunction(v))
@@ -97,13 +99,13 @@ class PyInterface:
         v = self.m[ffid]
         on, val = args
         for key in keys:
-            if (type(v) in (dict, tuple, list)):
+            if type(v) in (dict, tuple, list):
                 v = v[key]
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
-                v = v[key] # 🚨 If you get an error here, you called an undefined property
-        if (type(v) in (dict, tuple, list, set)):
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+        if type(v) in (dict, tuple, list, set):
             v[on] = val
         else:
             setattr(v, on, val)
@@ -148,7 +150,8 @@ class PyInterface:
                         json_input[k] = Proxy(self.executor, ffid)
                     else:
                         process(v, lookup_key)
-        process(args, 'ffid')
+
+        process(args, "ffid")
         pargs, kwargs = args
         if set_attr:
             self.Set(r, ffid, key, pargs)
@@ -164,7 +167,7 @@ class PyInterface:
     # primitive values and everything else is an object refrence.
     def value(self, r, ffid, keys, args):
         v = self.m[ffid]
-    
+
         for key in keys:
             t = getattr(v, str(key), None)
             if t is None:
@@ -182,7 +185,7 @@ class PyInterface:
         try:
             return getattr(self, action)(r, ffid, key, args)
         except Exception:
-            self.q(r, "error", '', traceback.format_exc())
+            self.q(r, "error", "", traceback.format_exc())
             pass
 
     def inbound(self, j):

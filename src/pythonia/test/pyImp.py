@@ -1,5 +1,6 @@
 print("hello world :)")
 
+
 def add_inverse(a, b):
     return -1 * (a + b)
 
@@ -7,16 +8,22 @@ def add_inverse(a, b):
 def complex_num():
     return 1j * 1j
 
+
 def inner():
     return 3
 
+
 def some_event(cb, vfn):
     print("CB", cb, vfn, vfn.someMethod(), vfn.get(3))
-    cb('from python', inner)
+    cb("from python", inner)
 
-x = [ 1, 2, 3 ]
-y = { 'a': 'wow', 'b': 'naw' }
+
+x = [1, 2, 3]
+y = {"a": "wow", "b": "naw"}
+
+
 class A:
     prop = 3
+
 
 a = A()

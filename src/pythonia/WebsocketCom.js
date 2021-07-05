@@ -17,19 +17,19 @@ class StdioCom {
 
     this.sock = new WS('ws://127.0.0.1:8768/')
     const onMessage = message => {
-        const j = JSON.parse(message)
-        if (j.c === 'stderr') {
-            console.log('PyE', message.val)
-        } else if (j.c == 'stdout') {
-            console.log('PyO', message.val)
-        } else {
-            this.recieve(j)
-        }
+      const j = JSON.parse(message)
+      if (j.c === 'stderr') {
+        console.log('PyE', message.val)
+      } else if (j.c == 'stdout') {
+        console.log('PyO', message.val)
+      } else {
+        this.recieve(j)
+      }
     }
     const onOpen = () => {
-        for (const q of this.sendQ) {
-            this.sock.send(q)
-        }
+      for (const q of this.sendQ) {
+        this.sock.send(q)
+      }
     }
     this.sock.on?.('message', onMessage)
     this.sock.onmessage = message => onMessage(message.data)

@@ -8,10 +8,12 @@ import websockets
 loop = asyncio.get_event_loop()
 sendQ = asyncio.Queue()
 
+
 class WsCom:
     recvQ = Queue()
     sendQ = Queue()
     socket = None
+
     def readline(self):
         return self.recvQ.get()
 
@@ -29,8 +31,10 @@ class WsCom:
         # print("PUT INTO Q", what)
         self.recvQ.put(what)
 
+
 ipc = WsCom()
 bridge = Bridge(ipc)
+
 
 def ws_io():
     global ipc
@@ -49,12 +53,14 @@ def ws_io():
             await asyncio.sleep(1)
 
     async def handler(ws, path):
-        print('new conn!')
+        print("new conn!")
         while True:
             listener_task = asyncio.ensure_future(ws.recv())
             producer_task = asyncio.ensure_future(sendQ.get())
 
-            done, pending = await asyncio.wait([listener_task, producer_task], return_when=asyncio.FIRST_COMPLETED)
+            done, pending = await asyncio.wait(
+                [listener_task, producer_task], return_when=asyncio.FIRST_COMPLETED
+            )
             for task in pending:
                 task.cancel()
 
@@ -78,6 +84,7 @@ def com_io():
             break
         j = json.loads(data)
         bridge.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
+
 
 com_thread = threading.Thread(target=com_io, args=(), daemon=True)
 com_thread.start()

@@ -2,8 +2,10 @@ import time, threading, json
 from .config import debug, is_main_loop_active
 from . import config, json_patch
 
+
 class JavaScriptError(Exception):
     pass
+
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -35,7 +37,7 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
         if action == "make":
             l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
-        if action == 'set':
+        if action == "set":
             l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
 
         if not l.wait(10):
@@ -44,7 +46,7 @@ class Executor:
         res, barrier = self.loop.responses[r]
         del self.loop.responses[r]
         barrier.wait()
-        if 'error' in res:
+        if "error" in res:
             raise JavaScriptError(f"Access to '{attr}' failed:\n{res['error']}\n")
         return res
 
@@ -55,10 +57,10 @@ class Executor:
         non-primitive objects in the arguments, in the preliminary request we "request" an FFID from JS
         which is the authoritative side for FFIDs. Only it may assign them; we must request them. Once
         JS recieves the pcall, it searches the arguments and assigns FFIDs for everything, then returns
-        the IDs in a response. We use these IDs to store the non-primitive values into our ref map. 
+        the IDs in a response. We use these IDs to store the non-primitive values into our ref map.
         On the JS side, it creates Proxy classes for each of the requests in the pcall, once they get
         destroyed, a free call is sent to Python where the ref is removed from our ref map to allow for
-        normal GC by Python. Finally, on the JS side it executes the function call without waiting for 
+        normal GC by Python. Finally, on the JS side it executes the function call without waiting for
         Python. A init/set operation on a JS object also uses pcall as the semantics are the same.
         """
         wanted = {}
@@ -69,10 +71,10 @@ class Executor:
         # p=1 means we expect a reply back, not used at the meoment, but
         # in the future as an optimization we could skip the wait if not needed
         packet = {"r": self.i, "p": 1, "action": action, "ffid": ffid, "key": attr, "args": args}
-        
+
         def ser(arg):
             if hasattr(arg, "ffid"):
-                return { "ffid": arg.ffid }
+                return {"ffid": arg.ffid}
             else:
                 # Anything we don't know how to serialize -- exotic or not -- treat it as an object
                 self.ctr += 1
@@ -89,14 +91,14 @@ class Executor:
             raise Exception("Execution timed out")
         pre, barrier = self.loop.responses[pi]
         del self.loop.responses[pi]
-    
-        if 'error' in pre:
+
+        if "error" in pre:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{pre['error']}\n")
 
         for requestId in pre["val"]:
             ffid = pre["val"][requestId]
             self.bridge.m[ffid] = wanted[int(requestId)]
-            setattr(self.bridge.m[ffid], 'iffid', ffid)
+            setattr(self.bridge.m[ffid], "iffid", ffid)
 
         barrier.wait()
 
@@ -106,16 +108,16 @@ class Executor:
         res, barrier = self.loop.responses[fi]
         del self.loop.responses[fi]
         barrier.wait()
-        if 'error' in res:
+        if "error" in res:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
-        return res['key'], res['val']
+        return res["key"], res["val"]
 
     def getProp(self, ffid, method):
         resp = self.ipc("get", ffid, method)
         return resp["key"], resp["val"]
 
     def setProp(self, ffid, method, val):
-        self.pcall(ffid, 'set', method, [val])
+        self.pcall(ffid, "set", method, [val])
         return True
 
     def callProp(self, ffid, method, args, timeout=None):
@@ -172,13 +174,17 @@ class Proxy(object):
             return Proxy(self._exe, val)
         if methodType == "void":
             return None
-        if methodType == 'py':
+        if methodType == "py":
             return self._exe.get(val)
         else:
             return val
 
     def __call__(self, *args, timeout=10):
-        mT, v = self._exe.initProp(self._pffid, self._pname, args) if self._es6 else self._exe.callProp(self._pffid, self._pname, args, timeout)
+        mT, v = (
+            self._exe.initProp(self._pffid, self._pname, args)
+            if self._es6
+            else self._exe.callProp(self._pffid, self._pname, args, timeout)
+        )
         if mT == "fn":
             return Proxy(self._exe, v)
         return self._call(self._pname, mT, v)
@@ -213,11 +219,11 @@ class Proxy(object):
             return self._exe.setProp(self.ffid, name, value)
 
     def __setitem__(self, name, value):
-            return self._exe.setProp(self.ffid, name, value)
+        return self._exe.setProp(self.ffid, name, value)
 
     def valueOf(self):
-        ser = self._exe.ipc("serialize", self.ffid, '')
-        return ser['val']
+        ser = self._exe.ipc("serialize", self.ffid, "")
+        return ser["val"]
 
     def __str__(self):
         return self._exe.inspect(self.ffid)
