@@ -79,10 +79,13 @@ avoid this when possible. To avoid trouble, `stop()` does not force the thread t
 ### events
 
 This library provides some wrappers around EventEmitters. You must use them over the built-in
-`.on` and `.off` methods of normal EventEmitters. You can still use `.emit` normally.
+`.on`, `.off` and `.once` methods of normal EventEmitters. You can still use `.emit` normally.
+
+These wrappers are avaliable as `@On(emitter, eventName)`, `@Once(emitter, eventName)` and
+the top-level `off(emitter, eventName, handlerFn)` function.
 
 ```py
-from javascript import require, On
+from javascript import require, On, Once, off
 MyEmitter = require('./emitter.js')
 # New class instance
 myEmitter = MyEmitter()
@@ -91,7 +94,7 @@ myEmitter = MyEmitter()
 def handleIncrement(this, counter):
     print("Incremented", counter)
     # Stop listening. `this` is the this variable in JS.
-    this.off('increment', handleIncrement)
+    off(myEmitter, 'increment', handleIncrement)
 # Trigger the event handler
 myEmitter.inc()
 ```
