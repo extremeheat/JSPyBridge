@@ -94,7 +94,7 @@ class PyBridge {
         if (v.ffid) return { ffid: v.ffid }
         if (
           typeof v === 'function' ||
-           typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array')
+          (typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array'))
         ) {
           const ffid = ++this.jsi.ffid
           this.jsi.m[ffid] = v
@@ -149,7 +149,7 @@ class PyBridge {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') throw new PythonException([], resp.sig)
     return resp.val
   }
 
@@ -216,11 +216,9 @@ class PyBridge {
         let icall, kwargs, timeout
         if (final === 'apply') {
           target.callstack.pop()
-          icall = true
           args = [args[0], ...args[1]]
         } else if (final === 'call') {
           target.callstack.pop()
-          icall = true
         } else if (final?.endsWith('$')) {
           kwargs = args.pop()
           timeout = kwargs.$timeout

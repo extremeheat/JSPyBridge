@@ -5,7 +5,6 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 }
 
 const util = require('util')
-if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
 const log = () => {}
 // const log = console.log
@@ -33,17 +32,17 @@ class PyClass {
   #superargs
   #superkwargs
   #trap
-  constructor(superclass, superArgs=[], superKwargs={}) {
+  constructor (superclass, superArgs = [], superKwargs = {}) {
     if (this.init) this.#userInit = this.init
     this.init = this.#init
     this.#superclass = superclass
     this.#superargs = superArgs
     this.#superkwargs = superKwargs
     if (!Array.isArray(superArgs)) {
-      throw new SyntaxError(`Second parameter to PyClass super must be the positional arguments to pass to the Python superclass`)
+      throw new SyntaxError('Second parameter to PyClass super must be the positional arguments to pass to the Python superclass')
     }
-    if (typeof superKwargs != 'object') {
-      throw new SyntaxError(`Third parameter to PyClass super must be an object which holds keyword arguments to pass to the Python superclass`)
+    if (typeof superKwargs !== 'object') {
+      throw new SyntaxError('Third parameter to PyClass super must be an object which holds keyword arguments to pass to the Python superclass')
     }
   }
 
@@ -57,13 +56,13 @@ class PyClass {
     const name = this.constructor.name
     const variables = Object.getOwnPropertyNames(this)
     // Set.has() is faster than Array.includes which is O(n)
-    const members = new Set(Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(k => k != 'constructor'))
+    const members = new Set(Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(k => k !== 'constructor'))
     // This would be a proxy to Python ... it creates the class & calls __init__ in one pass
     const sup = await this.#superclass
-    const pyClass = await bridge.makePyClass(this, name, { 
-      name, 
-      overriden: [...variables, ...members], 
-      bases: [[sup.ffid, this.#superargs, this.#superkwargs]] 
+    const pyClass = await bridge.makePyClass(this, name, {
+      name,
+      overriden: [...variables, ...members],
+      bases: [[sup.ffid, this.#superargs, this.#superkwargs]]
     })
     this.pyffid = pyClass.ffid
 
@@ -76,10 +75,12 @@ class PyClass {
           if (prop === 'parent') return target.parent
           if (members.has(prop)) return this[prop]
           else return pyClass[prop]
-        }, 
-        set(target, prop, val) {
-          if (prop === 'parent') throw RangeError
-('illegal reserved property change')
+        },
+        set (target, prop, val) {
+          if (prop === 'parent') {
+            throw RangeError
+            ('illegal reserved property change')
+          }
           if (forceParent) {
             return pyClass[prop] = val
           }
@@ -89,7 +90,7 @@ class PyClass {
       })
     }
     class Trap extends Function {
-      constructor() {
+      constructor () {
         super()
         this.base = makeProxy(this, false)
         this.parent = makeProxy(this, true)
@@ -192,8 +193,8 @@ class Bridge {
     const req = { r, action: set ? 'setval' : 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
     // The following serializes our arguments and sends them to Python.
     // When we provide FFID as '', we ask Python to assign a new FFID on
-    // its side for the purpose of this function call, then to return 
-    // the number back to us 
+    // its side for the purpose of this function call, then to return
+    // the number back to us
     const payload = JSON.stringify(req, (k, v) => {
       if (!k) return v
       if (v && !v.r) {
@@ -206,7 +207,7 @@ class Bridge {
         if (v.ffid) return { ffid: v.ffid }
         if (
           typeof v === 'function' ||
-          typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array')
+          (typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array'))
         ) {
           const r = nextReq()
           made[r] = v
@@ -282,8 +283,8 @@ class Bridge {
   }
 
   /**
-   * This method creates a Python class which proxies overriden entries on the 
-   * on the JS side over to JS. Conversely, in JS when a property access 
+   * This method creates a Python class which proxies overriden entries on the
+   * on the JS side over to JS. Conversely, in JS when a property access
    * is performed on an object that doesn't exist, it's sent to Python.
    */
   async makePyClass (inst, name, props) {
@@ -376,14 +377,12 @@ class Bridge {
       },
       apply: (target, self, args) => { // Called for function call
         const final = target.callstack[target.callstack.length - 1]
-        let icall, kwargs, timeout
+        let kwargs, timeout
         if (final === 'apply') {
           target.callstack.pop()
-          icall = true
           args = [args[0], ...args[1]]
         } else if (final === 'call') {
           target.callstack.pop()
-          icall = true
         } else if (final?.endsWith('$')) {
           kwargs = args.pop()
           timeout = kwargs.$timeout

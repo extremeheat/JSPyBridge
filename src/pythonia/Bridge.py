@@ -82,7 +82,7 @@ class Bridge:
         def getAttribute(self, attr):
             if attr.startswith("__"):
                 return object.__getattribute__(self, attr)
-            if attr.startswith("$$"): # Bypass keyword for our __getattribute__ trap
+            if attr.startswith("$$"):  # Bypass keyword for our __getattribute__ trap
                 return object.__getattribute__(self, attr.replace[2:])
             if attr in overriden:
                 return getattr(proxy, attr)
@@ -106,7 +106,7 @@ class Bridge:
         js_ffid = self.cur_ffid
         proxy = Proxy(self.executor, js_ffid)
         self.m[js_ffid] = proxy
-        inst = self.make_class(params['name'], proxy, params['bases'], params['overriden'])
+        inst = self.make_class(params["name"], proxy, params["bases"], params["overriden"])
         py_ffid = self.assign_ffid(inst)
         self.q(r, "inst", [js_ffid, py_ffid])
 
@@ -246,7 +246,11 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            self.m[self.cur_ffid] = self.m[v['extend']] if 'extend' in v else Proxy(self.executor, self.cur_ffid)
+                            self.m[self.cur_ffid] = (
+                                self.m[v["extend"]]
+                                if "extend" in v
+                                else Proxy(self.executor, self.cur_ffid)
+                            )
                             json_input[k] = self.m[self.cur_ffid]
                             created[v["r"]] = self.cur_ffid
                         else:
@@ -259,7 +263,11 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            self.m[self.cur_ffid] = self.m[v['extend']] if 'extend' in v else Proxy(self.executor, self.cur_ffid)
+                            self.m[self.cur_ffid] = (
+                                self.m[v["extend"]]
+                                if "extend" in v
+                                else Proxy(self.executor, self.cur_ffid)
+                            )
                             json_input[k] = self.m[self.cur_ffid]
                             created[v["r"]] = self.cur_ffid
                         else:
