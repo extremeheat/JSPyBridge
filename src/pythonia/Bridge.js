@@ -3,6 +3,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
   console.error('Please update it to a version >= 16.x.x from https://nodejs.org/')
   process.exit(1)
 }
+
 const util = require('util')
 if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
 const { JSBridge } = require('./jsi')
@@ -25,20 +26,87 @@ class PythonException extends Error {
 }
 
 class PyClass {
-  _Supers = []
-  #waits = []
-  constructor (...exts) {
-    for (const ext of exts) {
-      this.#waits.push(ext.then(ex => this._Supers.push(ex)))
+  // Hard privates to avoid tripping over our internal things
+  #current = {}
+  #userInit
+  #superclass
+  #superargs
+  #superkwargs
+  #trap
+  constructor(superclass, superArgs=[], superKwargs={}) {
+    if (this.init) this.#userInit = this.init
+    this.init = this.#init
+    this.#superclass = superclass
+    this.#superargs = superArgs
+    this.#superkwargs = superKwargs
+    if (!Array.isArray(superArgs)) {
+      throw new SyntaxError(`Second parameter to PyClass super must be the positional arguments to pass to the Python superclass`)
+    }
+    if (typeof superKwargs != 'object') {
+      throw new SyntaxError(`Third parameter to PyClass super must be an object which holds keyword arguments to pass to the Python superclass`)
     }
   }
 
-  async waitForReady () {
-    return Promise.all(this.#waits)
+  static init (...args) {
+    const clas = new this(...args)
+    return clas.init()
   }
 
-  superclass (ix = 0) {
-    return this._Supers[ix]
+  async #init (bridge = globalThis.__pythonBridge) {
+    if (this.#trap) throw 'cannot re-init'
+    const name = this.constructor.name
+    const variables = Object.getOwnPropertyNames(this)
+    // Set.has() is faster than Array.includes which is O(n)
+    const members = new Set(Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(k => k != 'constructor'))
+    // This would be a proxy to Python ... it creates the class & calls __init__ in one pass
+    const sup = await this.#superclass
+    const pyClass = await bridge.makePyClass(this, name, { 
+      name, 
+      overriden: [...variables, ...members], 
+      bases: [[sup.ffid, this.#superargs, this.#superkwargs]] 
+    })
+    this.pyffid = pyClass.ffid
+
+    const makeProxy = (target, forceParent) => {
+      return new Proxy(target, {
+        get: (target, prop) => {
+          if (forceParent) {
+            return pyClass[prop]
+          }
+          if (prop === 'parent') return target.parent
+          if (members.has(prop)) return this[prop]
+          else return pyClass[prop]
+        }, 
+        set(target, prop, val) {
+          if (prop === 'parent') throw RangeError
+('illegal reserved property change')
+          if (forceParent) {
+            return pyClass[prop] = val
+          }
+          if (members.has(prop)) return this[prop] = val
+          else return pyClass[prop] = val
+        }
+      })
+    }
+    class Trap extends Function {
+      constructor() {
+        super()
+        this.base = makeProxy(this, false)
+        this.parent = makeProxy(this, true)
+      }
+    }
+    this.#trap = new Trap()
+
+    for (const member of members) {
+      const fn = this[member]
+      this.#current[member] = fn
+      console.log(member, fn)
+      // Overwrite the `this` statement in each of the class members to use our router
+      this[member] = fn.bind(this.#trap.base)
+    }
+
+    this.#userInit?.()
+    return this
   }
 }
 
@@ -54,7 +122,8 @@ async function waitFor (cb, withTimeout, onTimeout) {
   return ret
 }
 
-const nextReq = () => (performance.now() * 100) | 0
+let nextReqId = 10000
+const nextReq = () => nextReqId++
 
 class Bridge {
   constructor (com) {
@@ -121,24 +190,20 @@ class Bridge {
     const made = {}
     const r = nextReq()
     const req = { r, action: set ? 'setval' : 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
+    // The following serializes our arguments and sends them to Python.
+    // When we provide FFID as '', we ask Python to assign a new FFID on
+    // its side for the purpose of this function call, then to return 
+    // the number back to us 
     const payload = JSON.stringify(req, (k, v) => {
       if (!k) return v
       if (v && !v.r) {
-        if (v.ffid) return { ffid: v.ffid }
+        console.log(v, v instanceof PyClass)
         if (v instanceof PyClass) {
           const r = nextReq()
-          const proxy = new Proxy(v, {
-            get (target, prop, reciever) {
-              if (target[prop]) {
-                return target[prop]
-              } else {
-                return target.superclass()?.[prop]
-              }
-            }
-          })
-          made[r] = proxy
-          return { r, ffid: '' }
+          made[r] = v
+          return { r, ffid: '', extend: v.pyffid }
         }
+        if (v.ffid) return { ffid: v.ffid }
         if (
           typeof v === 'function' ||
           typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array')
@@ -155,7 +220,9 @@ class Bridge {
       if (pre.key === 'pre') {
         for (const r in pre.val) {
           const ffid = pre.val[r]
-          this.jsi.m[ffid] = made[r]
+          // Python is the owner of the memory, we borrow a ref to it and once
+          // we're done with it (GC'd), we can ask python to free it
+          this.jsi.addWeakRef(made[r], ffid)
           this.queueForCollection(ffid, made[r])
         }
         return true
@@ -212,6 +279,28 @@ class Bridge {
 
   queueForCollection (ffid, val) {
     this.finalizer.register(val, ffid)
+  }
+
+  /**
+   * This method creates a Python class which proxies overriden entries on the 
+   * on the JS side over to JS. Conversely, in JS when a property access 
+   * is performed on an object that doesn't exist, it's sent to Python.
+   */
+  async makePyClass (inst, name, props) {
+    const req = { r: nextReq(), action: 'makeclass', ffid: '', key: name, val: props }
+    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
+      throw new BridgeException(`Attempt to create '${name}' failed.`)
+    })
+    if (resp.key === 'error') throw new PythonException([name], resp.sig)
+    // Python puts a new proxy into its Ref map, we get a ref ID to its one.
+    // We don't put ours into our map; allow normal GC on our side and once
+    // it is, it'll be free'd in the Python side.
+    this.jsi.addWeakRef(inst, resp.val[0])
+    // Track when our class gets GC'ed so we can erase it on the Python side
+    this.queueForCollection(resp.val[0], inst)
+    // Return the Python instance - when it gets freed, the
+    // other ref on the python side is also free'd.
+    return this.makePyObject(resp.val[1], resp.sig)
   }
 
   makePyObject (ffid, inspectString) {

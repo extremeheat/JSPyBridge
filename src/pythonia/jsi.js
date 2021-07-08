@@ -51,6 +51,15 @@ class JSBridge {
     // ipc.on('message', this.onMessage)
   }
 
+  addWeakRef (object, ffid) {
+    const weak = new WeakRef(object)
+    Object.defineProperty(this.m, ffid, {
+      get () {
+        return weak.deref()
+      }
+    })
+  }
+
   async get (r, ffid, attr) {
     try {
       var v = await this.m[ffid][attr]
@@ -99,6 +108,7 @@ class JSBridge {
 
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
+    console.log('call', r, ffid, attr, args)
     try {
       if (attr) {
          var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line

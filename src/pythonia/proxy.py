@@ -117,7 +117,7 @@ class Executor:
         return self.loop.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6", '~class']
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.

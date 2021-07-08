@@ -10,6 +10,7 @@ const getCaller = require('caller')
 
 const com = new StdioCom()
 const bridge = new Bridge(com)
+globalThis.__pythonBridge = bridge
 const root = bridge.makePyObject(0)
 
 async function py (tokens, ...replacements) {
