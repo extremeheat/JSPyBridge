@@ -1,7 +1,7 @@
 if (typeof window !== 'undefined') {
   var { StdioCom } = require('./WebsocketCom')
 } else {
-  var { StdioCom } = process.platform == 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
+  var { StdioCom } = process.platform === 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
 }
 
 const { join, resolve } = require('path')
@@ -10,6 +10,7 @@ const getCaller = require('caller')
 
 const com = new StdioCom()
 const bridge = new Bridge(com)
+globalThis.__pythonBridge = bridge
 const root = bridge.makePyObject(0)
 
 async function py (tokens, ...replacements) {
@@ -37,7 +38,7 @@ module.exports = {
     if (file.startsWith('/') || file.startsWith('./') || file.startsWith('../') || file.includes(':')) {
       if (file.startsWith('.')) {
         const caller = getCaller(1)
-        const prefix = process.platform == 'win32' ? 'file:///' : 'file://'
+        const prefix = process.platform === 'win32' ? 'file:///' : 'file://'
         const callerDir = caller.replace(prefix, '').split('/').slice(0, -1).join('/')
         file = join(callerDir, file)
       }

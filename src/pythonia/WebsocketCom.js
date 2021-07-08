@@ -20,7 +20,7 @@ class StdioCom {
       const j = JSON.parse(message)
       if (j.c === 'stderr') {
         console.log('PyE', message.val)
-      } else if (j.c == 'stdout') {
+      } else if (j.c === 'stdout') {
         console.log('PyO', message.val)
       } else {
         this.recieve(j)

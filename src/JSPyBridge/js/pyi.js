@@ -4,8 +4,8 @@
 
 const util = require('util')
 if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
-const REQ_TIMEOUT = 100000
 const log = () => {}
+const REQ_TIMEOUT = 100000
 
 class BridgeException extends Error {
   constructor (...a) {
@@ -33,7 +33,8 @@ async function waitFor (cb, withTimeout, onTimeout) {
   return ret
 }
 
-const nextReq = () => (performance.now() * 100) | 0
+let nextReqId = 10000
+const nextReq = () => nextReqId++
 
 class PyBridge {
   constructor (com, jsi) {
@@ -66,13 +67,16 @@ class PyBridge {
     return resp.val
   }
 
-  async get (ffid, stack, args) {
+  async get (ffid, stack, args, suppressErrors) {
     const req = { r: nextReq(), action: 'get', ffid: ffid, key: stack, val: args }
 
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') {
+      if (suppressErrors) return undefined
+      throw new PythonException(stack, resp.sig)
+    }
     switch (resp.key) {
       case 'string':
       case 'int':
@@ -94,7 +98,7 @@ class PyBridge {
         if (v.ffid) return { ffid: v.ffid }
         if (
           typeof v === 'function' ||
-           typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array')
+          (typeof v === 'object' && (v.constructor.name !== 'Object' && v.constructor.name !== 'Array'))
         ) {
           const ffid = ++this.jsi.ffid
           this.jsi.m[ffid] = v
@@ -149,7 +153,7 @@ class PyBridge {
       // Allow a GC time out, it's probably because the Python process died
       // throw new BridgeException('Attempt to GC failed.')
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') throw new PythonException([], resp.sig)
     return resp.val
   }
 
@@ -194,17 +198,30 @@ class PyBridge {
         }
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
+            // This is just for destructuring arrays
             return function *iter () {
-              for (let i = 0; i < Infinity; i++) {
+              for (let i = 0; i < 100; i++) {
                 const next = new Intermediate([...target.callstack, i])
                 yield new Proxy(next, handler)
+              }
+              throw SyntaxError('You must use `for await` when iterating over a Python object in a for-of loop')
+            }
+          }
+          if (prop === Symbol.asyncIterator) {
+            const self = this
+            return async function *iter () {
+              const it = await self.call(0, ['Iterate'], [{ ffid }])
+              while (true) {
+                const val = await it.Next()
+                if (val === '$$STOPITER') {
+                  return
+                } else {
+                  yield val
+                }
               }
             }
           }
           console.log('Get symbol', next.callstack, prop)
-          if (prop === Symbol.asyncIterator) {
-            // todo
-          }
           return
         }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
@@ -213,14 +230,12 @@ class PyBridge {
       },
       apply: (target, self, args) => { // Called for function call
         const final = target.callstack[target.callstack.length - 1]
-        let icall, kwargs, timeout
+        let kwargs, timeout
         if (final === 'apply') {
           target.callstack.pop()
-          icall = true
           args = [args[0], ...args[1]]
         } else if (final === 'call') {
           target.callstack.pop()
-          icall = true
         } else if (final?.endsWith('$')) {
           kwargs = args.pop()
           timeout = kwargs.$timeout

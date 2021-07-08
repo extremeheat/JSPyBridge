@@ -21,7 +21,7 @@ await it('does function calls', async function () {
 await it('declares classes', async function () {
   class MyClas extends PyClass {
     constructor() {
-      super(demo.DemoClass(4))
+      super(demo.DemoClass, [4])
     }
     someMethod() {
       return 3
@@ -33,7 +33,7 @@ await it('declares classes', async function () {
     assert.strictEqual(message, 'from python')
     assert.strictEqual(await method(), 3)
     // console.log('Message', message, await method())
-  }, new MyClas())
+  }, await MyClas.init())
 })
 
 await it('consumes classes', async function () {

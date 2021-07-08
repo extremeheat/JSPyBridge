@@ -51,6 +51,15 @@ class JSBridge {
     // ipc.on('message', this.onMessage)
   }
 
+  addWeakRef (object, ffid) {
+    const weak = new WeakRef(object)
+    Object.defineProperty(this.m, ffid, {
+      get () {
+        return weak.deref()
+      }
+    })
+  }
+
   async get (r, ffid, attr) {
     try {
       var v = await this.m[ffid][attr]

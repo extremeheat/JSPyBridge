@@ -8,8 +8,35 @@ from .proxy import Proxy
 from weakref import WeakValueDictionary
 
 
+class Iterate:
+    def __init__(self, v):
+        self.what = v
+
+        # If we have a normal iterator, we need to make it a generator
+        if inspect.isgeneratorfunction(v):
+            it = self.next_gen()
+        elif hasattr(v, "__iter__"):
+            it = self.next_iter()
+
+        def next_iter():
+            try:
+                return next(it)
+            except Exception:
+                return "$$STOPITER"
+
+        self.Next = next_iter
+
+    def next_iter(self):
+        for entry in self.what:
+            yield entry
+        return
+
+    def next_gen(self):
+        yield self.what()
+
+
 class PyInterface:
-    m = {0: {}}
+    m = {0: {"Iterate": Iterate}}
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
     cur_ffid = 0
@@ -37,6 +64,12 @@ class PyInterface:
 
     def call(self, r, ffid, keys, args, kwargs, invoke=True):
         v = self.m[ffid]
+        # Subtle differences here depending on if we want to call or get a property.
+        # Since in Python, items ([]) and attributes (.) function differently,
+        # when calling first we want to try . then []
+        # For example with the .append function we don't want ['append'] taking
+        # precedence in a dict. However if we're only getting objects, we can
+        # first try bracket for dicts, then attributes.
         if invoke:
             for key in keys:
                 t = getattr(v, str(key), None)
@@ -61,7 +94,6 @@ class PyInterface:
                 was_class = True
             v = v(*args, **kwargs)
         typ = type(v)
-        # print("typ", v, typ, inspect.isclass(v), inspect.ismodule(v))
         if typ is str:
             self.q(r, "string", v)
             return
@@ -86,7 +118,6 @@ class PyInterface:
         ):  # numpy generator for some reason can't be picked up without this
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
-        # print("VOID", v, '\n', type(v), isinstance(v, (type)), inspect.isgenerator(v), inspect.isgeneratorfunction(v), inspect.isclass(v),inspect.ismethod(v), inspect.isfunction(v))
         self.q(r, "void", self.cur_ffid)
 
     # Same as call just without invoking anything, and args

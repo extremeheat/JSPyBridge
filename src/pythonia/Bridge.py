@@ -73,6 +73,43 @@ class Bridge:
         self.m[self.cur_ffid] = what
         return self.cur_ffid
 
+    def make_class(this, name, proxy, bases, overriden):
+        def init(self):
+            for base_ffid, baseArgs, baseKwargs in bases:
+                base = this.m[base_ffid]
+                base.__init__(self, *baseArgs, **baseKwargs)
+
+        def getAttribute(self, attr):
+            if attr.startswith("__"):
+                return object.__getattribute__(self, attr)
+            if attr.startswith("$$"):  # Bypass keyword for our __getattribute__ trap
+                return object.__getattribute__(self, attr.replace[2:])
+            if attr in overriden:
+                return getattr(proxy, attr)
+            return object.__getattribute__(self, attr)
+
+        base_classes = []
+        for base_ffid, a, kw in bases:
+            base = this.m[base_ffid]
+            base_classes.append(base)
+
+        claz = type(base_classes[0])
+        clas = type(name, tuple(base_classes), {"__init__": init, "__getattribute__": getAttribute})
+        inst = clas()
+        setattr(proxy, "~class", inst)
+        return inst
+
+    # Here, we allocate two different refrences. The first is the Proxy to the JS
+    # class, the send is a ref to our Python class. Both refs are GC tracked by JS.
+    def makeclass(self, r, ffid, key, params):
+        self.cur_ffid += 1
+        js_ffid = self.cur_ffid
+        proxy = Proxy(self.executor, js_ffid)
+        self.m[js_ffid] = proxy
+        inst = self.make_class(params["name"], proxy, params["bases"], params["overriden"])
+        py_ffid = self.assign_ffid(inst)
+        self.q(r, "inst", [js_ffid, py_ffid])
+
     def length(self, r, ffid, key, args):
         l = len(self.m[ffid])
         self.q(r, "num", l)
@@ -209,7 +246,11 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            self.m[self.cur_ffid] = Proxy(self.executor, self.cur_ffid)
+                            self.m[self.cur_ffid] = (
+                                self.m[v["extend"]]
+                                if "extend" in v
+                                else Proxy(self.executor, self.cur_ffid)
+                            )
                             json_input[k] = self.m[self.cur_ffid]
                             created[v["r"]] = self.cur_ffid
                         else:
@@ -222,8 +263,11 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            p = Proxy(self.executor, self.cur_ffid)
-                            self.m[self.cur_ffid] = p
+                            self.m[self.cur_ffid] = (
+                                self.m[v["extend"]]
+                                if "extend" in v
+                                else Proxy(self.executor, self.cur_ffid)
+                            )
                             json_input[k] = self.m[self.cur_ffid]
                             created[v["r"]] = self.cur_ffid
                         else:
