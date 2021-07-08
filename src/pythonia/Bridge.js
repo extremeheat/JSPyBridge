@@ -69,23 +69,26 @@ class PyClass {
     const makeProxy = (target, forceParent) => {
       return new Proxy(target, {
         get: (target, prop) => {
-          if (forceParent) {
-            return pyClass[prop]
-          }
+          const pname = prop != 'then' ? '~~' + prop : prop
+          if (forceParent) return pyClass[pname]
           if (prop === 'parent') return target.parent
           if (members.has(prop)) return this[prop]
-          else return pyClass[prop]
+          else return pyClass[pname]
         },
         set (target, prop, val) {
-          if (prop === 'parent') {
-            throw RangeError
-            ('illegal reserved property change')
-          }
-          if (forceParent) {
-            return pyClass[prop] = val
-          }
+          const pname = prop != 'then' ? '~~' + prop : prop
+          if (prop === 'parent') throw RangeError('illegal reserved property change')
+          if (forceParent) return pyClass[pname] = val
           if (members.has(prop)) return this[prop] = val
-          else return pyClass[prop] = val
+          else return pyClass[pname] = val
+        },
+        apply: (target, self, args) => {
+          let prop = '__call__'
+          if (this[prop]) {
+            return this[prop](...args)
+          } else {
+            return pyClass[prop](...args)
+          }
         }
       })
     }
@@ -101,13 +104,12 @@ class PyClass {
     for (const member of members) {
       const fn = this[member]
       this.#current[member] = fn
-      console.log(member, fn)
       // Overwrite the `this` statement in each of the class members to use our router
       this[member] = fn.bind(this.#trap.base)
     }
 
-    this.#userInit?.()
-    return this
+    this.#userInit?.call(this.#trap.base)
+    return this.#trap.base
   }
 }
 
@@ -137,7 +139,6 @@ class Bridge {
       this.free(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
       delete this.jsi.m[ffid]
-      // console.log('Freed', this.jsi.m)
     })
 
     this.jsi = new JSBridge(null, this)
@@ -198,7 +199,6 @@ class Bridge {
     const payload = JSON.stringify(req, (k, v) => {
       if (!k) return v
       if (v && !v.r) {
-        console.log(v, v instanceof PyClass)
         if (v instanceof PyClass) {
           const r = nextReq()
           made[r] = v
@@ -235,6 +235,10 @@ class Bridge {
     })
     if (resp.key === 'error') throw new PythonException(stack, resp.sig)
 
+    if (set) {
+      return true // Do not allocate new FFID if setting
+    }
+
     log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
@@ -270,12 +274,8 @@ class Bridge {
 
   async free (ffid) {
     const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
-      // Allow a GC time out, it's probably because the Python process died
-      // throw new BridgeException('Attempt to GC failed.')
-    })
-    if (resp.key === 'error') throw new PythonException('', resp.sig)
-    return resp.val
+    this.request(req)
+    return true
   }
 
   queueForCollection (ffid, val) {

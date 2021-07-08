@@ -35,7 +35,7 @@ class StdioCom {
   }
 
   recieve (j) {
-    log('[py -> js]', j, this.handlers)
+    log('[py -> js]', j, Object.keys(this.handlers).length)
     if (this.handlers[j.c]) {
       return this.handlers[j.c](j)
     }
@@ -54,7 +54,7 @@ class StdioCom {
   write (what, cb) {
     log('[js -> py]', what)
     this.proc.send(what)
-    this.register(what.r, cb)
+    if (cb) this.register(what.r, cb)
   }
 
   writeRaw (what, r, cb) {

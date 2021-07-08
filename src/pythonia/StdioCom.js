@@ -56,7 +56,7 @@ class StdioCom {
     log('[js -> py]', what)
     const fb = JSON.stringify(what)
     this.proc.stdin.write(fb + '\n')
-    this.register(what.r, cb)
+    if (cb) this.register(what.r, cb)
   }
 
   writeRaw (what, r, cb) {

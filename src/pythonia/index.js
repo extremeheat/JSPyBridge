@@ -19,7 +19,7 @@ async function py (tokens, ...replacements) {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
     const repl = await replacements[i]
-    if (repl) {
+    if (repl != null) {
       const v = '__' + i
       vars[v] = (repl.ffid ? ({ ffid: repl.ffid }) : repl)
       nstr += token + v
@@ -30,9 +30,13 @@ async function py (tokens, ...replacements) {
   return root.eval(nstr, null, vars)
 }
 
+py.enumerate = what => root.enumerate(what)
+py.tuple = (...items) => root.tuple(items)
+py.set = (...items) => root.set(items)
+
 module.exports = {
   PyClass,
-  root,
+  builtins: root,
   py,
   python (file) {
     if (file.startsWith('/') || file.startsWith('./') || file.startsWith('../') || file.includes(':')) {

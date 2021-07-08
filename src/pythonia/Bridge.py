@@ -55,6 +55,7 @@ class Bridge:
             "Iterate": Iterate,
             "tuple": tuple,
             "set": set,
+            "enumerate": enumerate
         }
     }
     # Things added to this dict are auto GC'ed
@@ -82,8 +83,8 @@ class Bridge:
         def getAttribute(self, attr):
             if attr.startswith("__"):
                 return object.__getattribute__(self, attr)
-            if attr.startswith("$$"):  # Bypass keyword for our __getattribute__ trap
-                return object.__getattribute__(self, attr.replace[2:])
+            if attr.startswith("~~"):  # Bypass keyword for our __getattribute__ trap
+                return object.__getattribute__(self, attr[2:])
             if attr in overriden:
                 return getattr(proxy, attr)
             return object.__getattribute__(self, attr)
@@ -154,7 +155,7 @@ class Bridge:
         if typ is str:
             self.q(r, "string", v)
             return
-        if typ is int or typ is float or (v is None):
+        if typ is int or typ is float or (v is None) or (v is True) or (v is False):
             self.q(r, "int", v)
             return
         if inspect.isclass(v) or isinstance(v, type):
