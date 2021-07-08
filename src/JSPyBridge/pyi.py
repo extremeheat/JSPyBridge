@@ -7,6 +7,7 @@ import socket
 from .proxy import Proxy
 from weakref import WeakValueDictionary
 
+
 class Iterate:
     def __init__(self, v):
         self.what = v

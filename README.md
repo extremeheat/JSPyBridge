@@ -63,8 +63,6 @@ await root.mainloop$({ $timeout: Infinity })
 
 Open in Gitpod link above, and run :
 ```
-nvm install 16 # Install Node.js 16
-nvm use 16 # Use node.js 16
 npm install # this installs test deps
 cd src
 DEBUG=true python3 test.py
