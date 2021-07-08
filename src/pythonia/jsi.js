@@ -108,7 +108,6 @@ class JSBridge {
 
   // Call function with async keyword (also works with sync funcs)
   async call (r, ffid, attr, args) {
-    console.log('call', r, ffid, attr, args)
     try {
       if (attr) {
          var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line

@@ -8,7 +8,7 @@ const util = require('util')
 const { JSBridge } = require('./jsi')
 const log = () => {}
 // const log = console.log
-const REQ_TIMEOUT = 10000
+const REQ_TIMEOUT = 100000
 
 class BridgeException extends Error {
   constructor (...a) {

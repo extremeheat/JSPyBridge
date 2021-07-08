@@ -60,6 +60,15 @@ class Bridge {
     // ipc.on('message', this.onMessage)
   }
 
+  addWeakRef (object, ffid) {
+    const weak = new WeakRef(object)
+    Object.defineProperty(this.m, ffid, {
+      get () {
+        return weak.deref()
+      }
+    })
+  }
+
   async get (r, ffid, attr) {
     try {
       var v = await this.m[ffid][attr]
@@ -67,6 +76,7 @@ class Bridge {
     } catch (e) {
       return this.ipc.send({ r, key: 'void', val: this.ffid })
     }
+
     switch (type) {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
