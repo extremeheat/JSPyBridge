@@ -174,6 +174,8 @@ class JSBridge {
             const proxy = this.pyi.makePyObject(v.ffid)
             this.m[v.ffid] = proxy
             input[k] = proxy
+          } else {
+            parse(v)
           }
         } else {
           parse(v)

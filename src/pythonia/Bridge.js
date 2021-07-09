@@ -223,6 +223,7 @@ class Bridge {
           const ffid = pre.val[r]
           // Python is the owner of the memory, we borrow a ref to it and once
           // we're done with it (GC'd), we can ask python to free it
+          if (made[r] instanceof Promise) throw Error('You did not await a paramater when calling ' + stack.join('.'))
           this.jsi.addWeakRef(made[r], ffid)
           this.queueForCollection(ffid, made[r])
         }
