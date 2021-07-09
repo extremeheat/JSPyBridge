@@ -123,7 +123,6 @@ for (let epoch = 0; epoch < 1; epoch++) {
 
   var averageLoss = 0
 
-  console.log('Enum', await py.enumerate(trainLoader))
 
   for await (let [batchIndex, [x, target]] of await py.enumerate(trainLoader)) {
     if (!x) {
@@ -146,13 +145,16 @@ for (let epoch = 0; epoch < 1; epoch++) {
     // console.log("Avg loss", averageLoss)
     // if (typeof averageLoss != 'number')
     // process.exit(1)
-    averageLoss = py`${averageLoss} * 0.9 + ${loss.data} * 0.1`
+    
+
+    averageLoss = await py`${averageLoss} * 0.9 + ${loss.data} * 0.1`
     await loss.backward()
     await optimizer.step()
 
+
     const batchNum = await batchIndex + 1
     if ((batchNum % 100 == 0) || (batchNum == await testLoader.length)) {
-      console.log(`=> epoch: ${epoch}, batch index: ${batchNum}, test loss: ${avgLoss}, acc ${correctCount * 1.0 / totalCount}`)
+      console.log(`=> epoch: ${epoch}, batch index: ${batchNum}, test loss: ${averageLoss}, acc ${correctCount * 1.0 / totalCount}`)
     }
   }
 
@@ -188,3 +190,4 @@ for (let epoch = 0; epoch < 1; epoch++) {
 }
 
 await torch.save(await model.save_dict(), await model.name())
+python.exit()

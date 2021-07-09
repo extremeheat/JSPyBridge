@@ -23,7 +23,15 @@ class StdioCom {
     const symbols = Object.getOwnPropertySymbols(this.proc)
     const symbol = symbols.find(sym => sym.toString() === 'Symbol(kChannelHandle)')
     const channel = this.proc[symbol]
-    this._writeRaw = data => channel.writeUtf8String({}, data)
+    channel._writeUtf8String = channel.writeUtf8String
+    let ww
+    channel.writeUtf8String = (...a) => {
+      ww = a[0].constructor
+      channel.writeUtf8String = channel._writeUtf8String
+      return channel._writeUtf8String.apply(channel, a)
+    }
+    this.proc.send('')
+    this._writeRaw = data => channel.writeUtf8String(new ww(), data)
     this.proc.on('message', data => {
       this.recieve(data)
     })

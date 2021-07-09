@@ -6,7 +6,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 
 const util = require('util')
 const { JSBridge } = require('./jsi')
-const log = () => {}
+const log = process.env.DEBUG ? console.debug : () => {}
 // const log = console.log
 const REQ_TIMEOUT = 100000
 
@@ -138,7 +138,7 @@ class Bridge {
     this.finalizer = new FinalizationRegistry(ffid => {
       this.free(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
-      delete this.jsi.m[ffid]
+      try { delete this.jsi.m[ffid] } catch {}
     })
 
     this.jsi = new JSBridge(null, this)
@@ -326,6 +326,7 @@ class Bridge {
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'toJSON') return () => ({ ffid })
+        if (prop === 'toString') return target[prop]
         if (prop === 'then') {
           // Avoid .then loops
           if (!next.callstack.length) {
@@ -368,7 +369,7 @@ class Bridge {
               }
             }
           }
-          console.log('Get symbol', next.callstack, prop)
+          log('Get symbol', next.callstack, prop)
           return
         }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
@@ -413,6 +414,10 @@ class Bridge {
       }
 
       [util.inspect.custom] () {
+        return inspectString || '(Some Python object)'
+      }
+
+      toString () {
         return inspectString || '(Some Python object)'
       }
     }
