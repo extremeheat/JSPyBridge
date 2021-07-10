@@ -78,7 +78,7 @@ module.exports = {
   },
   com
 }
-module.exports.python.exit = () => { 
+module.exports.python.exit = () => {
   bridge.end()
   com.end()
 }

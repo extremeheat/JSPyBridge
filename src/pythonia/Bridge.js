@@ -72,6 +72,7 @@ class PyClass {
           const pname = prop != 'then' ? '~~' + prop : prop
           if (forceParent) return pyClass[pname]
           if (prop === 'ffid') return this.pyffid
+          if (prop === 'toJSON') return () => ({ ffid })
           if (prop === 'parent') return target.parent
           if (members.has(prop)) return this[prop]
           else return pyClass[pname]
@@ -84,7 +85,7 @@ class PyClass {
           else return pyClass[pname] = val
         },
         apply: (target, self, args) => {
-          let prop = '__call__'
+          const prop = '__call__'
           if (this[prop]) {
             return this[prop](...args)
           } else {

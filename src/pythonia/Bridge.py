@@ -56,7 +56,7 @@ class Bridge:
             "tuple": tuple,
             "set": set,
             "enumerate": enumerate,
-            "repr": repr
+            "repr": repr,
         }
     }
     # Things added to this dict are auto GC'ed
@@ -67,7 +67,7 @@ class Bridge:
         self.ipc = ipc
         # This toggles if we want to send inspect data for console logging. It's auto
         # disabled when a for loop is active; use `repr` to request logging instead.
-        self.m[0]["sendInspect"] = lambda x: setattr(self, 'send_inspect', x)
+        self.m[0]["sendInspect"] = lambda x: setattr(self, "send_inspect", x)
         self.send_inspect = True
         self.q = lambda r, key, val, sig="": self.ipc.queue(
             {"r": r, "key": key, "val": val, "sig": sig}
@@ -99,7 +99,6 @@ class Bridge:
             # to avoid a mess
             super(clas, self).__setattr__(attr, val)
             object.__setattr__(self, attr, val)
-            
 
         base_classes = []
         for base_ffid, a, kw in bases:
@@ -107,7 +106,11 @@ class Bridge:
             base_classes.append(base)
 
         claz = type(base_classes[0])
-        clas = type(name, tuple(base_classes), {"__init__": init, "__getattribute__": getAttribute, '__setattr__': setAttr})
+        clas = type(
+            name,
+            tuple(base_classes),
+            {"__init__": init, "__getattribute__": getAttribute, "__setattr__": setAttr},
+        )
         inst = clas()
         setattr(proxy, "~class", inst)
         return inst
@@ -250,7 +253,7 @@ class Bridge:
     def make_signature(self, what):
         if self.send_inspect:
             return repr(what)
-        return ''
+        return ""
 
     def read(self):
         data = self.ipc.readline()

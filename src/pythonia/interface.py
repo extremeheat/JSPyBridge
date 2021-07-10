@@ -24,7 +24,7 @@ bridge = Bridge(ipc)
 # recieve different messages at the same time.
 def com_io():
     global apiin, apiout
-    if sys.platform == "win32" or ('NODE_CHANNEL_FD' not in os.environ):
+    if sys.platform == "win32" or ("NODE_CHANNEL_FD" not in os.environ):
         apiin = sys.stdin
         apiout = sys.stderr
     else:
@@ -37,7 +37,7 @@ def com_io():
         data = apiin.readline()
         if not data:
             break
-        if data[0] != '{':
+        if data[0] != "{":
             continue
         j = json.loads(data)
         bridge.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])

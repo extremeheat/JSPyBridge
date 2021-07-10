@@ -43,7 +43,7 @@ class StdioCom {
   }
 
   recieve (j) {
-    log('[py -> js]', j, Object.keys(this.handlers).length)
+    log('[py -> js]', j)
     if (this.handlers[j.c]) {
       return this.handlers[j.c](j)
     }
