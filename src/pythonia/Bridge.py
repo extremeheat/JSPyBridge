@@ -1,4 +1,3 @@
-import util
 import inspect, importlib, importlib.util
 import json, types, traceback, sys
 from proxy import Executor, Proxy
@@ -56,7 +55,8 @@ class Bridge:
             "Iterate": Iterate,
             "tuple": tuple,
             "set": set,
-            "enumerate": enumerate
+            "enumerate": enumerate,
+            "repr": repr
         }
     }
     # Things added to this dict are auto GC'ed
@@ -65,6 +65,10 @@ class Bridge:
 
     def __init__(self, ipc):
         self.ipc = ipc
+        # This toggles if we want to send inspect data for console logging. It's auto
+        # disabled when a for loop is active; use `repr` to request logging instead.
+        self.m[0]["sendInspect"] = lambda x: setattr(self, 'send_inspect', x)
+        self.send_inspect = True
         self.q = lambda r, key, val, sig="": self.ipc.queue(
             {"r": r, "key": key, "val": val, "sig": sig}
         )
@@ -176,19 +180,19 @@ class Bridge:
             return
         if inspect.isclass(v) or isinstance(v, type):
             # We need to increment FFID
-            self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "class", self.assign_ffid(v), self.make_signature(v))
             return
         if callable(v):  # anything with __call__
-            self.q(r, "fn", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "fn", self.assign_ffid(v), self.make_signature(v))
             return
         if (typ is dict) or (inspect.ismodule(v)) or was_class:  # "object" in JS speak
-            self.q(r, "obj", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "obj", self.assign_ffid(v), self.make_signature(v))
             return
         if typ is list:
-            self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "list", self.assign_ffid(v), self.make_signature(v))
             return
         if hasattr(v, "__class__"):  # numpy generator can't be picked up without this
-            self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "class", self.assign_ffid(v), self.make_signature(v))
             return
         self.q(r, "void", self.cur_ffid)
 
@@ -218,7 +222,7 @@ class Bridge:
         v = self.m[ffid]
         for key in keys:
             v = getattr(v, key, None) or v[key]
-        s = util.make_signature(v)
+        s = repr(v)
         self.q(r, "", s)
 
     # no ACK needed
@@ -242,6 +246,11 @@ class Bridge:
 
     def queue_request_raw(self, request_id, payload, timeout=None):
         self.ipc.queue(payload)
+
+    def make_signature(self, what):
+        if self.send_inspect:
+            return repr(what)
+        return ''
 
     def read(self):
         data = self.ipc.readline()

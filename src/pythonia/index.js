@@ -76,7 +76,11 @@ module.exports = {
 module.exports.python.exit = () => { 
   bridge.end()
   com.end()
-} 
+}
+
+module.exports.python.setFastMode = (val) => {
+  root.sendInspect(!val)
+}
 
 if (typeof window !== 'undefined') {
   window.Python = module.exports

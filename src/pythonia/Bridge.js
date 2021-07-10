@@ -319,6 +319,7 @@ class Bridge {
   }
 
   makePyObject (ffid, inspectString) {
+    const self = this
     // "Intermediate" objects are returned while chaining. If the user tries to log
     // an Intermediate then we know they forgot to use await, as if they were to use
     // await, then() would be implicitly called where we wouldn't return a Proxy, but
@@ -340,7 +341,7 @@ class Bridge {
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'toJSON') return () => ({ ffid })
-        if (prop === 'toString') return target[prop]
+        if (prop === 'toString' && inspectString) return target[prop]
         if (prop === 'then') {
           // Avoid .then loops
           if (!next.callstack.length) {
@@ -355,9 +356,7 @@ class Bridge {
             next.callstack = [] // Empty the callstack afer running fn
           }
         }
-        if (prop === 'length') {
-          return this.len(ffid, next.callstack, [])
-        }
+        if (prop === 'length') return this.len(ffid, next.callstack, [])
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
             // This is just for destructuring arrays
@@ -370,7 +369,6 @@ class Bridge {
             }
           }
           if (prop === Symbol.asyncIterator) {
-            const self = this
             return async function *iter () {
               const it = await self.call(0, ['Iterate'], [{ ffid }])
               while (true) {
@@ -407,6 +405,10 @@ class Bridge {
           target.callstack.pop()
           const ret = this.value(ffid, [...target.callstack])
           return ret
+        } else if (final === 'toString') {
+          target.callstack.pop()
+          const ret = this.inspect(ffid, [...target.callstack])
+          return ret
         }
         const ret = this.call(ffid, target.callstack, args, kwargs, false, timeout)
         target.callstack = [] // Flush callstack to py
@@ -428,7 +430,7 @@ class Bridge {
       }
 
       [util.inspect.custom] () {
-        return inspectString || '(Some Python object)'
+        return inspectString || "(Some Python object) Use `await object.toString()` to get this object's repr()."
       }
 
       toString () {
