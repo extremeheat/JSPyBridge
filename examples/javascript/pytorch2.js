@@ -1,5 +1,5 @@
 import { py, PyClass, python } from 'JSPyBridge'
-
+python.setFastMode(true) // bridge skips string serialization; need to use .toString() when console.logging now
 const torch = await python('torch')
 const nn = await python('torch.nn')
 const F = await python('torch.nn.functional')
@@ -102,7 +102,7 @@ const dataset1 = await datasets.MNIST$('./torch_data', { train: true, download: 
 const dataset2 = await datasets.MNIST$('./torch_data', { train: false, download: true, transform })
 
 const trainLoader = await torch.utils.data.DataLoader$(dataset1, { batch_size })
-const testLoader = await torch.utils.data.DataLoader$(dataset2, { batch_size })
+const testLoader = await torch.utils.data.DataLoader$(dataset2, { batch_size: test_batch_size })
 
 const net = await Net.init()
 const model = await net.to(device)
@@ -114,6 +114,10 @@ for (let epoch = 0; epoch < epochs + 1; epoch++) {
   await train(log_interval, dry_run, model, device, trainLoader, optimizer, epoch)
   await test(model, device, testLoader)
   await scheduler.step()
+}
+
+if (save_model) {
+  await torch.save(await model.state_dict(), "mnist_cnn.pt")
 }
 
 python.exit()

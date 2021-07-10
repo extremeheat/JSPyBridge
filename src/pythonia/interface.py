@@ -43,4 +43,6 @@ def com_io():
         bridge.onMessage(j["r"], j["action"], j["ffid"], j["key"], j["val"])
 
 
+# import cProfile
+# cProfile.run('com_io()', sort='time')
 com_io()

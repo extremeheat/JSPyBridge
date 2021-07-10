@@ -33,7 +33,8 @@ class Executor:
             try:  # Event loop is dead, no need for GC
                 l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
             except ValueError:
-                return {"val": True}
+                pass
+            return
         if action == "raw":
             # (not really a FFID, but request ID)
             r = ffid
@@ -106,7 +107,6 @@ class Executor:
 
     def free(self, ffid):
         resp = self.ipc("free", ffid, "")
-        return resp["val"]
 
     def new_ffid(self, for_object):
         self.loop.cur_ffid += 1

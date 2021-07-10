@@ -154,7 +154,6 @@ class JSBridge {
 
   free (r, ffid) {
     delete this.m[ffid]
-    this.ipc.send({ r, val: true })
   }
 
   make (r, ffid) {

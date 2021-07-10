@@ -135,11 +135,14 @@ class Bridge {
     // This is a ref map used so Python can call back JS APIs
     this.jrefs = {}
 
+    // We don't want to GC things individually, so batch all the GCs at once
+    // to Python
+    this.freeable = []
+    this.loop = setInterval(this.runTasks, 1000)
+
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
-      this.free(ffid)
-      // Once the Proxy is freed, we also want to release the pyClass ref
-      try { delete this.jsi.m[ffid] } catch {}
+      this.freeable.push(ffid)
     })
 
     this.jsi = new JSBridge(null, this)
@@ -150,6 +153,15 @@ class Bridge {
       makePyObject: ffid => this.makePyObject(ffid)
     }
     this.com.register('jsi', this.jsi.onMessage.bind(this.jsi))
+  }
+
+  runTasks = () => {
+    if (this.freeable.length) this.free(this.freeable)
+    this.freeable = []
+  }
+
+  end () {
+    clearInterval(this.loop)
   }
 
   request (req, cb) {
@@ -274,8 +286,8 @@ class Bridge {
     return resp.val
   }
 
-  async free (ffid) {
-    const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
+  async free (ffids) {
+    const req = { r: nextReq(), action: 'free', ffid: '', key: '', val: ffids }
     this.request(req)
     return true
   }

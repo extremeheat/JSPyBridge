@@ -30,9 +30,28 @@ async function py (tokens, ...replacements) {
   return root.eval(nstr, null, vars)
 }
 
+// same as above but with eval instead -- todo: auto fix indent
+async function pyExec (tokens, ...replacements) {
+  const vars = {} // List of locals
+  let nstr = ''
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const repl = await replacements[i]
+    if (repl != null) {
+      const v = '__' + i
+      vars[v] = (repl.ffid ? ({ ffid: repl.ffid }) : repl)
+      nstr += token + v
+    } else {
+      nstr += token
+    }
+  }
+  return root.exec(nstr, null, vars)
+}
+
 py.enumerate = what => root.enumerate(what)
 py.tuple = (...items) => root.tuple(items)
 py.set = (...items) => root.set(items)
+py.exec = pyExec
 
 module.exports = {
   PyClass,
@@ -54,7 +73,10 @@ module.exports = {
   },
   com
 }
-module.exports.python.exit = () => com.end()
+module.exports.python.exit = () => { 
+  bridge.end()
+  com.end()
+} 
 
 if (typeof window !== 'undefined') {
   window.Python = module.exports

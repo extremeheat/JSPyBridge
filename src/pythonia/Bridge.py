@@ -187,9 +187,7 @@ class Bridge:
         if typ is list:
             self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
             return
-        if hasattr(
-            v, "__class__"
-        ):  # numpy generator for some reason can't be picked up without this
+        if hasattr(v, "__class__"):  # numpy generator can't be picked up without this
             self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
             return
         self.q(r, "void", self.cur_ffid)
@@ -223,13 +221,12 @@ class Bridge:
         s = util.make_signature(v)
         self.q(r, "", s)
 
+    # no ACK needed
     def free(self, r, ffid, key, args):
-        if ffid not in self.m:
-            # OK, we already GC'ed
-            self.q(r, "", True)
-            return
-        del self.m[ffid]
-        self.q(r, "", True)
+        for i in args:
+            if i not in self.m:
+                continue
+            del self.m[ffid]
 
     def make(self, r, ffid, key, args):
         self.cur_ffid += 1
@@ -294,7 +291,8 @@ class Bridge:
 
         process(args, "ffid")
         pargs, kwargs = args
-        self.q(r, "pre", created)
+        if len(created):
+            self.q(r, "pre", created)
         if set_attr:
             self.Set(r, ffid, key, pargs)
         else:
