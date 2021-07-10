@@ -52,6 +52,11 @@ py.enumerate = what => root.enumerate(what)
 py.tuple = (...items) => root.tuple(items)
 py.set = (...items) => root.set(items)
 py.exec = pyExec
+py.with = async (using, fn) => {
+  const handle = await (await using).__enter__()
+  await fn(handle)
+  await py`${using}.__exit__(*sys.exc_info())`
+}
 
 module.exports = {
   PyClass,
@@ -77,7 +82,6 @@ module.exports.python.exit = () => {
   bridge.end()
   com.end()
 }
-
 module.exports.python.setFastMode = (val) => {
   root.sendInspect(!val)
 }

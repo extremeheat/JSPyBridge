@@ -60,19 +60,19 @@ async function test(model, device, testLoader) {
   await model.eval()
   let testLoss = 0
   let correct = 0
-  const handle = await torch.no_grad()
-  // console.log(handle)
-  await handle.__enter__()
-  for await (let [data, target] of testLoader) {
-    data = await data.to(device)
-    target = await target.to(device)
-    const output = await model(data)
-    const loss = await F.nll_loss$(output, await target, { reduction: 'sum' })
-    testLoss += await loss.item()
-    const pred = await output.argmax$({ dim: 1, keepdim: true })
-    correct += await pred.eq(await target.view_as(pred)).then(k => k.sum()).then(k => k.item())
-  }
-  await py`${handle}.__exit__(*sys.exc_info())`
+
+  await py.with(torch.no_grad(), async () => {
+    for await (let [data, target] of testLoader) {
+      data = await data.to(device)
+      target = await target.to(device)
+      const output = await model(data)
+      const loss = await F.nll_loss$(output, await target, { reduction: 'sum' })
+      testLoss += await loss.item()
+      const pred = await output.argmax$({ dim: 1, keepdim: true })
+      correct += await pred.eq(await target.view_as(pred)).then(k => k.sum()).then(k => k.item())
+    }
+  })
+
   testLoss /= await testLoader.dataset.length
   console.log(`\nTest set: Average loss: ${testLoss}, Accuracy: ${correct}/${await testLoader.dataset.length} (${(100 * correct) / await testLoader.dataset.length}%)\n`)
 }
