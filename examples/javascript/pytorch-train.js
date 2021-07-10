@@ -1,3 +1,7 @@
+/**
+ * A PyTorch NN training example with the MNIST digit dataset using torchvision
+ * Ported from https://github.com/pytorch/examples/tree/master/mnist
+ */
 import { py, PyClass, python } from 'JSPyBridge'
 python.setFastMode(true) // bridge skips string serialization; need to use .toString() when console.logging now
 const torch = await python('torch')
