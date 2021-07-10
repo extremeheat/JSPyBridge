@@ -50,6 +50,7 @@ class Bridge:
             "open": open,
             "fileImport": fileImport,
             "eval": eval,
+            "exec": exec,
             "setattr": setattr,
             "getattr": getattr,
             "Iterate": Iterate,
@@ -84,10 +85,17 @@ class Bridge:
             if attr.startswith("__"):
                 return object.__getattribute__(self, attr)
             if attr.startswith("~~"):  # Bypass keyword for our __getattribute__ trap
-                return object.__getattribute__(self, attr[2:])
+                return super(clas, self).__getattribute__(attr[2:])
             if attr in overriden:
                 return getattr(proxy, attr)
-            return object.__getattribute__(self, attr)
+            return super(clas, self).__getattribute__(attr)
+
+        def setAttr(self, attr, val):
+            # Trippy stuff, but we need to set on both super and this
+            # to avoid a mess
+            super(clas, self).__setattr__(attr, val)
+            object.__setattr__(self, attr, val)
+            
 
         base_classes = []
         for base_ffid, a, kw in bases:
@@ -95,7 +103,7 @@ class Bridge:
             base_classes.append(base)
 
         claz = type(base_classes[0])
-        clas = type(name, tuple(base_classes), {"__init__": init, "__getattribute__": getAttribute})
+        clas = type(name, tuple(base_classes), {"__init__": init, "__getattribute__": getAttribute, '__setattr__': setAttr})
         inst = clas()
         setattr(proxy, "~class", inst)
         return inst
@@ -111,8 +119,16 @@ class Bridge:
         py_ffid = self.assign_ffid(inst)
         self.q(r, "inst", [js_ffid, py_ffid])
 
-    def length(self, r, ffid, key, args):
-        l = len(self.m[ffid])
+    def length(self, r, ffid, keys, args):
+        v = self.m[ffid]
+        for key in keys:
+            if type(v) in (dict, tuple, list):
+                v = v[key]
+            elif hasattr(v, str(key)):
+                v = getattr(v, str(key))
+            else:
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+        l = len(v)
         self.q(r, "num", l)
 
     def init(self, r, ffid, key, args):

@@ -59,24 +59,25 @@ class PyClass {
     const members = new Set(Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(k => k !== 'constructor'))
     // This would be a proxy to Python ... it creates the class & calls __init__ in one pass
     const sup = await this.#superclass
-    const pyClass = await bridge.makePyClass(this, name, {
+    const [ffid, pyClass] = await bridge.makePyClass(this, name, {
       name,
       overriden: [...variables, ...members],
       bases: [[sup.ffid, this.#superargs, this.#superkwargs]]
     })
-    this.pyffid = pyClass.ffid
+    this.pyffid = ffid
 
     const makeProxy = (target, forceParent) => {
       return new Proxy(target, {
         get: (target, prop) => {
           const pname = prop != 'then' ? '~~' + prop : prop
           if (forceParent) return pyClass[pname]
+          if (prop === 'ffid') return this.pyffid
           if (prop === 'parent') return target.parent
           if (members.has(prop)) return this[prop]
           else return pyClass[pname]
         },
         set (target, prop, val) {
-          const pname = prop != 'then' ? '~~' + prop : prop
+          const pname = prop
           if (prop === 'parent') throw RangeError('illegal reserved property change')
           if (forceParent) return pyClass[pname] = val
           if (members.has(prop)) return this[prop] = val
@@ -108,7 +109,7 @@ class PyClass {
       this[member] = fn.bind(this.#trap.base)
     }
 
-    this.#userInit?.call(this.#trap.base)
+    await this.#userInit?.call(this.#trap.base)
     return this.#trap.base
   }
 }
@@ -302,7 +303,7 @@ class Bridge {
     this.queueForCollection(resp.val[0], inst)
     // Return the Python instance - when it gets freed, the
     // other ref on the python side is also free'd.
-    return this.makePyObject(resp.val[1], resp.sig)
+    return [resp.val[1], this.makePyObject(resp.val[1], resp.sig)]
   }
 
   makePyObject (ffid, inspectString) {

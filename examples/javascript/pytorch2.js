@@ -1,7 +1,6 @@
 import { py, PyClass, python } from 'JSPyBridge'
 
 const torch = await python('torch')
-const tutils = await python('torch.utils')
 const nn = await python('torch.nn')
 const F = await python('torch.nn.functional')
 const optim = await python('torch.optim')
@@ -22,8 +21,7 @@ class Net extends PyClass {
     this.fc2 = await nn.Linear(128, 10)
   }
 
-  async forward([x]) {
-    // console.log('x', x)
+  async forward(x) {
     x = await this.conv1(x)
     x = await F.relu(x)
     x = await this.conv2(x)
@@ -46,13 +44,13 @@ async function train(log_interval, dry_run, model, device, trainLoader, optimize
     data = await data.to(device)
     target = await target.to(device)
     await optimizer.zero_grad()
-    const output = await model(data)
-    const loss = await F.nll_loss(output, target)
+    const output = await model(await data)
+    const loss = await F.nll_loss(output, await target)
     await loss.backward()
     await optimizer.step()
     const batchIx = await _batchIx
     if (batchIx % log_interval == 0) {
-      console.log(`Train epoch: ${epoch} [${batchIx * await data.length}]/${await trainLoader.dataset.length} (${100 * batchIx / await trainLoader.length}%)\tLoss: ${await loss.item()}`)
+      console.log(`Train epoch: ${epoch} [${batchIx * await data.length}/${await trainLoader.dataset.length} (${100 * batchIx / await trainLoader.length}%)]\tLoss: ${await loss.item()}`)
     }
     if (dry_run) break
   }
@@ -81,7 +79,7 @@ async function test(model, device, testLoader) {
 
 const batch_size = 100
 const test_batch_size = 1000
-const epochs = 1
+const epochs = 14
 const lr = 1
 const gamma = 0.7
 const no_cuda = true
