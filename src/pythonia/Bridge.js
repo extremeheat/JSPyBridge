@@ -6,7 +6,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 
 const util = require('util')
 const { JSBridge } = require('./jsi')
-const log = () => {}
+const log = process.env.DEBUG ? console.debug : () => {}
 // const log = console.log
 const REQ_TIMEOUT = 100000
 
@@ -59,33 +59,38 @@ class PyClass {
     const members = new Set(Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(k => k !== 'constructor'))
     // This would be a proxy to Python ... it creates the class & calls __init__ in one pass
     const sup = await this.#superclass
-    const pyClass = await bridge.makePyClass(this, name, {
+    const [ffid, pyClass] = await bridge.makePyClass(this, name, {
       name,
       overriden: [...variables, ...members],
       bases: [[sup.ffid, this.#superargs, this.#superkwargs]]
     })
-    this.pyffid = pyClass.ffid
+    this.pyffid = ffid
 
     const makeProxy = (target, forceParent) => {
       return new Proxy(target, {
         get: (target, prop) => {
-          if (forceParent) {
-            return pyClass[prop]
-          }
+          const pname = prop != 'then' ? '~~' + prop : prop
+          if (forceParent) return pyClass[pname]
+          if (prop === 'ffid') return this.pyffid
+          if (prop === 'toJSON') return () => ({ ffid })
           if (prop === 'parent') return target.parent
           if (members.has(prop)) return this[prop]
-          else return pyClass[prop]
+          else return pyClass[pname]
         },
         set (target, prop, val) {
-          if (prop === 'parent') {
-            throw RangeError
-            ('illegal reserved property change')
-          }
-          if (forceParent) {
-            return pyClass[prop] = val
-          }
+          const pname = prop
+          if (prop === 'parent') throw RangeError('illegal reserved property change')
+          if (forceParent) return pyClass[pname] = val
           if (members.has(prop)) return this[prop] = val
-          else return pyClass[prop] = val
+          else return pyClass[pname] = val
+        },
+        apply: (target, self, args) => {
+          const prop = '__call__'
+          if (this[prop]) {
+            return this[prop](...args)
+          } else {
+            return pyClass[prop](...args)
+          }
         }
       })
     }
@@ -101,13 +106,12 @@ class PyClass {
     for (const member of members) {
       const fn = this[member]
       this.#current[member] = fn
-      console.log(member, fn)
       // Overwrite the `this` statement in each of the class members to use our router
       this[member] = fn.bind(this.#trap.base)
     }
 
-    this.#userInit?.()
-    return this
+    await this.#userInit?.call(this.#trap.base)
+    return this.#trap.base
   }
 }
 
@@ -132,12 +136,14 @@ class Bridge {
     // This is a ref map used so Python can call back JS APIs
     this.jrefs = {}
 
+    // We don't want to GC things individually, so batch all the GCs at once
+    // to Python
+    this.freeable = []
+    this.loop = setInterval(this.runTasks, 1000)
+
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
-      this.free(ffid)
-      // Once the Proxy is freed, we also want to release the pyClass ref
-      delete this.jsi.m[ffid]
-      // console.log('Freed', this.jsi.m)
+      this.freeable.push(ffid)
     })
 
     this.jsi = new JSBridge(null, this)
@@ -148,6 +154,15 @@ class Bridge {
       makePyObject: ffid => this.makePyObject(ffid)
     }
     this.com.register('jsi', this.jsi.onMessage.bind(this.jsi))
+  }
+
+  runTasks = () => {
+    if (this.freeable.length) this.free(this.freeable)
+    this.freeable = []
+  }
+
+  end () {
+    clearInterval(this.loop)
   }
 
   request (req, cb) {
@@ -198,7 +213,6 @@ class Bridge {
     const payload = JSON.stringify(req, (k, v) => {
       if (!k) return v
       if (v && !v.r) {
-        console.log(v, v instanceof PyClass)
         if (v instanceof PyClass) {
           const r = nextReq()
           made[r] = v
@@ -223,6 +237,7 @@ class Bridge {
           const ffid = pre.val[r]
           // Python is the owner of the memory, we borrow a ref to it and once
           // we're done with it (GC'd), we can ask python to free it
+          if (made[r] instanceof Promise) throw Error('You did not await a paramater when calling ' + stack.join('.'))
           this.jsi.addWeakRef(made[r], ffid)
           this.queueForCollection(ffid, made[r])
         }
@@ -234,6 +249,10 @@ class Bridge {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+
+    if (set) {
+      return true // Do not allocate new FFID if setting
+    }
 
     log('call', ffid, stack, args, resp)
     switch (resp.key) {
@@ -268,14 +287,10 @@ class Bridge {
     return resp.val
   }
 
-  async free (ffid) {
-    const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
-      // Allow a GC time out, it's probably because the Python process died
-      // throw new BridgeException('Attempt to GC failed.')
-    })
-    if (resp.key === 'error') throw new PythonException('', resp.sig)
-    return resp.val
+  async free (ffids) {
+    const req = { r: nextReq(), action: 'free', ffid: '', key: '', val: ffids }
+    this.request(req)
+    return true
   }
 
   queueForCollection (ffid, val) {
@@ -301,10 +316,11 @@ class Bridge {
     this.queueForCollection(resp.val[0], inst)
     // Return the Python instance - when it gets freed, the
     // other ref on the python side is also free'd.
-    return this.makePyObject(resp.val[1], resp.sig)
+    return [resp.val[1], this.makePyObject(resp.val[1], resp.sig)]
   }
 
   makePyObject (ffid, inspectString) {
+    const self = this
     // "Intermediate" objects are returned while chaining. If the user tries to log
     // an Intermediate then we know they forgot to use await, as if they were to use
     // await, then() would be implicitly called where we wouldn't return a Proxy, but
@@ -326,6 +342,7 @@ class Bridge {
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'toJSON') return () => ({ ffid })
+        if (prop === 'toString' && inspectString) return target[prop]
         if (prop === 'then') {
           // Avoid .then loops
           if (!next.callstack.length) {
@@ -340,9 +357,7 @@ class Bridge {
             next.callstack = [] // Empty the callstack afer running fn
           }
         }
-        if (prop === 'length') {
-          return this.len(ffid, next.callstack, [])
-        }
+        if (prop === 'length') return this.len(ffid, next.callstack, [])
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
             // This is just for destructuring arrays
@@ -355,7 +370,6 @@ class Bridge {
             }
           }
           if (prop === Symbol.asyncIterator) {
-            const self = this
             return async function *iter () {
               const it = await self.call(0, ['Iterate'], [{ ffid }])
               while (true) {
@@ -368,7 +382,7 @@ class Bridge {
               }
             }
           }
-          console.log('Get symbol', next.callstack, prop)
+          log('Get symbol', next.callstack, prop)
           return
         }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
@@ -392,6 +406,10 @@ class Bridge {
           target.callstack.pop()
           const ret = this.value(ffid, [...target.callstack])
           return ret
+        } else if (final === 'toString') {
+          target.callstack.pop()
+          const ret = this.inspect(ffid, [...target.callstack])
+          return ret
         }
         const ret = this.call(ffid, target.callstack, args, kwargs, false, timeout)
         target.callstack = [] // Flush callstack to py
@@ -413,6 +431,10 @@ class Bridge {
       }
 
       [util.inspect.custom] () {
+        return inspectString || "(Some Python object) Use `await object.toString()` to get this object's repr()."
+      }
+
+      toString () {
         return inspectString || '(Some Python object)'
       }
     }

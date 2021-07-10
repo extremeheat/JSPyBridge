@@ -34,10 +34,11 @@ function processPackage(name, desiredVersion) {
     }
     // log('Already installed!', depVer)
     return finalName
-  } else if (!desiredVersion) {
+  } else if (!desiredVersion || desiredVersion === 'latest') {
     // savePackages()
     log(`Installing '${name}' version 'latest'... This will only happen once.`)
     cp.execSync(`${NODE_PM} install ${finalName}`, { stdio: 'inherit', cwd: __dirname })
+    process.stderr.write('\n\n')
     loadPackages()
     packages.dependencies[name] = 'latest'
     savePackages()
@@ -45,6 +46,7 @@ function processPackage(name, desiredVersion) {
   } else if (desiredVersion) {
     log(`Installing '${name}' version '${desiredVersion}'... This will only happen once.`)
     cp.execSync(`${NODE_PM} install ${finalName}@npm:${name}@${desiredVersion}`, { stdio: 'inherit', cwd: __dirname })
+    process.stderr.write('\n\n')
     log('OK.')
     // savePackages()
   }

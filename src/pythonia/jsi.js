@@ -7,6 +7,7 @@ const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => 
 const colors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
+  if (obj?.ffid) return 'py'
   if (typeof obj === 'function') {
     // Some tricks to check if we have a function, class or object
     if (obj.prototype) {
@@ -35,7 +36,7 @@ class JSBridge {
   constructor (ipc, pyi) {
     // This is an ID that increments each time a new object is returned
     // to Python.
-    this.ffid = 0
+    this.ffid = 10000
     this.pyi = pyi
     // This contains a refrence map of FFIDs to JS objects.
     // TODO: figure out gc, maybe weakmaps
@@ -123,6 +124,7 @@ class JSBridge {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
+      case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
         this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'class', val: this.ffid })
@@ -152,7 +154,6 @@ class JSBridge {
 
   free (r, ffid) {
     delete this.m[ffid]
-    this.ipc.send({ r, val: true })
   }
 
   make (r, ffid) {
@@ -172,6 +173,8 @@ class JSBridge {
             const proxy = this.pyi.makePyObject(v.ffid)
             this.m[v.ffid] = proxy
             input[k] = proxy
+          } else {
+            parse(v)
           }
         } else {
           parse(v)

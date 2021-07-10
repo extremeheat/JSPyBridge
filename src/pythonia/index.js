@@ -19,7 +19,7 @@ async function py (tokens, ...replacements) {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
     const repl = await replacements[i]
-    if (repl) {
+    if (repl != null) {
       const v = '__' + i
       vars[v] = (repl.ffid ? ({ ffid: repl.ffid }) : repl)
       nstr += token + v
@@ -30,9 +30,37 @@ async function py (tokens, ...replacements) {
   return root.eval(nstr, null, vars)
 }
 
+// same as above but with eval instead -- todo: auto fix indent
+async function pyExec (tokens, ...replacements) {
+  const vars = {} // List of locals
+  let nstr = ''
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const repl = await replacements[i]
+    if (repl != null) {
+      const v = '__' + i
+      vars[v] = (repl.ffid ? ({ ffid: repl.ffid }) : repl)
+      nstr += token + v
+    } else {
+      nstr += token
+    }
+  }
+  return root.exec(nstr, null, vars)
+}
+
+py.enumerate = what => root.enumerate(what)
+py.tuple = (...items) => root.tuple(items)
+py.set = (...items) => root.set(items)
+py.exec = pyExec
+py.with = async (using, fn) => {
+  const handle = await (await using).__enter__()
+  await fn(handle)
+  await py`${using}.__exit__(*sys.exc_info())`
+}
+
 module.exports = {
   PyClass,
-  root,
+  builtins: root,
   py,
   python (file) {
     if (file.startsWith('/') || file.startsWith('./') || file.startsWith('../') || file.includes(':')) {
@@ -50,7 +78,13 @@ module.exports = {
   },
   com
 }
-module.exports.python.exit = () => com.end()
+module.exports.python.exit = () => {
+  bridge.end()
+  com.end()
+}
+module.exports.python.setFastMode = (val) => {
+  root.sendInspect(!val)
+}
 
 if (typeof window !== 'undefined') {
   window.Python = module.exports
