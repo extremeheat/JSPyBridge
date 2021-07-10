@@ -79,7 +79,7 @@ async function test(model, device, testLoader) {
 
 const batch_size = 100
 const test_batch_size = 1000
-const epochs = 14
+const epochs = 1
 const lr = 1
 const gamma = 0.7
 const no_cuda = true
