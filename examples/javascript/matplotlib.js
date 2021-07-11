@@ -1,4 +1,4 @@
-import { py, python } from 'JSPyBridge'
+import { py, python } from 'pythonia'
 const np = await python('numpy')
 const plot = await python('matplotlib.pyplot')
 

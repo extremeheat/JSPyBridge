@@ -2,8 +2,8 @@ const chalk = require('chalk')
 const fs = require('fs')
 
 function formatLine(line) {
-  const statements = ['const', 'await', 'import', 'let', 'var', 'async', 'self', 'def', 'return', 'from', 'for', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '\\/', '=']
-  const secondary = ['{', '}', "'", /\//, /\//, 'true', 'false']
+  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '\\/', '=']
+  const secondary = ['{', '}', "'", /\//, /\//, ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
   for (const second of secondary) line = line.replace(new RegExp(second, 'g'), chalk.blueBright(second) + '')
   return line
@@ -22,7 +22,7 @@ function printError(failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStackt
   log('\n... across the bridge ...\n')
 
   for (const [at, line] of pyStacktrace) {
-    if (at.includes('jspybridge')) continue
+    if (at.includes('pythonia')) continue
     if (!line) {
       log(' ',chalk.dim(at))
     } else {
@@ -57,7 +57,7 @@ function processJSStacktrace(stack) {
   let jsErrorline
   let foundMainLine = false
   for (const line of stack.split('\n')) {
-    if (!(line.toLowerCase().includes('jspybridge') && line.includes('pythonia')) && !foundMainLine) {
+    if (!(line.toLowerCase().includes('pythonia')) && !foundMainLine) {
       const absPath = line.match(/\((.*):(\d+):(\d+)\)/)
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
       if (absPath || filePath) {
