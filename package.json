@@ -16,8 +16,10 @@
     "browserify": "^17.0.0"
   },
   "dependencies": {
-    "babel-eslint": "^10.1.0",
     "caller": "^1.0.1",
+    "chalk": "^4.1.1"
+  },
+  "peerDependencies": {
     "ws": "^7.5.1"
   },
   "standard": {
