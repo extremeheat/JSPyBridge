@@ -29,6 +29,7 @@ def require(name, version=None):
 
 
 console = config.global_jsi.console
+globalThis = config.global_jsi.globalThis
 
 
 def AsyncTask(fn):

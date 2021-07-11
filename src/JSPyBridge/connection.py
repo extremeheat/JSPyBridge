@@ -49,31 +49,6 @@ def read_stderr(stderrs):
     return ret
 
 
-# Run a remote command and then wait for the outcome
-def exec_sync(command, timeout=1000):
-    if type(command) is str:
-        j = command
-    else:
-        j = json.dumps(command)
-    time.sleep(1)
-    debug("[py -> js]", int(time.time() * 1000), j)
-    stdout, stderr = proc.communicate(input=j.encode(), timeout=2)
-    print(stdout, stderr)
-    ret = []
-
-    return read_stderr(stderr)
-
-
-# Run a remote command, and wait for outcome that matches request_id
-# Since we can be multitasking over the same pipe, it's possible exec_sync
-# will run but with output for a different command.
-def command(requestId, command, pollingInterval=20):
-    for line in exec_sync(command):
-        if line["r"] == requestId:
-            return line
-    return None
-
-
 sendQ = []
 
 # Write a message to a remote socket, in this case it's standard input

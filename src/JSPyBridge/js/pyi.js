@@ -43,12 +43,26 @@ class PyBridge {
     this.jrefs = {}
     this.jsi = jsi
 
+    // We don't want to GC things individually, so batch all the GCs at once
+    // to Python
+    this.freeable = []
+    this.loop = setInterval(this.runTasks, 1000)
+
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
-      this.free(ffid)
+      this.freeable.push(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
       delete this.jsi.m[ffid]
     })
+  }
+
+  runTasks = () => {
+    if (this.freeable.length) this.free(this.freeable)
+    this.freeable = []
+  }
+
+  end () {
+    clearInterval(this.loop)
   }
 
   request (req, cb) {
@@ -114,6 +128,10 @@ class PyBridge {
     })
     if (resp.key === 'error') throw new PythonException(stack, resp.sig)
 
+    if (set) {
+      return true // Do not allocate new FFID if setting
+    }
+
     log('call', ffid, stack, args, resp)
     switch (resp.key) {
       case 'string':
@@ -147,14 +165,10 @@ class PyBridge {
     return resp.val
   }
 
-  async free (ffid) {
-    const req = { r: nextReq(), action: 'free', ffid: ffid, key: '', val: '' }
-    const resp = await waitFor(cb => this.request(req, cb), 500, () => {
-      // Allow a GC time out, it's probably because the Python process died
-      // throw new BridgeException('Attempt to GC failed.')
-    })
-    if (resp.key === 'error') throw new PythonException([], resp.sig)
-    return resp.val
+  async free (ffids) {
+    const req = { r: nextReq(), action: 'free', ffid: '', key: '', val: ffids }
+    this.request(req)
+    return true
   }
 
   queueForCollection (ffid, val) {
@@ -183,6 +197,7 @@ class PyBridge {
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'toJSON') return () => ({ ffid })
+        if (prop === 'toString' && inspectString) return target[prop]
         if (prop === 'then') {
           // Avoid .then loops
           if (!next.callstack.length) {
@@ -193,9 +208,7 @@ class PyBridge {
             next.callstack = [] // Empty the callstack afer running fn
           }
         }
-        if (prop === 'length') {
-          return this.len(ffid, next.callstack, [])
-        }
+        if (prop === 'length') return this.len(ffid, next.callstack, [])
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
             // This is just for destructuring arrays
@@ -221,7 +234,7 @@ class PyBridge {
               }
             }
           }
-          console.log('Get symbol', next.callstack, prop)
+          log('Get symbol', next.callstack, prop)
           return
         }
         if (Number.isInteger(parseInt(prop))) prop = parseInt(prop)
@@ -244,6 +257,10 @@ class PyBridge {
         } else if (final === 'valueOf') {
           target.callstack.pop()
           const ret = this.value(ffid, [...target.callstack])
+          return ret
+        } else if (final === 'toString') {
+          target.callstack.pop()
+          const ret = this.inspect(ffid, [...target.callstack])
           return ret
         }
         const ret = this.call(ffid, target.callstack, args, kwargs, false, timeout)

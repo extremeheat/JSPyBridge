@@ -13,7 +13,7 @@ class DemoClass extends EventEmitter {
     this.y++
     setInterval(() => {
       this.emit('increment', () => 3, this.y++, { a: { y: this.y } })
-    }, 150)
+    }, 50)
   }
 
   get () {
@@ -46,6 +46,22 @@ class DemoClass extends EventEmitter {
 
   error () {
     throw Error('This should fail')
+  }
+
+  ok () {
+    function someMethod (a, b, c) {
+      return a + b + c
+    }
+    someMethod.x = 'wow'
+    return someMethod
+  }
+
+  static hello () {
+    return 'world'
+  }
+
+  toString () {
+    return '123!'
   }
 }
 

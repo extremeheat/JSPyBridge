@@ -14,6 +14,7 @@ const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => 
 const colors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
+  if (obj?.ffid) return 'py'
   if (typeof obj === 'function') {
     // Some tricks to check if we have a function, class or object
     if (obj.prototype) {
@@ -83,12 +84,8 @@ class Bridge {
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
       case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
-        // We do not need to increment FFID here because Python will return
-        // an instanciable function. The FFID can be ignored.
-        // Example: some.method() -> some['method'] is GET'ed, then Python realizes
-        // it's a class so returns a callable function that does a INIT operation.
-        // this.m[++this.ffid] = v
-        return this.ipc.send({ r, key: 'class', val: ffid })
+        this.m[++this.ffid] = v
+        return this.ipc.send({ r, key: 'class', val: this.ffid })
       case 'fn':
         this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'fn', val: this.ffid })
@@ -132,6 +129,7 @@ class Bridge {
       case 'string': return this.ipc.send({ r, key: 'string', val: v })
       case 'big': return this.ipc.send({ r, key: 'big', val: Number(v) })
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
+      case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
         this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'class', val: this.ffid })
@@ -159,21 +157,15 @@ class Bridge {
     this.ipc.send({ r, val: v.valueOf() })
   }
 
-  free (r, ffid) {
-    delete this.m[ffid]
-    this.ipc.send({ r, val: true })
-  }
-
-  make (r, ffid) {
-    ++this.ffid
-    const proxy = this.pyi.makePyObject(this.ffid)
-    this.m[this.ffid] = new WeakRef(proxy)
-    this.pyi.queueForCollection(ffid, proxy)
-    this.ipc.send({ r, val: this.ffid })
+  free (r, ffid, attr, args) {
+    for (const id of args) {
+      delete this.m[id]
+    }
   }
 
   process (r, args) {
     const made = {}
+    let madeCount = 0
     const parse = input => {
       if (typeof input !== 'object') return
       for (const k in input) {
@@ -185,6 +177,7 @@ class Bridge {
             this.m[this.ffid] = proxy
             made[input[k].r] = this.ffid
             input[k] = proxy
+            madeCount++
           } else if (v.ffid) {
             input[k] = this.m[v.ffid]
           }
@@ -194,15 +187,15 @@ class Bridge {
       }
     }
     parse(args)
-    this.ipc.send({ r, key: 'pre', val: made })
+    // We only need to reply if we made some Proxies
+    if (madeCount) this.ipc.send({ r, key: 'pre', val: made })
   }
 
   async onMessage ({ r, action, p, ffid, key, args }) {
     // console.debug('onMessage!', arguments, r, action)
     try {
       if (p) {
-        this.process(r, args)
-        r += 1
+        this.process(r + 1, args)
       }
       await this[action](r, ffid, key, args)
     } catch (e) {
@@ -231,7 +224,6 @@ const handlers = {}
 const ipc = {
   send: data => {
     debug('js -> py', data)
-    data.ts = Date.now()
     process.stderr.write(JSON.stringify(data) + '\n')
   },
   writeRaw: (data, r, cb) => {

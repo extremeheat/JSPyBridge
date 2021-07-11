@@ -106,7 +106,7 @@ class Executor:
         return resp["val"]
 
     def free(self, ffid):
-        resp = self.ipc("free", ffid, "")
+        self.ipc("free", ffid, "")
 
     def new_ffid(self, for_object):
         self.loop.cur_ffid += 1

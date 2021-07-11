@@ -12,7 +12,13 @@ fs.writeFileSync("HelloWorld.txt", "hi!")
 demo = DemoClass("blue", {"a": 3}, lambda v: print("Should be 3", v))
 demo2 = DemoClass.new("blue", {"a": 3}, lambda v: print("Should be 3", v))
 
+print(demo.ok()(1, 2, 3))
+print(demo.ok().x)
+print(demo.toString())
+print("Hello ", DemoClass.hello())
+
 console.log(demo.other(demo2), demo.array(), demo.array()["0"])
+
 
 for i in demo.array():
     print("i", i)

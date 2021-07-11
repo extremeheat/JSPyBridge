@@ -1,6 +1,5 @@
 # THe Python Interface for JavaScript
 
-from . import util
 import inspect, importlib, traceback
 import os, sys, json, types
 import socket
@@ -39,10 +38,14 @@ class PyInterface:
     m = {0: {"Iterate": Iterate}}
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
-    cur_ffid = 0
+    cur_ffid = 10000
 
     def __init__(self, ipc, exe):
         self.ipc = ipc
+        # This toggles if we want to send inspect data for console logging. It's auto
+        # disabled when a for loop is active; use `repr` to request logging instead.
+        self.m[0]["sendInspect"] = lambda x: setattr(self, "send_inspect", x)
+        self.send_inspect = True
         self.q = lambda r, key, val, sig="": self.ipc.queue_payload(
             {"c": "pyi", "r": r, "key": key, "val": val, "sig": sig}
         )
@@ -53,8 +56,16 @@ class PyInterface:
         self.m[self.cur_ffid] = what
         return self.cur_ffid
 
-    def length(self, r, ffid, key, args):
-        l = len(self.m[ffid])
+    def length(self, r, ffid, keys, args):
+        v = self.m[ffid]
+        for key in keys:
+            if type(v) in (dict, tuple, list):
+                v = v[key]
+            elif hasattr(v, str(key)):
+                v = getattr(v, str(key))
+            else:
+                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+        l = len(v)
         self.q(r, "num", l)
 
     def init(self, r, ffid, key, args):
@@ -97,26 +108,24 @@ class PyInterface:
         if typ is str:
             self.q(r, "string", v)
             return
-        if typ is int or typ is float or (v is None):
+        if typ is int or typ is float or (v is None) or (v is True) or (v is False):
             self.q(r, "int", v)
             return
         if inspect.isclass(v) or isinstance(v, type):
             # We need to increment FFID
-            self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "class", self.assign_ffid(v), self.make_signature(v))
             return
         if callable(v):  # anything with __call__
-            self.q(r, "fn", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "fn", self.assign_ffid(v), self.make_signature(v))
             return
         if (typ is dict) or (inspect.ismodule(v)) or was_class:  # "object" in JS speak
-            self.q(r, "obj", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "obj", self.assign_ffid(v), self.make_signature(v))
             return
         if typ is list:
-            self.q(r, "list", self.assign_ffid(v), util.make_signature(v))
+            self.q(r, "list", self.assign_ffid(v), self.make_signature(v))
             return
-        if hasattr(
-            v, "__class__"
-        ):  # numpy generator for some reason can't be picked up without this
-            self.q(r, "class", self.assign_ffid(v), util.make_signature(v))
+        if hasattr(v, "__class__"):  # numpy generator can't be picked up without this
+            self.q(r, "class", self.assign_ffid(v), self.make_signature(v))
             return
         self.q(r, "void", self.cur_ffid)
 
@@ -146,16 +155,20 @@ class PyInterface:
         v = self.m[ffid]
         for key in keys:
             v = getattr(v, key, None) or v[key]
-        s = util.make_signature(v)
+        s = repr(v)
         self.q(r, "", s)
 
+    # no ACK needed
     def free(self, r, ffid, key, args):
-        if ffid not in self.m:
-            # OK, we already GC'ed
-            self.q(r, "", True)
-            return
-        del self.m[ffid]
-        self.q(r, "", True)
+        for i in args:
+            if i not in self.m:
+                continue
+            del self.m[ffid]
+
+    def make_signature(self, what):
+        if self.send_inspect:
+            return repr(what)
+        return ""
 
     def read(self):
         data = apiin.readline()

@@ -14,11 +14,11 @@ const tagged = await Promise.all(tokenized.map(tok => nltk.pos_tag(tok)))
 const chunked = await nltk.ne_chunk_sents$(tagged, { binary: true })
 
 // Some tree traversal logic to extract all the Named Entities (NE)
-async function extractEntityNames(t) {
+async function extractEntityNames (t) {
   const entityNames = []
   if (await t.label$) {
     const label = await t.label()
-    if (label == 'NE') {
+    if (label === 'NE') {
       for (const child of await t.valueOf()) {
         entityNames.push(child[0])
       }

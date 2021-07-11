@@ -46,6 +46,7 @@ class EventExecutorThread(threading.Thread):
 class EventLoop:
     active = True
     queue = Queue()
+    freeable = []
 
     callbackExecutor = EventExecutorThread()
 
@@ -155,6 +156,10 @@ class EventLoop:
             # Iterate over the open threads and check if any have been killed, if so
             # remove them from self.threads
             self.threads = [x for x in self.threads if x[2].is_alive()]
+
+            if len(self.freeable) > 40:
+                self.queue_payload({"r": r, "action": "free", "ffid": "", "args": self.freeable})
+                self.freeable = []
 
             # Read the inbound data and route it to correct handler
             inbounds = connection.readAll()

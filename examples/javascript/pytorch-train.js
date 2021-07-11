@@ -12,11 +12,11 @@ const { datasets, transforms } = await python('torchvision')
 const lrs = await python('torch.optim.lr_scheduler')
 
 class Net extends PyClass {
-  constructor() {
+  constructor () {
     super(nn.Module)
   }
 
-  async init() {
+  async init () {
     this.conv1 = await nn.Conv2d(1, 32, 3, 1)
     this.conv2 = await nn.Conv2d(32, 64, 3, 1)
     this.dropout1 = await nn.Dropout(0.25)
@@ -25,7 +25,7 @@ class Net extends PyClass {
     this.fc2 = await nn.Linear(128, 10)
   }
 
-  async forward(x) {
+  async forward (x) {
     x = await this.conv1(x)
     x = await F.relu(x)
     x = await this.conv2(x)
@@ -42,7 +42,7 @@ class Net extends PyClass {
   }
 }
 
-async function train(log_interval, dry_run, model, device, trainLoader, optimizer, epoch) {
+async function train (log_interval, dry_run, model, device, trainLoader, optimizer, epoch) {
   await model.train()
   for await (let [_batchIx, [data, target]] of await py.enumerate(trainLoader)) {
     data = await data.to(device)
@@ -53,14 +53,14 @@ async function train(log_interval, dry_run, model, device, trainLoader, optimize
     await loss.backward()
     await optimizer.step()
     const batchIx = await _batchIx
-    if (batchIx % log_interval == 0) {
+    if ((batchIx % log_interval) === 0) {
       console.log(`Train epoch: ${epoch} [${batchIx * await data.length}/${await trainLoader.dataset.length} (${100 * batchIx / await trainLoader.length}%)]\tLoss: ${await loss.item()}`)
     }
     if (dry_run) break
   }
 }
 
-async function test(model, device, testLoader) {
+async function test (model, device, testLoader) {
   await model.eval()
   let testLoss = 0
   let correct = 0
@@ -110,7 +110,7 @@ const testLoader = await torch.utils.data.DataLoader$(dataset2, { batch_size: te
 
 const net = await Net.init()
 const model = await net.to(device)
-const optimizer = await optim.Adadelta$(await model.parameters(), {lr})
+const optimizer = await optim.Adadelta$(await model.parameters(), { lr })
 
 const scheduler = await lrs.StepLR$(optimizer, { step_size: 1, gamma })
 
@@ -121,7 +121,7 @@ for (let epoch = 0; epoch < epochs + 1; epoch++) {
 }
 
 if (save_model) {
-  await torch.save(await model.state_dict(), "mnist_cnn.pt")
+  await torch.save(await model.state_dict(), 'mnist_cnn.pt')
 }
 
 python.exit()
