@@ -48,6 +48,7 @@ def read_stderr(stderrs):
                 print("[JSE]", line)
     return ret
 
+
 sendQ = []
 
 # Write a message to a remote socket, in this case it's standard input

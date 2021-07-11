@@ -163,7 +163,6 @@ class Bridge {
     }
   }
 
-
   process (r, args) {
     const made = {}
     let madeCount = 0

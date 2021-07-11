@@ -1,9 +1,12 @@
 import time, threading, json, os
 from . import config, json_patch
+
 debug = config.debug
+
 
 class JavaScriptError(Exception):
     pass
+
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -130,7 +133,6 @@ class Executor:
     def free(self, ffid):
         self.loop.freeable.append(ffid)
 
-
     def get(self, ffid):
         return self.bridge.m[ffid]
 
@@ -221,10 +223,10 @@ class Proxy(object):
         return ser["val"]
 
     def __str__(self):
-        return self._exe.inspect(self.ffid, 'str')
+        return self._exe.inspect(self.ffid, "str")
 
     def __repr__(self):
-        return self._exe.inspect(self.ffid, 'repr')
+        return self._exe.inspect(self.ffid, "repr")
 
     def __json__(self):
         return {"ffid": self.ffid}

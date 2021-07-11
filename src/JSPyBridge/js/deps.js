@@ -25,7 +25,7 @@ const log = (...what) => console.log('\033[1m', ...what, '\033[0m')
 function processPackage(name, desiredVersion) {
   // Sometimes we have to rename the package for multi-versioning to work.
   // Some projects may use one version of a dep over the other.
-  let finalName = desiredVersion ? name + '--' + Buffer.from(desiredVersion).toString('hex') : name
+  let finalName = desiredVersion && desiredVersion !== 'latest' ? name + '--' + Buffer.from(desiredVersion).toString('hex') : name
   const depVer = packages.dependencies[finalName]
   if (depVer) {
     if (!desiredVersion && depVer !== 'latest') {
@@ -39,6 +39,7 @@ function processPackage(name, desiredVersion) {
     log(`Installing '${name}' version 'latest'... This will only happen once.`)
     cp.execSync(`${NODE_PM} install ${finalName}`, { stdio: 'inherit', cwd: __dirname })
     process.stderr.write('\n\n')
+    process.stdout.write('\n')
     loadPackages()
     packages.dependencies[name] = 'latest'
     savePackages()
@@ -47,11 +48,12 @@ function processPackage(name, desiredVersion) {
     log(`Installing '${name}' version '${desiredVersion}'... This will only happen once.`)
     cp.execSync(`${NODE_PM} install ${finalName}@npm:${name}@${desiredVersion}`, { stdio: 'inherit', cwd: __dirname })
     process.stderr.write('\n\n')
-    log('OK.')
+    process.stdout.write('\n')
+    loadPackages()
+    log('OK.', packages.dependencies[name])
     // savePackages()
   }
 
-  loadPackages()
   return finalName
 }
 

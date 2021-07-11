@@ -49,7 +49,7 @@ class DemoClass extends EventEmitter {
   }
 
   ok () {
-    function someMethod(a, b, c) {
+    function someMethod (a, b, c) {
       return a + b + c
     }
     someMethod.x = 'wow'

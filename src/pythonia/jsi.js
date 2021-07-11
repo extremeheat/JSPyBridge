@@ -157,7 +157,6 @@ class JSBridge {
     delete this.m[ffid]
   }
 
-
   process (r, args) {
     const parse = input => {
       if (typeof input !== 'object') return

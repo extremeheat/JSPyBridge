@@ -158,7 +158,7 @@ class EventLoop:
             self.threads = [x for x in self.threads if x[2].is_alive()]
 
             if len(self.freeable) > 40:
-                self.queue_payload({"r": r, "action": "free", "ffid": '', "args": self.freeable})
+                self.queue_payload({"r": r, "action": "free", "ffid": "", "args": self.freeable})
                 self.freeable = []
 
             # Read the inbound data and route it to correct handler
