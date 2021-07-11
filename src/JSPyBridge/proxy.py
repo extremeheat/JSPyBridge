@@ -19,9 +19,8 @@ class Executor:
 
     def ipc(self, action, ffid, attr, args=None):
         if action == "free":  # GC
-            # print('ML',config,is_main_loop_active)
             if not is_main_loop_active or not is_main_loop_active():
-                return {"val": True}  # Event loop is dead, no need for GC
+                return # Event loop is dead, no need for GC
         self.i += 1
         r = self.i  # unique request ts, acts as ID for response
         l = None  # the lock
@@ -34,9 +33,11 @@ class Executor:
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
         if action == "free":  # return JSON.stringify(obj[prop])
-            l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
-        if action == "make":
-            l = self.queue(r, {"r": r, "action": "make", "ffid": ffid})
+            try:  # Event loop is dead, no need for GC
+                l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
+            except ValueError:
+                pass
+            return
         if action == "set":
             l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
 
@@ -65,48 +66,52 @@ class Executor:
         """
         wanted = {}
         self.ctr = 0
-        self.i += 1
-        pi = self.i
-        expectReply = 1 if len(args) else 0
+        callRespId, ffidRespId = self.i + 1, self.i + 2
+        self.i += 2
+        self.expectReply = False
         # p=1 means we expect a reply back, not used at the meoment, but
         # in the future as an optimization we could skip the wait if not needed
-        packet = {"r": self.i, "p": 1, "action": action, "ffid": ffid, "key": attr, "args": args}
+        packet = {"r": callRespId, "action": action, "ffid": ffid, "key": attr, "args": args}
 
         def ser(arg):
             if hasattr(arg, "ffid"):
+                self.ctr += 1
                 return {"ffid": arg.ffid}
             else:
                 # Anything we don't know how to serialize -- exotic or not -- treat it as an object
                 self.ctr += 1
+                self.expectReply = True
                 wanted[self.ctr] = arg
                 return {"r": self.ctr, "ffid": ""}
 
         payload = json.dumps(packet, default=ser)
+        # a bit of a hack, but we need to add in the counter after we've already serialized ...
+        payload = payload[:-1] + f',"p":{self.ctr}}}'
+        l = self.loop.queue_request(callRespId, payload)
+        # We only have to wait for a FFID assignment response if
+        # we actually sent any non-primitives, otherwise skip
+        if self.expectReply:
+            l2 = self.loop.await_response(ffidRespId)
+            if not l2.wait(timeout):
+                raise Exception("Execution timed out")
+            pre, barrier = self.loop.responses[ffidRespId]
+            del self.loop.responses[ffidRespId]
 
-        self.i += 1
-        fi = self.i
-        l2 = self.loop.await_response(fi)
-        l = self.loop.queue_request(pi, payload)
+            if "error" in pre:
+                raise JavaScriptError(f"Call to '{attr}' failed:\n{pre['error']}\n")
+
+            for requestId in pre["val"]:
+                ffid = pre["val"][requestId]
+                self.bridge.m[ffid] = wanted[int(requestId)]
+                setattr(self.bridge.m[ffid], "iffid", ffid)
+
+            barrier.wait()
+
         if not l.wait(timeout):
-            raise Exception("Execution timed out")
-        pre, barrier = self.loop.responses[pi]
-        del self.loop.responses[pi]
-
-        if "error" in pre:
-            raise JavaScriptError(f"Call to '{attr}' failed:\n{pre['error']}\n")
-
-        for requestId in pre["val"]:
-            ffid = pre["val"][requestId]
-            self.bridge.m[ffid] = wanted[int(requestId)]
-            setattr(self.bridge.m[ffid], "iffid", ffid)
-
-        barrier.wait()
-
-        if not l2.wait(timeout):
             raise Exception(f"Call to '{attr}' timed out")
 
-        res, barrier = self.loop.responses[fi]
-        del self.loop.responses[fi]
+        res, barrier = self.loop.responses[callRespId]
+        del self.loop.responses[callRespId]
         barrier.wait()
         if "error" in res:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
@@ -133,14 +138,8 @@ class Executor:
         return resp["val"]
 
     def free(self, ffid):
-        resp = self.ipc("free", ffid, "")
-        return resp["val"]
+        self.ipc("free", ffid, "")
 
-    def new_ffid(self, what):
-        r = self.ipc("make", "", "")
-        ffid = r["val"]
-        self.bridge.m[ffid] = what
-        return ffid
 
     def get(self, ffid):
         return self.bridge.m[ffid]

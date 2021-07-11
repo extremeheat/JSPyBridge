@@ -144,6 +144,8 @@ class Bridge {
     // This is called on GC
     this.finalizer = new FinalizationRegistry(ffid => {
       this.freeable.push(ffid)
+      // Once the Proxy is freed, we also want to release the pyClass ref
+      delete this.jsi.m[ffid]
     })
 
     this.jsi = new JSBridge(null, this)

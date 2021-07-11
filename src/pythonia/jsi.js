@@ -43,7 +43,8 @@ class JSBridge {
     this.m = {
       0: {
         console,
-        require
+        require,
+        globalThis
       }
     }
     this.ipc = ipc
@@ -156,12 +157,6 @@ class JSBridge {
     delete this.m[ffid]
   }
 
-  make (r, ffid) {
-    const proxy = this.pyi.makePyObject(ffid)
-    this.m[ffid] = new WeakRef(proxy)
-    this.pyi.queueForCollection(ffid, proxy)
-    this.ipc.send({ r, val: ffid })
-  }
 
   process (r, args) {
     const parse = input => {
