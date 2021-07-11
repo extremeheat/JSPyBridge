@@ -134,6 +134,8 @@ class Bridge:
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
+                if key not in v:
+                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
                 v = v[key]  # 🚨 If you get an error here, you called an undefined property
         l = len(v)
         self.q(r, "num", l)
@@ -154,10 +156,14 @@ class Bridge:
         if invoke:
             for key in keys:
                 t = getattr(v, str(key), None)
-                if t is None:
-                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
-                else:
+                if t:
                     v = t
+                elif hasattr(v, '__getitem__'):
+                    if key not in v:
+                        raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
+                    v = v[key]
+                else:
+                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
         else:
             for key in keys:
                 if type(v) in (dict, tuple, list):
@@ -165,6 +171,8 @@ class Bridge:
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
                 else:
+                    if key not in v:
+                        raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
                     v = v[key]  # 🚨 If you get an error here, you called an undefined property
 
         # Classes when called will return void, but we need to return
@@ -214,6 +222,8 @@ class Bridge:
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
+                if key not in v:
+                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
                 v = v[key]  # 🚨 If you get an error here, you called an undefined property
         if type(v) in (dict, tuple, list, set):
             v[on] = val
@@ -233,7 +243,7 @@ class Bridge:
         for i in args:
             if i not in self.m:
                 continue
-            del self.m[ffid]
+            del self.m[i]
 
     def make(self, r, ffid, key, args):
         self.cur_ffid += 1

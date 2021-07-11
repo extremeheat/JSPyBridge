@@ -148,7 +148,7 @@ class Bridge {
     this.finalizer = new FinalizationRegistry(ffid => {
       this.freeable.push(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
-      delete this.jsi.m[ffid]
+      try { delete this.jsi.m[ffid] } catch {}
     })
 
     this.jsi = new JSBridge(null, this)

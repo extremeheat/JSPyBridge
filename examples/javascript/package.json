@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "JSPyBridge": "extremeheat/jspybridge"
+    "pythonia": "latest"
   },
   "type": "module"
 }

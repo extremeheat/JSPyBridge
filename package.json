@@ -13,7 +13,7 @@
   "devDependencies": {
     "mocha": "latest",
     "standard": "^16.0.3",
-    "JSPyBridge": "file:.",
+    "pythonia": "file:.",
     "browserify": "^17.0.0"
   },
   "dependencies": {

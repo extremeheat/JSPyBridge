@@ -1,8 +1,8 @@
 // process.env.DEBUG = 1
 import { py, python, PyClass } from 'JSPyBridge'
 import assert from 'assert'
-const f = await python('../src/pythonia/test/pyImp.py')
-const demo = await python('../src/pythonia/test/demo.py')
+const f = await python('./test/pyImp.py')
+const demo = await python('./test/demo.py')
 
 // async function it (what, fn) {
 //   console.log('it', what)

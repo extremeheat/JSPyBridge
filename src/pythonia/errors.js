@@ -2,8 +2,8 @@ const chalk = require('chalk')
 const fs = require('fs')
 
 function formatLine(line) {
-  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '\\/', '=']
-  const secondary = ['{', '}', "'", /\//, /\//, ' true', ' false']
+  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
+  const secondary = ['{', '}', "'", ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
   for (const second of secondary) line = line.replace(new RegExp(second, 'g'), chalk.blueBright(second) + '')
   return line
@@ -64,7 +64,7 @@ function processJSStacktrace(stack) {
         const path = absPath || filePath
         let [ fpath, errline, char ] = path.slice(1)
         if (fpath.startsWith('node:')) continue
-        const file = fs.readFileSync(new URL(fpath), 'utf-8')
+        const file = fs.readFileSync(fpath.startsWith('file:') ? new URL(fpath) : fpath, 'utf-8')
         const flines = file.split('\n')
         jsErrorline = flines[errline - 1]
         jsTraceLines.push(line.trim())
