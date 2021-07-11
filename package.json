@@ -1,6 +1,7 @@
 {
-  "name": "JSPyBridge",
+  "name": "pythonia",
   "author": "extremeheat",
+  "version": "0.1.0",
   "main": "./src/pythonia/index.js",
   "types": "./src/pythonia/index.d.ts",
   "scripts": {
