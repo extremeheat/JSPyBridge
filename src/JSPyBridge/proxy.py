@@ -1,11 +1,9 @@
-import time, threading, json
-from .config import debug, is_main_loop_active
+import time, threading, json, os
 from . import config, json_patch
-
+debug = config.debug
 
 class JavaScriptError(Exception):
     pass
-
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -18,9 +16,7 @@ class Executor:
         self.bridge = self.loop.pyi
 
     def ipc(self, action, ffid, attr, args=None):
-        if action == "free":  # GC
-            if not is_main_loop_active or not is_main_loop_active():
-                return # Event loop is dead, no need for GC
+        global config, os
         self.i += 1
         r = self.i  # unique request ts, acts as ID for response
         l = None  # the lock
@@ -32,12 +28,6 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
-        if action == "free":  # return JSON.stringify(obj[prop])
-            try:  # Event loop is dead, no need for GC
-                l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
-            except ValueError:
-                pass
-            return
         if action == "set":
             l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
 
@@ -138,14 +128,14 @@ class Executor:
         return resp["val"]
 
     def free(self, ffid):
-        self.ipc("free", ffid, "")
+        self.loop.freeable.append(ffid)
 
 
     def get(self, ffid):
         return self.bridge.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6", "_resolved"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
@@ -158,6 +148,7 @@ class Proxy(object):
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
         self._es6 = es6
+        self._resolved = {}
 
     def _call(self, method, methodType, val):
         this = self
@@ -192,7 +183,12 @@ class Proxy(object):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
             return self._call(self._pname if self._pffid == self.ffid else "", "class", self._pffid)
+        # Small optimization ... though doesn't seem to make a big difference !
+        # if attr in self._resolved and config.fast_mode:
+        #     methodType, val = self._resolved[attr]
+        #     return self._call(attr, methodType, val)
         methodType, val = self._exe.getProp(self._pffid, attr)
+        # self._resolved[attr] = methodType, val
         return self._call(attr, methodType, val)
 
     def __getitem__(self, attr):

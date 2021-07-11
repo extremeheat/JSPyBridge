@@ -161,8 +161,10 @@ class Bridge {
     this.ipc.send({ r, val: v.valueOf() })
   }
 
-  free (r, ffid) {
-    delete this.m[ffid]
+  free (r, ffid, attr, args) {
+    for (const id of args) {
+      delete this.m[id]
+    }
   }
 
 
