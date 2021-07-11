@@ -69,7 +69,7 @@ class PyClass {
     const makeProxy = (target, forceParent) => {
       return new Proxy(target, {
         get: (target, prop) => {
-          const pname = prop != 'then' ? '~~' + prop : prop
+          const pname = prop !== 'then' ? '~~' + prop : prop
           if (forceParent) return pyClass[pname]
           if (prop === 'ffid') return this.pyffid
           if (prop === 'toJSON') return () => ({ ffid })

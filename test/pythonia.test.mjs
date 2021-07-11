@@ -1,5 +1,5 @@
 // process.env.DEBUG = 1
-import { py, python, PyClass }  from 'JSPyBridge'
+import { py, python, PyClass } from 'JSPyBridge'
 import assert from 'assert'
 const f = await python('../src/pythonia/test/pyImp.py')
 const demo = await python('../src/pythonia/test/demo.py')
@@ -20,14 +20,15 @@ await it('does function calls', async function () {
 
 await it('declares classes', async function () {
   class MyClas extends PyClass {
-    constructor() {
+    constructor () {
       super(demo.DemoClass, [4])
     }
-    someMethod() {
+
+    someMethod () {
       return 3
     }
   }
-  
+
   await f.some_event(async (message, method) => {
     // Call a Python function passed as a paramater
     assert.strictEqual(message, 'from python')

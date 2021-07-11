@@ -1,4 +1,4 @@
-import { py, python, PyClass }  from '../index.js'
+import { py, python, PyClass } from '../index.js'
 const f = await python('./pyImp.py')
 const demo = await python('./demo.py')
 
@@ -17,14 +17,15 @@ await it('does function calls', async function () {
 
 await it('declares classes', async function () {
   class MyClas extends PyClass {
-    constructor() {
+    constructor () {
       super(demo.DemoClass, [4])
     }
-    someMethod() {
+
+    someMethod () {
       return 3
     }
   }
-  
+
   await f.some_event(async (message, method) => {
     // Call a Python function passed as a paramater
     console.log('Message', message, await method())

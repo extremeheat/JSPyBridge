@@ -20,7 +20,7 @@ function savePackages() {
   fs.writeFileSync('./package.json', JSON.stringify(packages, null, 2))
 }
 
-const log = (...what) => console.log('\033[1m', ...what, '\033[0m')
+const log = (...what) => console.log('\x1b[1m', ...what, '\x1b[0m')
 
 function processPackage(name, desiredVersion) {
   // Sometimes we have to rename the package for multi-versioning to work.

@@ -1,15 +1,15 @@
-import { py, python, PyClass } from "JSPyBridge"
+import { py, python, PyClass } from 'JSPyBridge'
 const tf = await python('tensorflow')
 
 class KerasCallback extends PyClass {
-  constructor() {
-    super(tf.keras.callbacks.Callback())
+  constructor () {
+    super(tf.keras.callbacks.Callback)
   }
 
-  on_epoch_end(epoch, logs) {
+  on_epoch_end (epoch, logs) {
     if (logs.loss < 0.4) {
       console.log('\nReached 60% accuracy so cancelling training!')
-      this.superclass().model.stop_training = true
+      this.model.stop_training = true
     }
   }
 }
@@ -29,5 +29,5 @@ const model = await tf.keras.models.Sequential([
 ])
 
 await model.compile$({ optimizer: 'adam', loss: 'sparse_categorical_crossentropy' })
-await model.fit$(trainingImages, await training_labels, { epochs: 5, callbacks: [new KerasCallback()], $timeout: Infinity })
+await model.fit$(trainingImages, await training_labels, { epochs: 5, callbacks: [await KerasCallback.init()], $timeout: Infinity })
 python.exit()
