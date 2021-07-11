@@ -47,6 +47,22 @@ class DemoClass extends EventEmitter {
   error () {
     throw Error('This should fail')
   }
+
+  ok () {
+    function someMethod(a, b, c) {
+      return a + b + c
+    }
+    someMethod.x = 'wow'
+    return someMethod
+  }
+
+  static hello () {
+    return 'world'
+  }
+
+  toString () {
+    return '123!'
+  }
 }
 
 module.exports = { DemoClass }

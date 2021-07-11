@@ -84,12 +84,8 @@ class Bridge {
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
       case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
-        // We do not need to increment FFID here because Python will return
-        // an instanciable function. The FFID can be ignored.
-        // Example: some.method() -> some['method'] is GET'ed, then Python realizes
-        // it's a class so returns a callable function that does a INIT operation.
-        // this.m[++this.ffid] = v
-        return this.ipc.send({ r, key: 'class', val: ffid })
+        this.m[++this.ffid] = v
+        return this.ipc.send({ r, key: 'class', val: this.ffid })
       case 'fn':
         this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'fn', val: this.ffid })

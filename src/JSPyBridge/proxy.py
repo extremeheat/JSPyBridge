@@ -25,7 +25,7 @@ class Executor:
         if action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
-            l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
+            l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid, "key": attr})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
         if action == "set":
@@ -123,8 +123,8 @@ class Executor:
         resp = self.pcall(ffid, "init", method, args)
         return resp
 
-    def inspect(self, ffid):
-        resp = self.ipc("inspect", ffid, "")
+    def inspect(self, ffid, mode):
+        resp = self.ipc("inspect", ffid, mode)
         return resp["val"]
 
     def free(self, ffid):
@@ -157,7 +157,7 @@ class Proxy(object):
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return Proxy(self._exe, val, self.ffid, method, True)
+            return Proxy(self._exe, val, es6=True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -221,10 +221,10 @@ class Proxy(object):
         return ser["val"]
 
     def __str__(self):
-        return self._exe.inspect(self.ffid)
+        return self._exe.inspect(self.ffid, 'str')
 
     def __repr__(self):
-        return self._exe.inspect(self.ffid)
+        return self._exe.inspect(self.ffid, 'repr')
 
     def __json__(self):
         return {"ffid": self.ffid}
