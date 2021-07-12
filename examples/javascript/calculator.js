@@ -1,4 +1,4 @@
-import { python } from 'JSPyBridge'
+import { python } from 'pythonia'
 const tk = await python('tkinter')
 
 let expression = ''

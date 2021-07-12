@@ -163,7 +163,7 @@ class PyInterface:
         for i in args:
             if i not in self.m:
                 continue
-            del self.m[ffid]
+            del self.m[i]
 
     def make_signature(self, what):
         if self.send_inspect:

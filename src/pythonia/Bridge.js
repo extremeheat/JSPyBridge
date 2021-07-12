@@ -6,6 +6,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 
 const util = require('util')
 const { JSBridge } = require('./jsi')
+const errors = require('./errors')
 const log = process.env.DEBUG ? console.debug : () => {}
 // const log = console.log
 const REQ_TIMEOUT = 100000
@@ -20,7 +21,9 @@ class BridgeException extends Error {
 
 class PythonException extends Error {
   constructor (stack, error) {
-    super(`Call to '${stack.join('.')}' failed: \n\n${error}`)
+    super()
+    const trace = this.stack.split('\n').slice(1).join('\n')
+    this.stack = errors.getErrorMessage(stack.join('.'), trace, error)
   }
 }
 
@@ -145,7 +148,7 @@ class Bridge {
     this.finalizer = new FinalizationRegistry(ffid => {
       this.freeable.push(ffid)
       // Once the Proxy is freed, we also want to release the pyClass ref
-      delete this.jsi.m[ffid]
+      try { delete this.jsi.m[ffid] } catch {}
     })
 
     this.jsi = new JSBridge(null, this)

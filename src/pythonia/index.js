@@ -82,6 +82,14 @@ module.exports.python.exit = () => {
   bridge.end()
   com.end()
 }
+module.exports.python.cwd = path => {
+  if (!path) {
+    const caller = getCaller(1)
+    const prefix = process.platform === 'win32' ? 'file:///' : 'file://'
+    path = caller.replace(prefix, '').split('/').slice(0, -1).join('/')
+  }
+  return py`os.chdir(${path.replace('\\', '/')})`
+}
 module.exports.python.setFastMode = (val) => {
   root.sendInspect(!val)
 }

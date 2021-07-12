@@ -1,4 +1,8 @@
 # JSPyBridge
+[![NPM version](https://img.shields.io/npm/v/pythonia.svg)](http://npmjs.com/package/pythonia)
+[![Build Status](https://github.com/extremeheat/JSPyBridge/workflows/Node.js%20CI/badge.svg)](https://github.com/extremeheat/JSPyBridge/actions/workflows/)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
+
 
 Interoperate Node.js with Python. **Work in progress.**
 
@@ -13,10 +17,14 @@ Requires Node.js 16 and Python 3.8 or newer.
 * Exception handling
 * Iterator support
 
-### Work in progress
-* Better Python class support and interop from JavaScript (allow for PyTorch)
+#### Limitations / WIP
+
+* Standard input is not piped to bridge processes. Instead, listen to standard input then expose an API on the other side of the bridge recieve the data.
+
 
 ## Basic usage example
+
+See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/examples). See [documentation](#Documentation) below and in [here](https://github.com/extremeheat/JSPyBridge/tree/master/docs)/.
 
 ### Access JavaScript from Python
 
@@ -41,11 +49,11 @@ fs.writeFileSync("HelloWorld.txt", "hi!")
 Make sure to have the dependencies installed before hand!
 
 ```sh
-npm i extremeheat/JSPyBridge
+npm i pythonia
 ```
 
 ```js
-import { python } from 'JSPyBridge'
+import { python } from 'pythonia'
 // Import tkinter
 const tk = await python('tkinter')
 // All Python API access must be prefixed with await
@@ -61,12 +69,7 @@ await root.mainloop$({ $timeout: Infinity })
 ### Run an example
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 
-Open in Gitpod link above, and run :
-```
-npm install # this installs test deps
-cd src
-DEBUG=true python3 test.py
-```
+Open in Gitpod link above, and open the examples folder.
 
 # Documentation
 
@@ -243,22 +246,22 @@ and executed in Python.
     the final argument is evaluated as a kwarg dictionary. You can supply named arguments this way.
 * Property access with a $ at the end acts as a error suppression operator. 
   * Any errors will be ignored and instead undefined will be returned
-* See docs/javascript.md for more docs.
+* See [docs/javascript.md](docs/javascript.md) for more docs, and the examples for more info
 
-###  Usage
+### Usage
 
 ### Basic import
 
 Let's say we have a file in Python like this called `time.py` ...
-```js
+```py
 import datetime
 def what_time_is_it():
   return str(datetime.datetime.now())
 ```
 
 Then we can call it from JavaScript !
-```py
-import { python } from 'JSPyBridge'
+```js
+import { python } from 'pythonia'
 const time = await python('./time.py')
 console.log("It's", await time.what_time_is_it())
 python.exit()

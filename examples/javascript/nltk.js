@@ -1,4 +1,4 @@
-import { python } from 'JSPyBridge'
+import { python } from 'pythonia'
 import fs from 'fs'
 const nltk = await python('nltk')
 

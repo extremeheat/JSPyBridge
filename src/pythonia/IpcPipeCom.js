@@ -39,7 +39,7 @@ class StdioCom {
   }
 
   end () {
-    this.proc.kill()
+    this.proc.kill('SIGKILL')
   }
 
   recieve (j) {

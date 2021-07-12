@@ -1,4 +1,4 @@
-import { py, python, PyClass } from 'JSPyBridge'
+import { py, python, PyClass } from 'pythonia'
 const tf = await python('tensorflow')
 
 class KerasCallback extends PyClass {
