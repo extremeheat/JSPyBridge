@@ -1,6 +1,7 @@
 {
   "name": "pythonia",
   "author": "extremeheat",
+  "description": "Interop Node.js and JavaScript",
   "version": "0.1.0",
   "main": "./src/pythonia/index.js",
   "types": "./src/pythonia/index.d.ts",

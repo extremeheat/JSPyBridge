@@ -13,7 +13,6 @@ Let's add some matrices ...
 
 ```js
 const np = await python('numpy')
-const x = np.
 
 const A = await np.array(([1,2],[3,4]))
 const B = await np.array(([2,2],[2,2]))
