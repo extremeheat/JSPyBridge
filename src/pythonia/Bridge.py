@@ -1,5 +1,5 @@
 import inspect, importlib, importlib.util
-import json, types, traceback, sys
+import json, types, traceback, os, sys
 from proxy import Executor, Proxy
 from weakref import WeakValueDictionary
 
@@ -133,10 +133,12 @@ class Bridge:
                 v = v[key]
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
-            else:
+            elif hasattr(v, '__getitem__'):
                 if key not in v:
                     raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
                 v = v[key]  # 🚨 If you get an error here, you called an undefined property
+            else:
+                raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
         l = len(v)
         self.q(r, "num", l)
 
@@ -170,10 +172,12 @@ class Bridge:
                     v = v[key]
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
-                else:
+                elif hasattr(v, '__getitem__'):
                     if key not in v:
                         raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
                     v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                else:
+                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
 
         # Classes when called will return void, but we need to return
         # object to JS.

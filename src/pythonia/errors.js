@@ -41,7 +41,7 @@ function processPyStacktrace(pyTrace) {
     if (lin.startsWith('  File')) {
       const fname = lin.split('"')[1]
       const line = lin.match(/, line (\d+)/)[1]
-      const at = lin.match(/, in (.*)/)[1]
+      const at = lin.match(/, in (.*)/)?.[1] ?? '^'
       pyTraceLines.push([`at ${at} (${fname}:${line})`])
     } else if (lin.startsWith('    ')) {
       pyTraceLines[pyTraceLines.length - 1]?.push(lin.trim())
@@ -52,12 +52,12 @@ function processPyStacktrace(pyTrace) {
   return [pyErrorLine, pyTraceLines]
 }
 
-function processJSStacktrace(stack) {
+function processJSStacktrace(stack, allowInternal) {
   const jsTraceLines = []
   let jsErrorline
   let foundMainLine = false
   for (const line of stack.split('\n')) {
-    if (!(line.toLowerCase().includes('pythonia')) && !foundMainLine) {
+    if (!(line.includes('pythonia') && !allowInternal) && !foundMainLine) {
       const absPath = line.match(/\((.*):(\d+):(\d+)\)/)
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
       if (absPath || filePath) {
@@ -74,11 +74,11 @@ function processJSStacktrace(stack) {
       jsTraceLines.push(line.trim())
     }
   }
-  return [jsErrorline, jsTraceLines]
+  return jsErrorline ? [jsErrorline, jsTraceLines] : null
 }
 
 function getErrorMessage(failedCall, jsStacktrace, pyStacktrace) {
-  const [ jse, jss ] = processJSStacktrace(jsStacktrace)
+  const [ jse, jss ] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
   const [ pye, pys ] = processPyStacktrace(pyStacktrace)
 
   const lines = printError(failedCall, jse, jss, pye, pys)

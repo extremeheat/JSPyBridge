@@ -17,6 +17,10 @@ Requires Node.js 16 and Python 3.8 or newer.
 * Exception handling
 * Iterator support
 
+#### Limitations / WIP
+
+* Standard input is not piped to bridge processes. Instead, listen to standard input then expose an API on the other side of the bridge recieve the data.
+
 
 ## Basic usage example
 
