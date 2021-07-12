@@ -20,7 +20,7 @@ Requires Node.js 16 and Python 3.8 or newer.
 
 ## Basic usage example
 
-See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/examples).
+See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/examples). See [documentation](#Documentation) below and in [here](https://github.com/extremeheat/JSPyBridge/tree/master/docs)/.
 
 ### Access JavaScript from Python
 
@@ -242,21 +242,21 @@ and executed in Python.
     the final argument is evaluated as a kwarg dictionary. You can supply named arguments this way.
 * Property access with a $ at the end acts as a error suppression operator. 
   * Any errors will be ignored and instead undefined will be returned
-* See docs/javascript.md for more docs, and the examples for more info
+* See [docs/javascript.md](docs/javascript.md) for more docs, and the examples for more info
 
 ### Usage
 
 ### Basic import
 
 Let's say we have a file in Python like this called `time.py` ...
-```js
+```py
 import datetime
 def what_time_is_it():
   return str(datetime.datetime.now())
 ```
 
 Then we can call it from JavaScript !
-```py
+```js
 import { python } from 'pythonia'
 const time = await python('./time.py')
 console.log("It's", await time.what_time_is_it())

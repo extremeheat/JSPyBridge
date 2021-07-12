@@ -1,5 +1,5 @@
 // process.env.DEBUG = 1
-import { py, python, PyClass } from 'JSPyBridge'
+import { py, python, PyClass } from 'pythonia'
 import assert from 'assert'
 const f = await python('./test/pyImp.py')
 const demo = await python('./test/demo.py')
