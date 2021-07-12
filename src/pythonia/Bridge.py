@@ -134,11 +134,12 @@ class Bridge:
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             elif hasattr(v, '__getitem__'):
-                if key not in v:
-                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
-                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                try:
+                    v = v[key]
+                except:
+                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
             else:
-                raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
+                raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
         l = len(v)
         self.q(r, "num", l)
 
@@ -161,11 +162,12 @@ class Bridge:
                 if t:
                     v = t
                 elif hasattr(v, '__getitem__'):
-                    if key not in v:
-                        raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
-                    v = v[key]
+                    try:
+                        v = v[key]
+                    except:
+                        raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
                 else:
-                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
+                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
         else:
             for key in keys:
                 if type(v) in (dict, tuple, list):
@@ -173,9 +175,10 @@ class Bridge:
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
                 elif hasattr(v, '__getitem__'):
-                    if key not in v:
-                        raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
-                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                    try:
+                        v = v[key]
+                    except:
+                        raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
                 else:
                     raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
 
@@ -226,9 +229,10 @@ class Bridge:
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
-                if key not in v:
-                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
-                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                try:
+                    v = v[key]
+                except:
+                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
         if type(v) in (dict, tuple, list, set):
             v[on] = val
         else:
@@ -286,12 +290,13 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            self.m[self.cur_ffid] = (
+                            proxy = (
                                 self.m[v["extend"]]
                                 if "extend" in v
                                 else Proxy(self.executor, self.cur_ffid)
                             )
-                            json_input[k] = self.m[self.cur_ffid]
+                            self.weakmap[self.cur_ffid] = proxy
+                            json_input[k] = proxy
                             created[v["r"]] = self.cur_ffid
                         else:
                             json_input[k] = self.m[lookup]
@@ -303,12 +308,13 @@ class Bridge:
                         lookup = v[lookup_key]
                         if lookup == "":
                             self.cur_ffid += 1
-                            self.m[self.cur_ffid] = (
+                            proxy = (
                                 self.m[v["extend"]]
                                 if "extend" in v
                                 else Proxy(self.executor, self.cur_ffid)
                             )
-                            json_input[k] = self.m[self.cur_ffid]
+                            self.weakmap[self.cur_ffid] = proxy
+                            json_input[k] = proxy
                             created[v["r"]] = self.cur_ffid
                         else:
                             json_input[k] = self.m[lookup]
