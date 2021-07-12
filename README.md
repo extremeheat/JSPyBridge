@@ -24,7 +24,7 @@ Requires Node.js 16 and Python 3.8 or newer.
 
 ## Basic usage example
 
-See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/examples). See [documentation](#Documentation) below and in [here](https://github.com/extremeheat/JSPyBridge/tree/master/docs)/.
+See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/examples). See [documentation](https://github.com/extremeheat/JSPyBridge#documentation) below and in [here](https://github.com/extremeheat/JSPyBridge/tree/master/docs).
 
 ### Access JavaScript from Python
 
@@ -265,4 +265,25 @@ import { python } from 'pythonia'
 const time = await python('./time.py')
 console.log("It's", await time.what_time_is_it())
 python.exit()
+```
+
+### Iterating
+
+* When iterating a Python object, you *must* use a `for await` loop instead of a normal `for-of` loop.
+
+iter.py
+```py
+import os
+def get_files():
+  for f in os.listdir():
+    yield f
+```
+
+iter.js
+```js
+const iter = await python('./iter.py')
+const files = await iter.get_files()
+for await (const file of files) {
+  console.log(file)
+}
 ```
