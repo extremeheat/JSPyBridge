@@ -61,9 +61,8 @@ const root = await tk.Tk()
 // A function call with a $ suffix will treat the last argument as a kwarg dict
 const a = await tk.Label$(root, { text: 'Hello World' })
 await a.pack()
-// The special $timeout argument tells the bridge to adjust the function call timeout
-// Set Infinity for no timeout.
-await root.mainloop$({ $timeout: Infinity })
+await root.mainloop()
+python.exit() // Make sure to exit Python in the end to allow node to exit. You can also use process.exit.
 ```
 
 ### Run an example

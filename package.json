@@ -1,7 +1,7 @@
 {
   "name": "pythonia",
   "author": "extremeheat",
-  "description": "Interop Node.js and JavaScript",
+  "description": "Interop Node.js and Python and call Python APIs from Node.js",
   "version": "0.1.1",
   "main": "./src/pythonia/index.js",
   "types": "./src/pythonia/index.d.ts",
@@ -26,6 +26,13 @@
   "peerDependencies": {
     "ws": "^7.5.1"
   },
+  "keywords": [
+    "node",
+    "javascript",
+    "python",
+    "bridge",
+    "interop"
+  ],
   "standard": {
     "parser": "babel-eslint"
   }
