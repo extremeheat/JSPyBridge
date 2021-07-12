@@ -54,6 +54,14 @@ interface python {
    * @param value True or false
    */
   setFastMode(value: boolean): void
+
+
+  /**
+   * Change the Python process working dir. Allows for file system loads relative to the working dir.
+   * @param path The path to set the work dir to. If blank, pick the current file's folder path.
+   */
+  cwd(path): void
+
   /**
    * Quits the Python process. You can also do `process.exit()` if you want to kill the current process, including Python.
    */

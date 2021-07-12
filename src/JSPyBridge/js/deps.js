@@ -6,31 +6,31 @@ try {
   packages = require('./package.json')
 } catch (e) {
   const p = join(__dirname, './package.json')
-  fs.writeFileSync(p, `{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}`)
+  fs.writeFileSync(p, '{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}')
   packages = JSON.parse(fs.readFileSync(p, 'utf-8'))
 }
 
 const NODE_PM = process.env.NODE_PM || 'npm'
 
-function loadPackages() {
+function loadPackages () {
   packages = require('./package.json')
 }
 
-function savePackages() {
+function savePackages () {
   fs.writeFileSync('./package.json', JSON.stringify(packages, null, 2))
 }
 
 const log = (...what) => console.log('\x1b[1m', ...what, '\x1b[0m')
 
-function processPackage(name, desiredVersion) {
+function processPackage (name, desiredVersion) {
   // Sometimes we have to rename the package for multi-versioning to work.
   // Some projects may use one version of a dep over the other.
-  let finalName = desiredVersion && desiredVersion !== 'latest' ? name + '--' + Buffer.from(desiredVersion).toString('hex') : name
+  const finalName = desiredVersion && desiredVersion !== 'latest' ? name + '--' + Buffer.from(desiredVersion).toString('hex') : name
   const depVer = packages.dependencies[finalName]
   if (depVer) {
     if (!desiredVersion && depVer !== 'latest') {
       packages.dependencies[name] = 'latest'
-      savePackages()    
+      savePackages()
     }
     // log('Already installed!', depVer)
     return finalName
@@ -57,16 +57,16 @@ function processPackage(name, desiredVersion) {
   return finalName
 }
 
-function reinstall() {
+function reinstall () {
   console.info('Erasing node_modules...')
   fs.rmdirSync('./node_modules')
   console.info('OK')
   console.info('Installing...')
-  cp.execSync(`npm install`, { stdio: 'inherit', cwd: __dirname })
+  cp.execSync('npm install', { stdio: 'inherit', cwd: __dirname })
   console.info('OK')
 }
 
-async function $require(what, version, relativeTo) {
+async function $require (what, version, relativeTo) {
   if (relativeTo) {
     const mod = await import('file://' + join(relativeTo, what))
     return mod.default ?? mod

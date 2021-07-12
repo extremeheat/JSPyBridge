@@ -113,4 +113,4 @@ python.exit()
 
 ## ✔
 
-For more info, see the README.md and the examples !
+For more info, see the README.md, the [type definitions](https://github.com/extremeheat/JSPyBridge/blob/master/src/pythonia/index.d.ts) and [the examples](https://github.com/extremeheat/JSPyBridge/tree/master/examples/javascript) !

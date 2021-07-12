@@ -1,7 +1,7 @@
 const chalk = require('chalk')
 const fs = require('fs')
 
-function formatLine(line) {
+function formatLine (line) {
   const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
   const secondary = ['{', '}', "'", ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
@@ -9,8 +9,8 @@ function formatLine(line) {
   return line
 }
 
-function printError(failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStacktrace) {
-  let lines = []
+function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStacktrace) {
+  const lines = []
   const log = (...sections) => lines.push(sections.join(' '))
   log('🐍', chalk.white.bgRedBright.bold(' Python Error '), `Call to '${failedCall.replace('~~', '')}' failed:`)
   log(chalk.dim('>'), formatLine(jsErrorline))
@@ -24,7 +24,7 @@ function printError(failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStackt
   for (const [at, line] of pyStacktrace) {
     if (at.includes('pythonia')) continue
     if (!line) {
-      log(' ',chalk.dim(at))
+      log(' ', chalk.dim(at))
     } else {
       log(chalk.dim('>'), formatLine(line))
       log(' ', chalk.dim(at))
@@ -34,7 +34,7 @@ function printError(failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStackt
   return lines
 }
 
-function processPyStacktrace(pyTrace) {
+function processPyStacktrace (pyTrace) {
   const pyTraceLines = []
   let pyErrorLine = ''
   for (const lin of pyTrace.split('\n')) {
@@ -52,7 +52,7 @@ function processPyStacktrace(pyTrace) {
   return [pyErrorLine, pyTraceLines]
 }
 
-function processJSStacktrace(stack, allowInternal) {
+function processJSStacktrace (stack, allowInternal) {
   const jsTraceLines = []
   let jsErrorline
   let foundMainLine = false
@@ -62,7 +62,7 @@ function processJSStacktrace(stack, allowInternal) {
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
       if (absPath || filePath) {
         const path = absPath || filePath
-        let [ fpath, errline, char ] = path.slice(1)
+        const [fpath, errline, char] = path.slice(1)
         if (fpath.startsWith('node:')) continue
         const file = fs.readFileSync(fpath.startsWith('file:') ? new URL(fpath) : fpath, 'utf-8')
         const flines = file.split('\n')
@@ -77,9 +77,9 @@ function processJSStacktrace(stack, allowInternal) {
   return jsErrorline ? [jsErrorline, jsTraceLines] : null
 }
 
-function getErrorMessage(failedCall, jsStacktrace, pyStacktrace) {
-  const [ jse, jss ] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
-  const [ pye, pys ] = processPyStacktrace(pyStacktrace)
+function getErrorMessage (failedCall, jsStacktrace, pyStacktrace) {
+  const [jse, jss] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
+  const [pye, pys] = processPyStacktrace(pyStacktrace)
 
   const lines = printError(failedCall, jse, jss, pye, pys)
   return lines.join('\n')

@@ -34,49 +34,48 @@ await mixer.music.play(-1)
 // Defining our player
 const playerIcon = await pygame.image.load('player.png')
 let playerX = 370
-let playerY = 480
+const playerY = 480
 let changedX = 0
-let playerSpeed = 9
+const playerSpeed = 9
 
 // Score
 let scoreValue = 0
 const font = await pygame.font.Font('freesansbold.ttf', 32)
 
-async function showScore(x, y) {
+async function showScore (x, y) {
   const score = await font.render(`Score : ${scoreValue}`, true, [255, 255, 255])
   await screen.blit(score, [x, y])
 }
 
-async function gameOver() {
+async function gameOver () {
   const overfont = await pygame.font.Font('freesansbold.ttf', 64)
-  const gamefont = await overfont.render("GAME OVER", true, [255, 255, 255])
+  const gamefont = await overfont.render('GAME OVER', true, [255, 255, 255])
   await screen.blit(gamefont, [200, 250])
 }
 
-async function meezan(x, y) {
+async function meezan (x, y) {
   const font2 = await pygame.font.Font('freesansbold.ttf', 16)
-  const score = await font2.render("Developed by Meezan malik", true, [255, 255, 255])
+  const score = await font2.render('Developed by Meezan malik', true, [255, 255, 255])
   await screen.blit(score, [x, y])
-
 }
 
-async function player(x, y) {
+async function player (x, y) {
   await screen.blit(playerIcon, [x, y])
 }
 
-function randint(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+function randint (min, max) {
+  min = Math.ceil(min)
+  max = Math.floor(max)
+  return Math.floor(Math.random() * (max - min) + min) // The maximum is exclusive and the minimum is inclusive
 }
 
 // # Enemy
-let enemyImg = []
-let enemyX = []
-let enemyY = []
-let enemyX_change = []
-let enemyY_change = []
-let num_of_enemies = 6
+const enemyImg = []
+const enemyX = []
+const enemyY = []
+const enemyX_change = []
+const enemyY_change = []
+const num_of_enemies = 6
 
 for (let i = 0; i < num_of_enemies; i++) {
   await enemyImg.push(await pygame.image.load('enemy.png'))
@@ -86,38 +85,34 @@ for (let i = 0; i < num_of_enemies; i++) {
   await enemyY_change.push(40)
 }
 
-
-async function enemy(x, y, i) {
+async function enemy (x, y, i) {
   await screen.blit(await enemyImg[i], [x, y])
 }
 
-
 // # defining our bullet
-let bullet_icon = await pygame.image.load('bullet.png')
+const bullet_icon = await pygame.image.load('bullet.png')
 let bulletX = 0
 let bulletY = 480
-let bulletY_changed = 15  // bullet speed
-let bullet_state = "ready"
+const bulletY_changed = 15 // bullet speed
+let bullet_state = 'ready'
 
-
-async function bullet(x, y) {
-  bullet_state = "fired"
+async function bullet (x, y) {
+  bullet_state = 'fired'
   await screen.blit(bullet_icon, [x + 16, y + 10])
 }
 
-function isCollision(enemyX, enemyY, bulletX, bulletY) {
-  let distance = Math.sqrt(Math.pow(enemyX - bulletX, 2) + (Math.pow(enemyY - bulletY, 2)))
+function isCollision (enemyX, enemyY, bulletX, bulletY) {
+  const distance = Math.sqrt(Math.pow(enemyX - bulletX, 2) + (Math.pow(enemyY - bulletY, 2)))
   if (distance < 27) return true
   return false
 }
-
 
 const [Quit, Press, Release, Left, Right, Space] = await Promise.all([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_SPACE])
 
 let running = true
 // # main game loop
 while (running) {
-  await screen.fill((0, 0, 0))  // background
+  await screen.fill([0, 0, 0]) // background
   await screen.blit(backgroundImg, [0, 0])
   for await (const event of await pygame.event.get()) {
     let key
@@ -131,7 +126,7 @@ while (running) {
         if (key === Right) changedX = playerSpeed
         if (key === Space) {
           if (bullet_state === 'ready') {
-            let bullet_sound = await mixer.Sound('laser.wav')
+            const bullet_sound = await mixer.Sound('laser.wav')
             await bullet_sound.play()
             bulletX = playerX
             bullet_state = 'fired'
