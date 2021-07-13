@@ -8,7 +8,9 @@ def python(method):
     return importlib.import_module(method, package=None)
 
 
-def fileImport(moduleName, absolutePath):
+def fileImport(moduleName, absolutePath, folderPath):
+    if folderPath not in sys.path:
+        sys.path.append(folderPath)
     spec = importlib.util.spec_from_file_location(moduleName, absolutePath)
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)

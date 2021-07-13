@@ -8,7 +8,7 @@
   "repository": "https://github.com/extremeheat/JSPyBridge",
   "homepage": "https://github.com/PrismarineJS/bedrock-protocol#readme",
   "scripts": {
-    "install": "pip3 install black",
+    "prepare": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
     "test": "mocha"

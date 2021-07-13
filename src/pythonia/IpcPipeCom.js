@@ -7,11 +7,11 @@ const log = process.env.DEBUG ? console.log : () => {}
 class StdioCom {
   constructor (ver = 3) {
     this.python = ver === 3 ? 'python3' : 'python2'
-    this.handlers = {}
     this.start()
   }
 
   start () {
+    this.handlers = {}
     this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
     // BAD HACK: since the channel is not exposed, and we need to send JSON with a
     // custom serializer, we basically have two choices:
@@ -35,11 +35,11 @@ class StdioCom {
     this.proc.on('message', data => {
       this.recieve(data)
     })
-    this.proc.on('error', console.warn)
   }
 
   end () {
     this.proc.kill('SIGKILL')
+    this.proc = null
   }
 
   recieve (j) {

@@ -6,11 +6,11 @@ const log = process.env.DEBUG ? console.log : () => {}
 class StdioCom {
   constructor (ver = 3) {
     this.python = ver === 3 ? 'python3' : 'python2'
-    this.handlers = {}
     this.start()
   }
 
   start () {
+    this.handlers = {}
     this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['pipe', 'inherit', 'pipe'] })
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
@@ -28,11 +28,11 @@ class StdioCom {
         }
       }
     })
-    this.proc.on('error', console.warn)
   }
 
   end () {
     this.proc.kill()
+    this.proc = null
   }
 
   recieve (j) {

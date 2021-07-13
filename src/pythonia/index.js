@@ -4,7 +4,7 @@ if (typeof window !== 'undefined') {
   var { StdioCom } = process.platform === 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
 }
 
-const { join, resolve } = require('path')
+const { dirname, join, resolve } = require('path')
 const { PyClass, Bridge } = require('./Bridge')
 const getCaller = require('caller')
 
@@ -63,16 +63,18 @@ module.exports = {
   builtins: root,
   py,
   python (file) {
+    // The Python process could have been exited. In which case we want to start it again on a new import.
+    if (!com.proc) com.start()
     if (file.startsWith('/') || file.startsWith('./') || file.startsWith('../') || file.includes(':')) {
       if (file.startsWith('.')) {
         const caller = getCaller(1)
         const prefix = process.platform === 'win32' ? 'file:///' : 'file://'
-        const callerDir = caller.replace(prefix, '').split('/').slice(0, -1).join('/')
+        const callerDir = caller.replace(prefix, '').split(/\/|\\/).slice(0, -1).join('/')
         file = join(callerDir, file)
       }
       const importPath = resolve(file)
       const fname = file.split('/').pop() || file
-      return root.fileImport(fname, importPath)
+      return root.fileImport(fname, importPath, dirname(importPath))
     }
     return root.python(file)
   },
