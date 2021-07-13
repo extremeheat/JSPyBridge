@@ -105,7 +105,9 @@ class Executor:
 
         res, barrier = self.loop.responses[callRespId]
         del self.loop.responses[callRespId]
+
         barrier.wait()
+
         if "error" in res:
             raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
         return res["key"], res["val"]

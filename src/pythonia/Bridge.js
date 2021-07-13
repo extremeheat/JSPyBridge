@@ -65,7 +65,7 @@ class PyClass {
     const [ffid, pyClass] = await bridge.makePyClass(this, name, {
       name,
       overriden: [...variables, ...members],
-      bases: [[sup.ffid, this.#superargs, this.#superkwargs]]
+      bases: this.#superclass ? [[sup.ffid, this.#superargs, this.#superkwargs]] : []
     })
     this.pyffid = ffid
 
@@ -80,7 +80,7 @@ class PyClass {
           if (members.has(prop)) return this[prop]
           else return pyClass[pname]
         },
-        set (target, prop, val) {
+        set: (target, prop, val) => {
           const pname = prop
           if (prop === 'parent') throw RangeError('illegal reserved property change')
           if (forceParent) return pyClass[pname] = val
@@ -243,7 +243,7 @@ class Bridge {
           // Python is the owner of the memory, we borrow a ref to it and once
           // we're done with it (GC'd), we can ask python to free it
           if (made[r] instanceof Promise) throw Error('You did not await a paramater when calling ' + stack.join('.'))
-          this.jsi.m[ffid] = made[r], ffid
+          this.jsi.m[ffid] = made[r]
           this.queueForCollection(ffid, made[r])
         }
         return true

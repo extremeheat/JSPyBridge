@@ -42,6 +42,9 @@ class Iterate:
         yield self.what()
 
 
+fix_key = lambda key: key.replace("~~", "") if type(key) is str else key
+
+
 class Bridge:
     m = {
         0: {
@@ -133,13 +136,13 @@ class Bridge:
                 v = v[key]
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
-            elif hasattr(v, '__getitem__'):
+            elif hasattr(v, "__getitem__"):
                 try:
                     v = v[key]
                 except:
-                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
             else:
-                raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         l = len(v)
         self.q(r, "num", l)
 
@@ -161,26 +164,26 @@ class Bridge:
                 t = getattr(v, str(key), None)
                 if t:
                     v = t
-                elif hasattr(v, '__getitem__'):
+                elif hasattr(v, "__getitem__"):
                     try:
                         v = v[key]
                     except:
-                        raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                        raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
                 else:
-                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         else:
             for key in keys:
                 if type(v) in (dict, tuple, list):
                     v = v[key]
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
-                elif hasattr(v, '__getitem__'):
+                elif hasattr(v, "__getitem__"):
                     try:
                         v = v[key]
                     except:
-                        raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                        raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
                 else:
-                    raise LookupError(f"Property '{key.replace('~~', '')}' does not exist on {repr(v)}")
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
 
         # Classes when called will return void, but we need to return
         # object to JS.
@@ -232,7 +235,7 @@ class Bridge:
                 try:
                     v = v[key]
                 except:
-                    raise LookupError(f"Property '{key.replace('~~', '') if type(key) is str else key}' does not exist on {repr(v)}")
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         if type(v) in (dict, tuple, list, set):
             v[on] = val
         else:
