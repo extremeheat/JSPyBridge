@@ -212,7 +212,7 @@ for item in items:
 
 ### Callback
 
-callback.py
+callback.js
 ```js
 export function method(cb, salt) {
     cb(42 + salt)
