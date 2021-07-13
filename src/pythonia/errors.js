@@ -78,11 +78,16 @@ function processJSStacktrace (stack, allowInternal) {
 }
 
 function getErrorMessage (failedCall, jsStacktrace, pyStacktrace) {
-  const [jse, jss] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
-  const [pye, pys] = processPyStacktrace(pyStacktrace)
-
-  const lines = printError(failedCall, jse, jss, pye, pys)
-  return lines.join('\n')
+  try {
+    const [jse, jss] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
+    const [pye, pys] = processPyStacktrace(pyStacktrace)
+  
+    const lines = printError(failedCall, jse, jss, pye, pys)
+    return lines.join('\n')
+  } catch (e) {
+    console.error(e)
+    console.log(`** Error in exception handler **\n** JavaScript Stacktrace **\n${jsStacktrace}\n** Python Stacktrace **\n${pyStacktrace}`)
+  }
 }
 
 module.exports = { getErrorMessage }
