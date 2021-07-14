@@ -34,6 +34,9 @@ class Iterate:
         yield self.what()
 
 
+fix_key = lambda key: key.replace("~~", "") if type(key) is str else key
+
+
 class PyInterface:
     m = {0: {"Iterate": Iterate}}
     # Things added to this dict are auto GC'ed
@@ -63,8 +66,13 @@ class PyInterface:
                 v = v[key]
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
+            elif hasattr(v, "__getitem__"):
+                try:
+                    v = v[key]
+                except:
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
             else:
-                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         l = len(v)
         self.q(r, "num", l)
 
@@ -84,18 +92,28 @@ class PyInterface:
         if invoke:
             for key in keys:
                 t = getattr(v, str(key), None)
-                if t is None:
-                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
-                else:
+                if t:
                     v = t
+                elif hasattr(v, "__getitem__"):
+                    try:
+                        v = v[key]
+                    except:
+                        raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
+                else:
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         else:
             for key in keys:
                 if type(v) in (dict, tuple, list):
                     v = v[key]
                 elif hasattr(v, str(key)):
                     v = getattr(v, str(key))
+                elif hasattr(v, "__getitem__"):
+                    try:
+                        v = v[key]
+                    except:
+                        raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
                 else:
-                    v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
 
         # Classes when called will return void, but we need to return
         # object to JS.
@@ -144,7 +162,10 @@ class PyInterface:
             elif hasattr(v, str(key)):
                 v = getattr(v, str(key))
             else:
-                v = v[key]  # 🚨 If you get an error here, you called an undefined property
+                try:
+                    v = v[key]
+                except:
+                    raise LookupError(f"Property '{fix_key(key)}' does not exist on {repr(v)}")
         if type(v) in (dict, tuple, list, set):
             v[on] = val
         else:

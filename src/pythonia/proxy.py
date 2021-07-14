@@ -29,12 +29,6 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
-        if action == "free":  # return JSON.stringify(obj[prop])
-            try:  # Event loop is dead, no need for GC
-                l = self.queue(r, {"r": r, "action": "free", "ffid": ffid})
-            except ValueError:
-                pass
-            return
         if action == "raw":
             # (not really a FFID, but request ID)
             r = ffid
@@ -54,10 +48,11 @@ class Executor:
     def pcall(self, ffid, action, attr, args, timeout=10):
         """
         This function does a one-pass call to JavaScript. Since we assign the FFIDs, we do not
-        need to send any preliminary call to JS. We simply iterate over the arguments, and for
-        the non-primitive values, we create new FFIDs for them, then use them as a replacement
-        for the non-primitive arg objects. We can then send the request to JS and expect one
-        response back.
+        need to send any preliminary call to JS. We can assign them ourselves.
+
+        We simply iterate over the arguments, and for each of the non-primitive values, we
+        create new FFIDs for them, then use them as a replacement for the non-primitive arg
+        objects. We can then send the request to JS and expect one response back.
         """
         self.ctr = 0
         self.i += 1
@@ -101,12 +96,16 @@ class Executor:
         resp = self.pcall(ffid, "init", method, args)
         return resp
 
-    def inspect(self, ffid):
-        resp = self.ipc("inspect", ffid, "")
+    def inspect(self, ffid, mode):
+        resp = self.ipc("inspect", ffid, mode)
         return resp["val"]
 
     def free(self, ffid):
-        self.ipc("free", ffid, "")
+        self.i += 1
+        try:
+            l = self.queue(self.i, {"r": self.i, "action": "free", "args": [ffid]})
+        except ValueError:  # Event loop is dead, no need for GC
+            pass
 
     def new_ffid(self, for_object):
         self.loop.cur_ffid += 1
@@ -138,7 +137,7 @@ class Proxy(object):
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return Proxy(self._exe, val, self.ffid, method, True)
+            return Proxy(self._exe, val, es6=True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -197,10 +196,10 @@ class Proxy(object):
         return ser["val"]
 
     def __str__(self):
-        return self._exe.inspect(self.ffid)
+        return self._exe.inspect(self.ffid, "str")
 
     def __repr__(self):
-        return self._exe.inspect(self.ffid)
+        return self._exe.inspect(self.ffid, "repr")
 
     def __json__(self):
         return {"ffid": self.ffid}

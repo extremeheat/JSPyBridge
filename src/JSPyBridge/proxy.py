@@ -1,12 +1,55 @@
-import time, threading, json, os
-from . import config, json_patch
+import time, threading, json, sys, os, traceback
+from . import config, json_patch, errors
 
 debug = config.debug
 
 
+# Custom exception logic
 class JavaScriptError(Exception):
+    def __init__(self, call, jsStackTrace):
+        self.call = call
+        self.js = jsStackTrace
+
+
+# Fix for IPython as it blocks the exception hook
+# https://stackoverflow.com/a/28758396/11173996
+try:
+    __IPYTHON__
+    import IPython.core.interactiveshell.InteractiveShell
+
+    oldLogger = IPython.core.interactiveshell.InteractiveShell.showtraceback
+
+    def newLogger(*a, **kw):
+        ex_type, ex_inst, tb = sys.exc_info()
+        if ex_type is JavaScriptError:
+            pyStacktrace = traceback.format_tb(tb)
+            # The Python part of the stack trace is already printed by IPython
+            print(errors.getErrorMessage(ex_inst.call, ex_inst.js, pyStacktrace))
+        else:
+            oldLogger(*a, **kw)
+
+    IPython.core.interactiveshell.InteractiveShell.showtraceback = newLogger
+except NameError:
     pass
 
+orig_excepthook = sys.excepthook
+
+
+def error_catcher(error_type, error, error_traceback):
+    """
+    Catches JavaScript exceptions and prints them to the console.
+    """
+    if error_type is JavaScriptError:
+        pyStacktrace = traceback.format_tb(error_traceback)
+        jsStacktrace = error.js
+        message = errors.getErrorMessage(error.call, jsStacktrace, pyStacktrace)
+        print(message, file=sys.stderr)
+    else:
+        orig_excepthook(error_type, error, error_traceback)
+
+
+sys.excepthook = error_catcher
+# ====
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -41,7 +84,7 @@ class Executor:
         del self.loop.responses[r]
         barrier.wait()
         if "error" in res:
-            raise JavaScriptError(f"Access to '{attr}' failed:\n{res['error']}\n")
+            raise JavaScriptError(attr, res["error"])
         return res
 
     def pcall(self, ffid, action, attr, args, timeout=10):
@@ -91,7 +134,7 @@ class Executor:
             del self.loop.responses[ffidRespId]
 
             if "error" in pre:
-                raise JavaScriptError(f"Call to '{attr}' failed:\n{pre['error']}\n")
+                raise JavaScriptError(attr, res["error"])
 
             for requestId in pre["val"]:
                 ffid = pre["val"][requestId]
@@ -105,9 +148,11 @@ class Executor:
 
         res, barrier = self.loop.responses[callRespId]
         del self.loop.responses[callRespId]
+
         barrier.wait()
+
         if "error" in res:
-            raise JavaScriptError(f"Call to '{attr}' failed:\n{res['error']}\n")
+            raise JavaScriptError(attr, res["error"])
         return res["key"], res["val"]
 
     def getProp(self, ffid, method):

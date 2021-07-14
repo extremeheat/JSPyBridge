@@ -1,14 +1,14 @@
 {
   "name": "pythonia",
   "author": "extremeheat",
-  "description": "Interop Node.js and Python and call Python APIs from Node.js",
+  "description": "Call and interop Python APIs from Node.js",
   "version": "0.1.1",
   "main": "./src/pythonia/index.js",
   "types": "./src/pythonia/index.d.ts",
   "repository": "https://github.com/extremeheat/JSPyBridge",
   "homepage": "https://github.com/PrismarineJS/bedrock-protocol#readme",
   "scripts": {
-    "install": "pip3 install black",
+    "prepare": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
     "test": "mocha"

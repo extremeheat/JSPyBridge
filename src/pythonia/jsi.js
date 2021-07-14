@@ -76,12 +76,8 @@ class JSBridge {
       case 'num': return this.ipc.send({ r, key: 'num', val: v })
       case 'py': return this.ipc.send({ r, key: 'py', val: v.ffid })
       case 'class':
-        // We do not need to increment FFID here because Python will return
-        // an instanciable function. The FFID can be ignored.
-        // Example: some.method() -> some['method'] is GET'ed, then Python realizes
-        // it's a class so returns a callable function that does a INIT operation.
-        // this.m[++this.ffid] = v
-        return this.ipc.send({ r, key: 'class', val: ffid })
+        this.m[++this.ffid] = v
+        return this.ipc.send({ r, key: 'class', val: this.ffid })
       case 'fn':
         this.m[++this.ffid] = v
         return this.ipc.send({ r, key: 'fn', val: this.ffid })
@@ -112,9 +108,9 @@ class JSBridge {
   async call (r, ffid, attr, args) {
     try {
       if (attr) {
-         var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
+        var v = await this.m[ffid][attr].apply(this.m[ffid], args) // eslint-disable-line
       } else {
-         var v = await this.m[ffid](...args) // eslint-disable-line
+        var v = await this.m[ffid](...args) // eslint-disable-line
       }
     } catch (e) {
       return this.ipc.send({ r, key: 'error', error: e.stack })
@@ -153,8 +149,10 @@ class JSBridge {
     this.ipc.send({ r, val: v.valueOf() })
   }
 
-  free (r, ffid) {
-    delete this.m[ffid]
+  free (r, ffid, attr, args) {
+    for (const id of args) {
+      delete this.m[id]
+    }
   }
 
   process (r, args) {
