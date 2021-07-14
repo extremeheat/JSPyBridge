@@ -137,7 +137,7 @@ def processJsStacktrace(stack):
     for line in stacks:
         if not message_line:
             message_line = line
-        if (not "JSPyBride" in line) and (not found_main_line):
+        if (not "JSPyBridge" in line) and (not found_main_line):
             abs_path = re.search(r"\((.*):(\d+):(\d+)\)", line)
             file_path = re.search(r"(file:\/\/.*):(\d+):(\d+)", line)
             if abs_path or file_path:
