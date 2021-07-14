@@ -49,9 +49,9 @@ class Executor:
         """
         This function does a one-pass call to JavaScript. Since we assign the FFIDs, we do not
         need to send any preliminary call to JS. We can assign them ourselves.
-        
-        We simply iterate over the arguments, and for each of the non-primitive values, we 
-        create new FFIDs for them, then use them as a replacement for the non-primitive arg 
+
+        We simply iterate over the arguments, and for each of the non-primitive values, we
+        create new FFIDs for them, then use them as a replacement for the non-primitive arg
         objects. We can then send the request to JS and expect one response back.
         """
         self.ctr = 0
@@ -102,9 +102,9 @@ class Executor:
 
     def free(self, ffid):
         self.i += 1
-        try: 
+        try:
             l = self.queue(self.i, {"r": self.i, "action": "free", "args": [ffid]})
-        except ValueError: # Event loop is dead, no need for GC
+        except ValueError:  # Event loop is dead, no need for GC
             pass
 
     def new_ffid(self, for_object):

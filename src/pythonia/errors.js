@@ -2,7 +2,7 @@ const chalk = require('chalk')
 const fs = require('fs')
 
 function formatLine (line) {
-  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
+  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', 'raise ', 'try ', 'except ', 'catch ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
   const secondary = ['{', '}', "'", ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
   for (const second of secondary) line = line.replace(new RegExp(second, 'g'), chalk.blueBright(second) + '')
@@ -46,7 +46,7 @@ function processPyStacktrace (pyTrace) {
     } else if (lin.startsWith('    ')) {
       pyTraceLines[pyTraceLines.length - 1]?.push(lin.trim())
     } else if (lin.trim()) {
-      pyErrorLine = lin
+      pyErrorLine = lin.trim()
     }
   }
   return [pyErrorLine, pyTraceLines]
@@ -85,8 +85,9 @@ function getErrorMessage (failedCall, jsStacktrace, pyStacktrace) {
     const lines = printError(failedCall, jse, jss, pye, pys)
     return lines.join('\n')
   } catch (e) {
-    console.error(e)
-    console.log(`** Error in exception handler **\n** JavaScript Stacktrace **\n${jsStacktrace}\n** Python Stacktrace **\n${pyStacktrace}`)
+    console.error('** Error in exception handler **', e)
+    console.log(`** JavaScript Stacktrace **\n${jsStacktrace}\n** Python Stacktrace **\n${pyStacktrace}`)
+    return ''
   }
 }
 
