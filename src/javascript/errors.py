@@ -84,7 +84,7 @@ def print_error(failedCall, jsErrorline, jsStackTrace, jsErrorMessage, pyErrorli
     )
 
     for at, line in pyStacktrace:
-        if "JSPyBridge" in at or "IPython" in at:
+        if "javascript" in at or "IPython" in at:
             continue
         if not line:
             log(" ", chalk.gray(at))
@@ -139,7 +139,7 @@ def processJsStacktrace(stack, allowInternal=False):
             message_line = line
         if allowInternal:
             lines.append(line.strip())
-        elif (not "JSPyBridge" in line) and (not found_main_line):
+        elif (not "javascript" in line) and (not found_main_line):
             abs_path = re.search(r"\((.*):(\d+):(\d+)\)", line)
             file_path = re.search(r"(file:\/\/.*):(\d+):(\d+)", line)
             if abs_path or file_path:
