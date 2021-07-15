@@ -1,8 +1,8 @@
 import os
 import time
-from JSPyBridge import require, console, On, Once, off
+from javascript import require, console, On, Once, off
 
-DemoClass = require("./JSPyBridge/js/test.js").DemoClass
+DemoClass = require("./javascript/js/test.js").DemoClass
 
 chalk, fs = require("chalk"), require("fs")
 

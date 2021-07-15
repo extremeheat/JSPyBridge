@@ -20,10 +20,10 @@ class PackageManager {
    */
   reload () {
     try {
-      this.installed = require(PACKAGE_PATH)
+      this.installed = JSON.parse(fs.readFileSync(PACKAGE_PATH))
     } catch (e) {
       fs.writeFileSync(PACKAGE_PATH, '{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}')
-      this.packages = require(PACKAGE_PATH)
+      this.installed = JSON.parse(fs.readFileSync(PACKAGE_PATH))
     }
   }
 
@@ -98,7 +98,12 @@ class PackageManager {
       let pname = join(modPath, packageInfo.main)
       // The ES6 `import()` function requires a file extension, always
       if (!packageInfo.main.endsWith('.js')) {
-        pname += '.js'
+        try {
+          const finfo = fs.lstatSync(pname)
+          if (finfo.isDirectory()) pname = join(pname, '/index.js')
+        } catch {
+          pname += '.js'
+        }
       }
       return pathToFileURL(pname)
     }

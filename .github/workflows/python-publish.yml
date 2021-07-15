@@ -6,6 +6,11 @@ name: Upload Python Package
 on:
   release:
     types: [created]
+  push:
+    branches:
+      - master # Change this to your default branch
+    paths: # Run release job 
+      - 'setup.py'
 
 jobs:
   deploy:

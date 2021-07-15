@@ -12,6 +12,10 @@
 
 ## Built-ins
 
+Dependencies are automatically maanged through the library through the `require` function. If
+you run into issues with dependencies, you can clear the internal `node_modules` folder cache
+by using `python3 -m javascript clear` in a command line.
+
 ### imports
 
 ```py

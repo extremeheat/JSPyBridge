@@ -2,7 +2,7 @@ const chalk = require('chalk')
 const fs = require('fs')
 
 function formatLine (line) {
-  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', 'raise ', 'try ', 'except ', 'catch ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
+  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', 'with ', 'raise ', 'try ', 'except ', 'catch ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
   const secondary = ['{', '}', "'", ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
   for (const second of secondary) line = line.replace(new RegExp(second, 'g'), chalk.blueBright(second) + '')
