@@ -1,4 +1,4 @@
-from JSPyBridge import require, On
+from javascript import require, On
 mineflayer = require('mineflayer')
 pathfinder = require('mineflayer-pathfinder')
 

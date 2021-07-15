@@ -1,5 +1,5 @@
 import time
-from JSPyBridge import require
+from javascript import require
 mcServer = require('flying-squid')
 
 mcServer.createMCServer({

@@ -128,7 +128,7 @@ def processPyStacktrace(stack):
     return error_line, lines
 
 
-def processJsStacktrace(stack):
+def processJsStacktrace(stack, allowInternal=False):
     lines = []
     message_line = ""
     error_line = ""
@@ -137,7 +137,9 @@ def processJsStacktrace(stack):
     for line in stacks:
         if not message_line:
             message_line = line
-        if (not "JSPyBridge" in line) and (not found_main_line):
+        if allowInternal:
+            lines.append(line.strip())
+        elif (not "JSPyBridge" in line) and (not found_main_line):
             abs_path = re.search(r"\((.*):(\d+):(\d+)\)", line)
             file_path = re.search(r"(file:\/\/.*):(\d+):(\d+)", line)
             if abs_path or file_path:
@@ -153,12 +155,14 @@ def processJsStacktrace(stack):
         elif found_main_line:
             lines.append(line.strip())
 
+    if allowInternal and not error_line:
+        error_line = '^'
     return (error_line, message_line, lines) if error_line else None
 
 
 def getErrorMessage(failed_call, jsStackTrace, pyStacktrace):
     try:
-        jse, jsm, jss = processJsStacktrace(jsStackTrace)
+        jse, jsm, jss = processJsStacktrace(jsStackTrace) or processJsStacktrace(jsStackTrace, True)
         pye, pys = processPyStacktrace(pyStacktrace)
 
         lines = print_error(failed_call, jse, jss, jsm, pye, pys)
@@ -167,6 +171,7 @@ def getErrorMessage(failed_call, jsStackTrace, pyStacktrace):
         print("Error in exception handler")
         import traceback
 
-        print(traceback.format_tb(e))
-        print(f"** JavaScript Stacktrace **{jsStackTrace}\n** Python Stacktrace **{pyStacktrace}")
+        print(e)
+        pys = '\n'.join(pyStacktrace)
+        print(f"** JavaScript Stacktrace **\n{jsStackTrace}\n** Python Stacktrace **\n{pys}")
         return ""

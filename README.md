@@ -4,22 +4,20 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 
 
-Interoperate Node.js with Python. **Work in progress.**
-
-Requires Node.js 16 and Python 3.8 or newer.
+Interoperate Node.js with Python. **Work in progress.** Requires Node.js 16 and Python 3.8 or newer.
 
 ## Key Features
 
-* Async and sync function support
-* Native garbage collection
-* Callbacks
-* 🚦  Events
-* Exception handling
-* Iterator support
+* Ability to call async and sync functions and get object properties with a native feel
+* Built-in garbage collection
+* Bi-directional callbacks with arbitrary arguments
+* Iteration support
+* Object inspection allows you to easily `console.log` or `print()` any foreign objects
 
-#### Limitations / WIP
-
-* Standard input is not piped to bridge processes. Instead, listen to standard input then expose an API on the other side of the bridge recieve the data.
+#### Exclusive to python bridge for javascript
+* Python class extension and inheritance. See pytorch and tensorflow examples.
+#### Exclusive to javascript bridge for python
+* Native decorator-based event emitter support (javascript bridge)
 
 
 ## Basic usage example
@@ -28,19 +26,18 @@ See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/e
 
 ### Access JavaScript from Python
 
-(Although the examples below use `javascript` import, please use `JSPyBridge` instead.)
 
 ```sh
-pip3 install git+https://github.com/extremeheat/jspybridge.git
+pip3 install javascript
 ```
 
 
 ```py
-from JSPyBridge import require, console
+from javascript import require, globalThis
 
 chalk, fs = require("chalk"), require("fs")
 
-console.log("Hello", chalk.red("world!"))
+print("Hello", chalk.red("world!"), "it's", globalThis.Date().toLocaleString())
 fs.writeFileSync("HelloWorld.txt", "hi!")
 ```
 
@@ -69,6 +66,30 @@ python.exit() // Make sure to exit Python in the end to allow node to exit. You 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 
 Open in Gitpod link above, and open the examples folder.
+
+### Bridge feature comparison
+
+Unlike other bridges, you may notice you're not just writing Python code in JavaScript, or vice-versa. You can operate on objects
+on the other side of the bridge as if the objects existed on your side. This is achieved through real interop support: you can call
+callbacks, and do loss-less function calls with any arguments you like (with the exception of floating points percision of course).
+
+|  | python(ia) bridge | javascript bridge | [npm:python-bridge](https://www.npmjs.com/package/python-bridge) |
+|---|---|---|---|
+| Garbage collection | ✔ | ✔ | ❌ |
+| Class extension support | ✔ | Not built-in (rare use case), can be manually done with custom proxy | ❌ |
+| Passthrough stdin | ❌ (Standard input is not piped to bridge processes. Instead, listen to standard input then expose an API on the other side of the bridge recieve the data.) | ❌ | ✔ |
+| Passthrough stdout, stderr | ✔ | ✔ | ✔ |
+| Long-running sync calls | ✔ | ✔ | ✔ |
+| Long-running async calls | ❌ (need to manually create new thread) | ✔ (AsyncTask) | ❌ (need to manually create new thread) |
+| Callbacks | ✔ | ✔ | ❌ |
+| Call classes | ✔ | ✔ |  |
+| Iterators | ✔ | ✔ | ❌ |
+| Inline eval | ✔ | ❌ |  |
+| Dependency Management | ❌ | ✔ | ❌ |
+| Local File Imports | ✔ | ✔ | ❌ |
+| Error Management | ✔ | ✔ | ✔ |
+| Object inspection | ✔ | ✔ | ❌ |
+
 
 # Documentation
 
