@@ -1,3 +1,6 @@
+## 0.2.2
+* py: Add new CLI to clear the internal node_module cache, can now be cleared with `python -m javascript clear`
+
 ## 0.2.1
 * Initial release of bridge to access JavaScript from Python
 * py: Fix issue with dependency installer
