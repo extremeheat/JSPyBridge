@@ -1,4 +1,7 @@
-# pythonia (Bridge to access Python from JavaScript)
+## 0.2.1
+* Initial release of bridge to access JavaScript from Python
+* py: Fix issue with dependency installer
+* py: Fix issue with error handler and issues with IPython
 
 ## 0.2.0
 * Importing relative Python files now automatically adds the file's directory to the import path [#10](https://github.com/extremeheat/JSPyBridge/pull/10) 
