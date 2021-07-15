@@ -1,19 +1,21 @@
 # JSPyBridge
 [![NPM version](https://img.shields.io/npm/v/pythonia.svg)](http://npmjs.com/package/pythonia)
-[![Gitpod ready-to-code](https://img.shields.io/pypi/v/javascript)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
+[![PyPI](https://img.shields.io/pypi/v/javascript)](https://pypi.org/project/javascript/)
 [![Build Status](https://github.com/extremeheat/JSPyBridge/workflows/Node.js%20CI/badge.svg)](https://github.com/extremeheat/JSPyBridge/actions/workflows/)
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 
 
 
-Interoperate Node.js with Python. **Work in progress.** Requires Node.js 16 and Python 3.8 or newer.
+Interoperate Node.js and Python. **Work in progress.** 
+
+Requires Node.js 16 and Python 3.8 or newer.
 
 ## Key Features
 
 * Ability to call async and sync functions and get object properties with a native feel
 * Built-in garbage collection
-* Bi-directional callbacks with arbitrary arguments
-* Iteration support
+* Bidirectional callbacks with arbitrary arguments
+* Iteration and exception handling support
 * Object inspection allows you to easily `console.log` or `print()` any foreign objects
 
 #### Exclusive to python bridge for javascript
@@ -64,10 +66,19 @@ await root.mainloop()
 python.exit() // Make sure to exit Python in the end to allow node to exit. You can also use process.exit.
 ```
 
-### Run an example
+### Examples
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 
-Open in Gitpod link above, and open the examples folder.
+Check out some cool examples below! Try them on Gitpod! Click the Open in Gitpod link above, and then open the examples folder.
+
+
+[![PyTorch](https://www.vectorlogo.zone/logos/pytorch/pytorch-ar21.svg)](https://github.com/extremeheat/JSPyBridge/blob/master/examples/javascript/pytorch-train.js)
+[![numpy](https://www.vectorlogo.zone/logos/numpy/numpy-ar21.svg)](https://github.com/extremeheat/JSPyBridge/blob/master/examples/javascript/matplotlib.js)
+[![tensorflow](https://www.vectorlogo.zone/logos/tensorflow/tensorflow-ar21.svg)](https://github.com/extremeheat/JSPyBridge/blob/master/examples/javascript/tensorflow.js)
+[![mineflayer](https://www.vectorlogo.zone/logos/minecraft/minecraft-ar21.svg)](https://github.com/extremeheat/JSPyBridge/blob/master/examples/python/mineflayer.py)
+<!-- <img src="https://matplotlib.org/stable/_static/logo2_compressed.svg" alt="matplotlib" width="120" height="70">
+ -->
+
 
 ### Bridge feature comparison
 
