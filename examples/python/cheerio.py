@@ -1,4 +1,4 @@
-from JSPyBridge import require
+from javascript import require
 cheerio = require('cheerio');
 C = cheerio.load('<h2 class="title">Hello world</h2>')
 

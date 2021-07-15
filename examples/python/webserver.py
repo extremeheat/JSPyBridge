@@ -1,5 +1,5 @@
 import time
-from JSPyBridge import require
+from javascript import require
 http = require('http')
 
 def handler(this, req, res):

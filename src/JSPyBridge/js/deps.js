@@ -1,100 +1,131 @@
 const cp = require('child_process')
 const fs = require('fs')
 const { join } = require('path')
-let packages
-try {
-  packages = require('./package.json')
-} catch (e) {
-  const p = join(__dirname, './package.json')
-  fs.writeFileSync(p, '{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}')
-  packages = JSON.parse(fs.readFileSync(p, 'utf-8'))
-}
+const { pathToFileURL } = require('url')
 
 const NODE_PM = process.env.NODE_PM || 'npm'
-
-function loadPackages () {
-  packages = require('./package.json')
-}
-
-function savePackages () {
-  fs.writeFileSync('./package.json', JSON.stringify(packages, null, 2))
-}
-
+const PACKAGE_PATH = join(__dirname, 'package.json')
+const LOCK_PATH = join(__dirname, NODE_PM === 'npm' ? 'package-lock.json' : 'yarn.lock')
+const MOD_PATH = join(__dirname, 'node_modules')
 const log = (...what) => console.log('\x1b[1m', ...what, '\x1b[0m')
 
-function processPackage (name, desiredVersion) {
-  // Sometimes we have to rename the package for multi-versioning to work.
-  // Some projects may use one version of a dep over the other.
-  const finalName = desiredVersion && desiredVersion !== 'latest' ? name + '--' + Buffer.from(desiredVersion).toString('hex') : name
-  const depVer = packages.dependencies[finalName]
-  if (depVer) {
-    if (!desiredVersion && depVer !== 'latest') {
-      packages.dependencies[name] = 'latest'
-      savePackages()
-    }
-    // log('Already installed!', depVer)
-    return finalName
-  } else if (!desiredVersion || desiredVersion === 'latest') {
-    // savePackages()
-    log(`Installing '${name}' version 'latest'... This will only happen once.`)
-    cp.execSync(`${NODE_PM} install ${finalName}`, { stdio: 'inherit', cwd: __dirname })
-    process.stderr.write('\n\n')
-    process.stdout.write('\n')
-    loadPackages()
-    packages.dependencies[name] = 'latest'
-    savePackages()
-    log('OK.')
-  } else if (desiredVersion) {
-    log(`Installing '${name}' version '${desiredVersion}'... This will only happen once.`)
-    cp.execSync(`${NODE_PM} install ${finalName}@npm:${name}@${desiredVersion}`, { stdio: 'inherit', cwd: __dirname })
-    process.stderr.write('\n\n')
-    process.stdout.write('\n')
-    loadPackages()
-    log('OK.', packages.dependencies[name])
-    // savePackages()
+class PackageManager {
+  constructor () {
+    this.loadedPackages = []
+    this.reload()
   }
 
-  return finalName
+  /**
+   * Some utility methods to save, create, update the package.json
+   */
+  reload () {
+    this.installed = JSON.parse(fs.readFileSync(PACKAGE_PATH))
+  }
+
+  save () {
+    fs.writeFileSync(PACKAGE_PATH, JSON.stringify(this.installed, null, 2))
+  }
+
+  reset () {
+    fs.rmSync(PACKAGE_PATH, { force: true })
+    fs.rmSync(LOCK_PATH, { force: true })
+    // This is unsafe:
+    // fs.rmSync(MOD_PATH, { force: true, recursive: true })
+  }
+
+  getInstalledVersion (name) {
+    return this.installed.dependencies[name]
+  }
+
+  setInstalledVersion (name, version) {
+    this.reload()
+    this.installed.dependencies[name] = version
+    this.save()
+  }
+
+  /**
+   * Installs a JavaScript package into the internal NPM module directory.
+   * If a version is specified, then it uses that to form a new internal name
+   * for this package to allow for having multiple versions of the same package installed.
+   *
+   * @returns {string} New internal package name.
+   */
+  install (name, version) {
+    version = version || 'latest'
+    this.reload()
+    let internalName = name
+    if (version !== 'latest') internalName = name + '--' + Buffer.from(version).toString('hex')
+
+    const installedVersion = this.getInstalledVersion(internalName)
+    let needsInstall = false
+    if (version === 'latest' && installedVersion !== 'latest') {
+      needsInstall = true
+    } else if (version !== 'latest' && !installedVersion) {
+      needsInstall = true
+    }
+
+    if (needsInstall) {
+      log(`Installing '${name}' version '${version}'... This will only happen once.`)
+      if (version === 'latest') {
+        // If version is latest, we need to handle this a bit differently. `npm i package@latest` does NOT
+        // work, since it will not actually save that into the Package Lock/JSON file. So we must first
+        // put `latest` into the package.json, then run npm install to persist the `latest` version.
+        this.setInstalledVersion(name, 'latest')
+        cp.execSync(`${NODE_PM} install`, { stdio: 'inherit', cwd: __dirname })
+      } else {
+        cp.execSync(`${NODE_PM} install ${internalName}@npm:${name}@${version}`, { stdio: 'inherit', cwd: __dirname })
+      }
+
+      process.stderr.write('\n\n')
+      process.stdout.write('\n')
+      log('OK.')
+      return this.resolve(internalName)
+    } else {
+      // The package is already installed.
+      return internalName
+    }
+  }
+
+  resolve (packageName) {
+    const modPath = join(MOD_PATH, packageName)
+    const packageInfo = require(join(modPath, 'package.json'))
+    if (packageInfo.main) {
+      let pname = join(modPath, packageInfo.main)
+      // The ES6 `import()` function requires a file extension, always
+      if (!packageInfo.main.endsWith('.js')) {
+        pname += '.js'
+      }
+      return pathToFileURL(pname)
+    }
+    return new pathToFileURL(join(modPath, 'index.js'))
+  }
 }
 
-function reinstall () {
-  console.info('Erasing node_modules...')
-  fs.rmdirSync('./node_modules')
-  console.info('OK')
-  console.info('Installing...')
-  cp.execSync('npm install', { stdio: 'inherit', cwd: __dirname })
-  console.info('OK')
-}
+const pm = new PackageManager()
 
-async function $require (what, version, relativeTo) {
+async function $require (name, version, relativeTo) {
   if (relativeTo) {
-    const mod = await import('file://' + join(relativeTo, what))
+    const mod = await import('file://' + join(relativeTo, name))
     return mod.default ?? mod
   }
-  let modPath
+
   if (!version) {
-    try { modPath = require.resolve(what) } catch {}
-    if (modPath) {
-      // It's already installed, just use that.
-      const mod = await import(what)
-      return mod.default ?? mod
-    }
+    // The user didn't specify a version. So try whatever version we find installed. This can fail for non CJS modules.
+    try { return require(name) } catch { }
   }
-  const newpath = processPackage(what, version)
+
+  // A version was specified, or the package wasn't found already installed.
+  const newpath = pm.install(name, version)
   const mod = await import(newpath)
   return mod.default ?? mod
 }
 
-module.exports = { processPackage, reinstall, $require }
+module.exports = { $require }
 
-// try {
-//   console.log(processPackage('prismarine-block'))
-//   console.log(processPackage('prismarine-item', '^3'))
-// } catch (e) {
-//   process.exit(1)
+// async function test () {
+//   console.log(await $require('prismarine-block'))
+//   console.log(await $require('nbt'))
+//   console.log(await $require('chalk', '2'))
+//   console.log(await $require('chalk', '3'))
 // }
-// from javascript import _require as require
-// mineflayer = require('mineflayer')
-// npm init && npm i mineflayer mineflayer-pathfinder
-// from javascript import _require as require
-// mineflayer = require('mineflayer')
+// test()

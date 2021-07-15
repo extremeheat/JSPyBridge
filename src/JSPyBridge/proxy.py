@@ -15,7 +15,7 @@ class JavaScriptError(Exception):
 # https://stackoverflow.com/a/28758396/11173996
 try:
     __IPYTHON__
-    import IPython.core.interactiveshell.InteractiveShell
+    import IPython.core.interactiveshell
 
     oldLogger = IPython.core.interactiveshell.InteractiveShell.showtraceback
 

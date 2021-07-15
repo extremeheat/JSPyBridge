@@ -1,5 +1,5 @@
 # Named Binary Tag (NBT) serialization format
-from JSPyBridge import require, globalThis
+from javascript import require, globalThis
 JSON = globalThis.JSON
 nbt = require("prismarine-nbt", "latest")
 
