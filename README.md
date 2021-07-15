@@ -1,7 +1,9 @@
 # JSPyBridge
 [![NPM version](https://img.shields.io/npm/v/pythonia.svg)](http://npmjs.com/package/pythonia)
+[![Gitpod ready-to-code](https://img.shields.io/pypi/v/javascript)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
 [![Build Status](https://github.com/extremeheat/JSPyBridge/workflows/Node.js%20CI/badge.svg)](https://github.com/extremeheat/JSPyBridge/actions/workflows/)
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
+
 
 
 Interoperate Node.js with Python. **Work in progress.** Requires Node.js 16 and Python 3.8 or newer.
