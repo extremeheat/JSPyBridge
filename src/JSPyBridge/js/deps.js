@@ -19,7 +19,12 @@ class PackageManager {
    * Some utility methods to save, create, update the package.json
    */
   reload () {
-    this.installed = JSON.parse(fs.readFileSync(PACKAGE_PATH))
+    try {
+      this.installed = require(PACKAGE_PATH)
+    } catch (e) {
+      fs.writeFileSync(PACKAGE_PATH, '{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}')
+      this.packages = require(PACKAGE_PATH)
+    }
   }
 
   save () {
