@@ -116,6 +116,7 @@ def kill_proc():
         except Exception:
             pass
 
+
 def is_alive():
     return proc.poll() is None
 

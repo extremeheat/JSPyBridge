@@ -1,5 +1,6 @@
 import re, sys
 
+
 class JavaScriptError(Exception):
     def __init__(self, call, jsStackTrace, pyStacktrace=None):
         self.call = call
@@ -162,7 +163,7 @@ def processJsStacktrace(stack, allowInternal=False):
             lines.append(line.strip())
 
     if allowInternal and not error_line:
-        error_line = '^'
+        error_line = "^"
     return (error_line, message_line, lines) if error_line else None
 
 
@@ -178,9 +179,10 @@ def getErrorMessage(failed_call, jsStackTrace, pyStacktrace):
         import traceback
 
         print(e)
-        pys = '\n'.join(pyStacktrace)
+        pys = "\n".join(pyStacktrace)
         print(f"** JavaScript Stacktrace **\n{jsStackTrace}\n** Python Stacktrace **\n{pys}")
         return ""
+
 
 # Custom exception logic
 
