@@ -1,3 +1,7 @@
+## 0.2.3
+* Add support for `in` operator in Python code
+* IO/error handling updates [#14](https://github.com/extremeheat/JSPyBridge/pull/14)
+
 ## 0.2.2
 * py: Add new CLI to clear the internal node_module cache, can now be cleared with `python -m javascript clear`
 
