@@ -191,6 +191,9 @@ class Proxy(object):
     def __setitem__(self, name, value):
         return self._exe.setProp(self.ffid, name, value)
 
+    def __contains__(self, key):
+        return True if self[key] is not None else False
+
     def valueOf(self):
         ser = self._exe.ipc("serialize", self.ffid, "")
         return ser["val"]

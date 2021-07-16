@@ -4,6 +4,7 @@ import inspect, importlib, traceback
 import os, sys, json, types
 import socket
 from .proxy import Proxy
+from .errors import JavaScriptError, getErrorMessage
 from weakref import WeakValueDictionary
 
 

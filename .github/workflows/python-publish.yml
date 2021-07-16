@@ -9,8 +9,8 @@ on:
   push:
     branches:
       - master # Change this to your default branch
-    paths: # Run release job 
-      - 'setup.py'
+    # paths: # Run release job 
+    #   - 'setup.py'
 
 jobs:
   deploy:

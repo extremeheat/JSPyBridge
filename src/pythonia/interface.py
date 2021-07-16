@@ -9,11 +9,15 @@ apiin = apiout = None
 class Ipc:
     def queue(self, what):
         global apiout
-        if type(what) == str:
-            apiout.write(what + "\n")
-        else:
-            apiout.write(json.dumps(what) + "\n")
-        apiout.flush()
+        try:
+            if type(what) == str:
+                apiout.write(what + "\n")
+            else:
+                apiout.write(json.dumps(what) + "\n")
+            apiout.flush()
+        except Exception:
+            # Quit if we are unable to write (is the parent process dead?)
+            exit(1)
 
 
 ipc = Ipc()

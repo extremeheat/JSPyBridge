@@ -1,55 +1,8 @@
 import time, threading, json, sys, os, traceback
-from . import config, json_patch, errors
+from . import config, json_patch
+from .errors import JavaScriptError
 
 debug = config.debug
-
-
-# Custom exception logic
-class JavaScriptError(Exception):
-    def __init__(self, call, jsStackTrace):
-        self.call = call
-        self.js = jsStackTrace
-
-
-# Fix for IPython as it blocks the exception hook
-# https://stackoverflow.com/a/28758396/11173996
-try:
-    __IPYTHON__
-    import IPython.core.interactiveshell
-
-    oldLogger = IPython.core.interactiveshell.InteractiveShell.showtraceback
-
-    def newLogger(*a, **kw):
-        ex_type, ex_inst, tb = sys.exc_info()
-        if ex_type is JavaScriptError:
-            pyStacktrace = traceback.format_tb(tb)
-            # The Python part of the stack trace is already printed by IPython
-            print(errors.getErrorMessage(ex_inst.call, ex_inst.js, pyStacktrace))
-        else:
-            oldLogger(*a, **kw)
-
-    IPython.core.interactiveshell.InteractiveShell.showtraceback = newLogger
-except NameError:
-    pass
-
-orig_excepthook = sys.excepthook
-
-
-def error_catcher(error_type, error, error_traceback):
-    """
-    Catches JavaScript exceptions and prints them to the console.
-    """
-    if error_type is JavaScriptError:
-        pyStacktrace = traceback.format_tb(error_traceback)
-        jsStacktrace = error.js
-        message = errors.getErrorMessage(error.call, jsStacktrace, pyStacktrace)
-        print(message, file=sys.stderr)
-    else:
-        orig_excepthook(error_type, error, error_traceback)
-
-
-sys.excepthook = error_catcher
-# ====
 
 # This is the Executor, something that sits in the middle of the Bridge and is the interface for
 # Python to JavaScript. This is also used by the bridge to call Python from Node.js.
@@ -262,6 +215,9 @@ class Proxy(object):
 
     def __setitem__(self, name, value):
         return self._exe.setProp(self.ffid, name, value)
+
+    def __contains__(self, key):
+        return True if self[key] is not None else False
 
     def valueOf(self):
         ser = self._exe.ipc("serialize", self.ffid, "")

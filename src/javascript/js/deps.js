@@ -12,7 +12,6 @@ const log = (...what) => console.log('\x1b[1m', ...what, '\x1b[0m')
 class PackageManager {
   constructor () {
     this.loadedPackages = []
-    this.reload()
   }
 
   /**

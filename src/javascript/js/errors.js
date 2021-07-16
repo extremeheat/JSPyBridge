@@ -1,8 +1,15 @@
-const chalk = require('chalk')
+const supportsColors = true
+const chalk = {
+  boldRed: text => supportsColors ? `\x1b[1m\x1b[91m${text}\x1b[0m` : text,
+  blueBright: text => supportsColors ? `\x1b[91m${text}\x1b[0m` : text,
+  dim: text => supportsColors ? `\x1b[2m${text}\x1b[0m` : text,
+  red: text => supportsColors ? `\x1b[91m${text}\x1b[0m` : text,
+  bold: text => supportsColors ? `\x1b[1m${text}\x1b[0m` : text
+}
 const fs = require('fs')
 
 function formatLine (line) {
-  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', 'with ', 'raise ', 'try ', 'except ', 'catch ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
+  const statements = ['const ', 'await ', 'import ', 'let ', 'var ', 'async ', 'self ', 'def ', 'return ', 'from ', 'for ', 'with ', 'raise ', 'try ', 'except ', 'catch ', 'elif ', 'if ', ':', '\\(', '\\)', '\\+', '\\-', '\\*', '=']
   const secondary = ['{', '}', "'", ' true', ' false']
   for (const statement of statements) line = line.replace(new RegExp(statement, 'g'), chalk.red(statement.replace('\\', '')) + '')
   for (const second of secondary) line = line.replace(new RegExp(second, 'g'), chalk.blueBright(second) + '')
@@ -12,8 +19,8 @@ function formatLine (line) {
 function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStacktrace) {
   const lines = []
   const log = (...sections) => lines.push(sections.join(' '))
-  log('🐍', chalk.white.bgRedBright.bold(' Python Error '), `Call to '${failedCall.replace('~~', '')}' failed:`)
-  log(chalk.dim('>'), formatLine(jsErrorline))
+  log('🐍', chalk.boldRed(' Python Error '), `JavaScript attempt to call '${failedCall.replace('~~', '') || 'some function'}' in Python failed:`)
+  log(chalk.dim('>'), formatLine(jsErrorline.trim()))
 
   for (const traceline of jsStacktrace) {
     log(' ', chalk.dim(traceline))
@@ -22,7 +29,7 @@ function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStack
   log('\n... across the bridge ...\n')
 
   for (const [at, line] of pyStacktrace) {
-    if (at.includes('pythonia')) continue
+    if (at.includes('javascript')) continue
     if (!line) {
       log(' ', chalk.dim(at))
     } else {
@@ -52,12 +59,15 @@ function processPyStacktrace (pyTrace) {
   return [pyErrorLine, pyTraceLines]
 }
 
+const INTERNAL_FILES = ['bridge.js', 'pyi.js', 'errors.js', 'deps.js', 'test.js']
+const isInternal = file => INTERNAL_FILES.find(k => file.includes(k))
+
 function processJSStacktrace (stack, allowInternal) {
   const jsTraceLines = []
   let jsErrorline
   let foundMainLine = false
   for (const line of stack.split('\n')) {
-    if (!(line.includes('pythonia') && !allowInternal) && !foundMainLine) {
+    if (!(isInternal(line) && !allowInternal) && !foundMainLine) {
       const absPath = line.match(/\((.*):(\d+):(\d+)\)/)
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
       const barePath = line.match(/at (.*):(\d+):(\d+)$/)
