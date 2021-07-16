@@ -27,7 +27,12 @@ host = sys.argv[1]
 port = sys.argv[2]
 username = sys.argv[3] if len(sys.argv) > 3 else "boat"
 
-bot = mineflayer.createBot({"host": host, "port": port, "username": username, "port": port})
+bot = mineflayer.createBot({
+    "host": host,
+    "port": port,
+    "username": username,
+    "port": port
+})
 
 Item = require("prismarine-item")(bot.version)
 
@@ -53,9 +58,9 @@ def handle(this, username, message, *args):
     elif message.startswith("spawn"):
         say_spawn()
     elif message.startswith("quit"):
-        quit(username)
+        quit_game(username)
     else:
-        bot.chat("That's nice 👍")
+        bot.chat("That's nice")
 
 
 def can_see(pos):
@@ -79,7 +84,6 @@ def say_position(username):
 def say_equipment(username):
     eq = bot.players[username].entity.equipment
     eqText = []
-    print("EQUIP", eq, eq[0])
     if eq[0]:
         eqText.append(f"holding a {eq[0].displayName}")
     if eq[1]:
@@ -106,7 +110,7 @@ def say_block_under():
     print(block)
 
 
-def quit(username):
+def quit_game(username):
     bot.quit(f"{username} told me to")
 
 
@@ -115,60 +119,60 @@ def say_nick():
 
 
 @On(bot, "whisper")
-def handle1(username, message, rawMessage):
+def whisper(this, username, message, rawMessage, *a):
     console.log(f"I received a message from {username}: {message}")
     bot.whisper(username, "I can tell secrets too.")
 
 
 @On(bot, "nonSpokenChat")
-def handle2(this, message):
+def nonSpokenChat(this, message):
     console.log(f"Non spoken chat: {message}")
 
 
 @On(bot, "login")
-def handle3(this):
+def login(this):
     bot.chat("Hi everyone!")
 
 
 @On(bot, "spawn")
-def handle4(this):
+def spawn(this):
     bot.chat("I spawned, watch out!")
 
 
 @On(bot, "spawnReset")
-def handle5(this, message):
+def spawnReset(this, message):
     bot.chat("Oh noez! My bed is broken.")
 
 
 @On(bot, "forcedMove")
-def handle6(this):
+def forcedMove(this):
     p = bot.entity.position
     bot.chat(f"I have been forced to move to {p.toString()}")
 
 
 @On(bot, "health")
-def handle7(this):
+def health(this):
     bot.chat(f"I have {bot.health} health and {bot.food} food")
 
 
 @On(bot, "death")
-def handle8(this):
+def death(this):
     bot.chat("I died x.x")
 
 
 @On(bot, "kicked")
-def handle9(this, reason, *a):
+def kicked(this, reason, *a):
     print("I was kicked", reason, a)
     console.log(f"I got kicked for {reason}")
 
 
 @On(bot, "time")
-def handle10(this):
+def time(this):
     bot.chat(f"Current time: " + str(bot.time.timeOfDay))
 
 
 @On(bot, "rain")
-def handle11(this):
+def rain(this):
     if bot.isRaining:
         bot.chat("It started raining")
     else:
@@ -176,53 +180,48 @@ def handle11(this):
 
 
 @On(bot, "noteHeard")
-def handle12(this, block, instrument, pitch):
+def noteHeard(this, block, instrument, pitch):
     bot.chat(f"Music for my ears! I just heard a {instrument.name}")
 
 
 @On(bot, "chestLidMove")
-def handle13(this, block, isOpen):
+def chestLidMove(this, block, isOpen, *a):
     action = "open" if isOpen else "close"
     bot.chat(f"Hey, did someone just {action} a chest?")
 
 
 @On(bot, "pistonMove")
-def handle14(this, block, isPulling, direction):
+def pistonMove(this, block, isPulling, direction):
     action = "pulling" if isPulling else "pushing"
     bot.chat(f"A piston is {action} near me, i can hear it.")
 
 
 @On(bot, "playerJoined")
-def handle15(this, player):
+def playerJoined(this, player):
     print("joined", player)
     if player["username"] != bot.username:
         bot.chat(f"Hello, {player['username']}! Welcome to the server.")
 
 
 @On(bot, "playerLeft")
-def handle16(this, player):
+def playerLeft(this, player):
     if player["username"] == bot.username:
         return
     bot.chat(f"Bye ${player.username}")
 
 
 @On(bot, "playerCollect")
-def handle17(this, collector, collected):
+def playerCollect(this, collector, collected):
     if collector.type == "player" and collected.type == "object":
         raw_item = collected.metadata[10]
-        ## does this work ??
-        print("item", Item)
         item = Item.fromNotch(raw_item)
-        header = (
-            ("I'm so jealous. " + collector.username)
-            if (collector.username != bot.username)
-            else "I "
-        )
+        header = ("I'm so jealous. " + collector.username) if (
+            collector.username != bot.username) else "I "
         bot.chat(f"{header} collected {item.count} {item.displayName}")
 
 
 @On(bot, "entitySpawn")
-def handle18(this, entity):
+def entitySpawn(this, entity):
     if entity.type == "mob":
         p = entity.position
         console.log(f"Look out! A {entity.mobType} spawned at {p.toString()}")
@@ -238,67 +237,67 @@ def handle18(this, entity):
 
 
 @On(bot, "entityHurt")
-def handle19(this, entity):
+def entityHurt(this, entity):
     if entity.type == "mob":
         bot.chat(f"Haha! The ${entity.mobType} got hurt!")
     elif entity.type == "player":
-        bot.chat(
-            f"Aww, poor {entity.username} got hurt. Maybe you shouldn't have a ping of {bot.players[entity.username].ping}"
-        )
+        if entity.username in bot.players:
+            ping = bot.players[entity.username].ping
+            bot.chat(f"Aww, poor {entity.username} got hurt. Maybe you shouldn't have a ping of {ping}")
 
 
 @On(bot, "entitySwingArm")
-def handle20(this, entity):
+def entitySwingArm(this, entity):
     bot.chat(f"{entity.username}, I see that your arm is working fine.")
 
 
 @On(bot, "entityCrouch")
-def handle21(this, entity):
+def entityCrouch(this, entity):
     bot.chat(f"${entity.username}: you so sneaky.")
 
 
 @On(bot, "entityUncrouch")
-def handle22(this, entity):
+def entityUncrouch(this, entity):
     bot.chat(f"{entity.username}: welcome back from the land of hunchbacks.")
 
 
 @On(bot, "entitySleep")
-def handle23(this, entity):
+def entitySleep(this, entity):
     bot.chat(f"Good night, {entity.username}")
 
 
 @On(bot, "entityWake")
-def handle24(this, entity):
+def entityWake(this, entity):
     bot.chat(f"Top of the morning, {entity.username}")
 
 
 @On(bot, "entityEat")
-def handle25(this, entity):
+def entityEat(this, entity):
     bot.chat(f"{entity.username}: OM NOM NOM NOMONOM. That's what you sound like.")
 
 
 @On(bot, "entityAttach")
-def handle26(this, entity, vehicle):
+def entityAttach(this, entity, vehicle):
     if entity.type == "player" and vehicle.type == "object":
         print(f"Sweet, {entity.username} is riding that {vehicle.objectType}")
 
 
 @On(bot, "entityDetach")
-def handle27(this, entity, vehicle):
+def entityDetach(this, entity, vehicle):
     if entity.type == "player" and vehicle.type == "object":
         print(f"Lame, {entity.username} stopped riding the {vehicle.objectType}")
 
 
 @On(bot, "entityEquipmentChange")
-def handle(this, entity):
+def entityEquipmentChange(this, entity):
     print("entityEquipmentChange", entity)
 
 
 @On(bot, "entityEffect")
-def handle28(this, entity, effect):
+def entityEffect(this, entity, effect):
     print("entityEffect", entity, effect)
 
 
 @On(bot, "entityEffectEnd")
-def handle29(this, entity, effect):
+def entityEffectEnd(this, entity, effect):
     print("entityEffectEnd", entity, effect)

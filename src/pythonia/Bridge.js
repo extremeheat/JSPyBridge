@@ -264,8 +264,6 @@ class Bridge {
       case 'string':
       case 'int':
         return resp.val // Primitives don't need wrapping
-      case 'error':
-        throw new PythonException(stack, resp.sig)
       default: {
         const py = this.makePyObject(resp.val, resp.sig)
         this.queueForCollection(resp.val, py)

@@ -19,6 +19,7 @@ class Ipc:
             # Quit if we are unable to write (is the parent process dead?)
             exit(1)
 
+
 ipc = Ipc()
 bridge = Bridge(ipc)
 
