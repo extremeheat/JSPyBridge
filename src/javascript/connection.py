@@ -3,6 +3,20 @@ import atexit, os, sys
 from . import config
 from .config import debug
 
+# Special handling for IPython jupyter notebooks
+stdout = sys.stdout
+notebook = False
+try:
+    shell = get_ipython().__class__.__name__
+    if shell == 'ZMQInteractiveShell':
+        stdout = subprocess.PIPE
+        notebook = True
+        # Jupyter notebook or qtconsole
+    elif shell == 'TerminalInteractiveShell':
+        pass  # Terminal running IPython
+except NameError:
+    pass
+
 
 def supports_color():
     """
@@ -13,6 +27,8 @@ def supports_color():
     supported_platform = plat != "Pocket PC" and (plat == "win32" or "ANSICON" in os.environ)
     # isatty is not always implemented, #6223.
     is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+    if notebook:
+        return True
     return supported_platform and is_a_tty
 
 
@@ -26,8 +42,7 @@ else:
 # ^^ Looks like custom FDs don't work on Windows, so let's keep using STDIO.
 
 dn = os.path.dirname(__file__)
-
-proc = None
+proc = com_thread = stdout_thread = None
 
 
 def read_stderr(stderrs):
@@ -37,7 +52,7 @@ def read_stderr(stderrs):
         for line in inp.split("\n"):
             if not len(line):
                 continue
-            if not line.startswith("{"):
+            if not line.startswith('{"r"'):
                 print("[JSE]", line)
                 continue
             try:
@@ -67,7 +82,7 @@ def writeAll(objs):
             proc.stdin.write(j.encode())
             proc.stdin.flush()
         except Exception:
-            kill_proc()
+            stop()
             break
 
 
@@ -82,12 +97,12 @@ def readAll():
 
 
 def com_io():
-    global proc
+    global proc, stdout_thread
     try:
         proc = subprocess.Popen(
             ["node", dn + "/js/bridge.js"],
             stdin=subprocess.PIPE,
-            stdout=sys.stdout,
+            stdout=stdout,
             stderr=subprocess.PIPE,
         )
     except Exception as e:
@@ -100,21 +115,31 @@ def com_io():
         proc.stdin.write(send)
     proc.stdin.flush()
 
+    if notebook:
+        stdout_thread = threading.Thread(target=stdout_read, args=(), daemon=True)
+        stdout_thread.start()
+
     while proc.poll() == None:
         stderr_lines.append(proc.stderr.readline())
         config.event_loop.queue.put("stdin")
 
+def stdout_read():
+    while proc.poll() is None:
+        print(proc.stdout.readline().decode("utf-8"))
 
-com_thread = threading.Thread(target=com_io, args=(), daemon=True)
-com_thread.start()
+def start():
+    global com_thread
+    com_thread = threading.Thread(target=com_io, args=(), daemon=True)
+    com_thread.start()
 
 
-def kill_proc():
-    if proc:
-        try:
-            proc.terminate()
-        except Exception:
-            pass
+def stop():
+    try:
+        proc.terminate()
+        com_thread.stop()
+        stdout_thread.stop()
+    except Exception:
+        pass
 
 
 def is_alive():
@@ -122,4 +147,4 @@ def is_alive():
 
 
 # Make sure out child process is killed if the parent one is exiting
-atexit.register(kill_proc)
+atexit.register(stop)

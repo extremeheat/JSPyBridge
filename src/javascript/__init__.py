@@ -4,6 +4,8 @@ import threading, time, atexit, os, sys
 
 
 def init():
+    if config.event_loop:
+        return # Do not start event loop again
     config.event_loop = events.EventLoop()
     config.event_thread = threading.Thread(target=config.event_loop.loop, args=(), daemon=True)
     config.event_thread.start()

@@ -69,6 +69,7 @@ class EventLoop:
     responses = {}  # Map of requestID -> response payload
 
     def __init__(self):
+        connection.start()
         self.callbackExecutor.start()
         self.pyi = pyi.PyInterface(self, config.executor)
 
