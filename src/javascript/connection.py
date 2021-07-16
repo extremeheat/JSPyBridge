@@ -63,8 +63,12 @@ def writeAll(objs):
         if not proc:
             sendQ.append(j.encode())
             continue
-        proc.stdin.write(j.encode())
-        proc.stdin.flush()
+        try:
+            proc.stdin.write(j.encode())
+            proc.stdin.flush()
+        except Exception:
+            kill_proc()
+            break
 
 
 stderr_lines = []
@@ -107,7 +111,13 @@ com_thread.start()
 
 def kill_proc():
     if proc:
-        proc.terminate()
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+
+def is_alive():
+    return proc.poll() is None
 
 
 # Make sure out child process is killed if the parent one is exiting

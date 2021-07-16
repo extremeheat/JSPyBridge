@@ -4,7 +4,8 @@
 
 const util = require('util')
 if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
-const log = () => {}
+const log = () => { }
+const errors = require('./errors')
 const REQ_TIMEOUT = 100000
 
 class BridgeException extends Error {
@@ -17,7 +18,20 @@ class BridgeException extends Error {
 
 class PythonException extends Error {
   constructor (stack, error) {
-    super(`Call to '${stack.join('.')}' failed: \n\n${error}`)
+    super()
+    const failedCall = stack.join('.')
+    const trace = this.stack.split('\n').slice(1).join('\n')
+
+    // Stack is generated at runtime when (and if) the error is printed
+    Object.defineProperty(this, 'stack', {
+      get: () => errors.getErrorMessage(failedCall, trace, error || this.pytrace)
+    })
+  }
+
+  setPythonTrace (value) {
+    // When the exception is thrown, we don't want this to be printed out.
+    // We could also use new class "hard-privates"
+    Object.defineProperty(this, 'pytrace', { enumerable: false, value })
   }
 }
 
@@ -77,7 +91,9 @@ class PyBridge {
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') {
+      throw new PythonException(stack, resp.sig)
+    }
     return resp.val
   }
 
@@ -103,6 +119,8 @@ class PyBridge {
     }
   }
 
+  // This does a function call to Python. We assign the FFIDs, so we can assign them and send the call to Python.
+  // We also need to keep track of the Python objects so we can GC them.
   async call (ffid, stack, args, kwargs, set, timeout) {
     const r = nextReq()
     const req = { r, c: 'pyi', action: set ? 'setval' : 'pcall', ffid: ffid, key: stack, val: [args, kwargs] }
@@ -123,10 +141,15 @@ class PyBridge {
       return v
     })
 
+    const stacktrace = new PythonException(stack)
+
     const resp = await waitFor(resolve => this.com.writeRaw(payload, r, resolve), timeout || REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
-    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
+    if (resp.key === 'error') {
+      stacktrace.setPythonTrace(resp.sig)
+      throw stacktrace
+    }
 
     if (set) {
       return true // Do not allocate new FFID if setting
@@ -137,8 +160,6 @@ class PyBridge {
       case 'string':
       case 'int':
         return resp.val // Primitives don't need wrapping
-      case 'error':
-        throw new PythonException(stack, resp.sig)
       default: {
         const py = this.makePyObject(resp.val, resp.sig)
         this.queueForCollection(resp.val, py)

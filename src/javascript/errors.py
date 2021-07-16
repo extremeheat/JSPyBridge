@@ -1,4 +1,10 @@
-import re
+import re, sys
+
+class JavaScriptError(Exception):
+    def __init__(self, call, jsStackTrace, pyStacktrace=None):
+        self.call = call
+        self.js = jsStackTrace
+        self.py = pyStacktrace
 
 
 class Chalk:
@@ -175,3 +181,45 @@ def getErrorMessage(failed_call, jsStackTrace, pyStacktrace):
         pys = '\n'.join(pyStacktrace)
         print(f"** JavaScript Stacktrace **\n{jsStackTrace}\n** Python Stacktrace **\n{pys}")
         return ""
+
+# Custom exception logic
+
+# Fix for IPython as it blocks the exception hook
+# https://stackoverflow.com/a/28758396/11173996
+try:
+    __IPYTHON__
+    import IPython.core.interactiveshell
+
+    oldLogger = IPython.core.interactiveshell.InteractiveShell.showtraceback
+
+    def newLogger(*a, **kw):
+        ex_type, ex_inst, tb = sys.exc_info()
+        if ex_type is JavaScriptError:
+            pyStacktrace = traceback.format_tb(tb)
+            # The Python part of the stack trace is already printed by IPython
+            print(getErrorMessage(ex_inst.call, ex_inst.js, pyStacktrace))
+        else:
+            oldLogger(*a, **kw)
+
+    IPython.core.interactiveshell.InteractiveShell.showtraceback = newLogger
+except NameError:
+    pass
+
+orig_excepthook = sys.excepthook
+
+
+def error_catcher(error_type, error, error_traceback):
+    """
+    Catches JavaScript exceptions and prints them to the console.
+    """
+    if error_type is JavaScriptError:
+        pyStacktrace = traceback.format_tb(error_traceback)
+        jsStacktrace = error.js
+        message = errors.getErrorMessage(error.call, jsStacktrace, pyStacktrace)
+        print(message, file=sys.stderr)
+    else:
+        orig_excepthook(error_type, error, error_traceback)
+
+
+sys.excepthook = error_catcher
+# ====

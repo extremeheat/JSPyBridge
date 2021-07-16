@@ -136,8 +136,8 @@ class EventLoop:
     def on_exit(self):
         if len(self.callbacks):
             config.debug("cannot exit because active callback", self.callbacks)
-        while len(self.callbacks):
-            time.sleep(0.2)
+        while len(self.callbacks) and connection.is_alive():
+            time.sleep(0.3)
         self.callbackExecutor.running = False
         self.queue.put("exit")
 
