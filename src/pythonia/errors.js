@@ -26,7 +26,7 @@ function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStack
     if (!line) {
       log(' ', chalk.dim(at))
     } else {
-      log(chalk.dim('>'), formatLine(line))
+      log(chalk.dim('>'), formatLine(line.trim()))
       log(' ', chalk.dim(at))
     }
   }
@@ -60,8 +60,9 @@ function processJSStacktrace (stack, allowInternal) {
     if (!(line.includes('pythonia') && !allowInternal) && !foundMainLine) {
       const absPath = line.match(/\((.*):(\d+):(\d+)\)/)
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
-      if (absPath || filePath) {
-        const path = absPath || filePath
+      const barePath = line.match(/at (.*):(\d+):(\d+)$/)
+      const path = absPath || filePath || barePath
+      if (path) {
         const [fpath, errline, char] = path.slice(1)
         if (fpath.startsWith('node:')) continue
         const file = fs.readFileSync(fpath.startsWith('file:') ? new URL(fpath) : fpath, 'utf-8')
@@ -81,7 +82,7 @@ function getErrorMessage (failedCall, jsStacktrace, pyStacktrace) {
   try {
     const [jse, jss] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
     const [pye, pys] = processPyStacktrace(pyStacktrace)
-  
+
     const lines = printError(failedCall, jse, jss, pye, pys)
     return lines.join('\n')
   } catch (e) {

@@ -71,8 +71,8 @@ function processJSStacktrace (stack, allowInternal) {
       const absPath = line.match(/\((.*):(\d+):(\d+)\)/)
       const filePath = line.match(/(file:\/\/.*):(\d+):(\d+)/)
       const barePath = line.match(/at (.*):(\d+):(\d+)$/)
-      if (absPath || filePath || barePath) {
-        const path = absPath || filePath || barePath
+      const path = absPath || filePath || barePath
+      if (path) {
         const [fpath, errline, char] = path.slice(1)
         if (fpath.startsWith('node:')) continue
         const file = fs.readFileSync(fpath.startsWith('file:') ? new URL(fpath) : fpath, 'utf-8')
@@ -89,7 +89,6 @@ function processJSStacktrace (stack, allowInternal) {
 }
 
 function getErrorMessage (failedCall, jsStacktrace, pyStacktrace) {
-  console.log(failedCall, jsStacktrace, pyStacktrace)
   try {
     const [jse, jss] = processJSStacktrace(jsStacktrace) || processJSStacktrace(jsStacktrace, true)
     const [pye, pys] = processPyStacktrace(pyStacktrace)

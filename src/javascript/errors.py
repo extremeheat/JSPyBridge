@@ -149,8 +149,9 @@ def processJsStacktrace(stack, allowInternal=False):
         elif (not "javascript" in line) and (not found_main_line):
             abs_path = re.search(r"\((.*):(\d+):(\d+)\)", line)
             file_path = re.search(r"(file:\/\/.*):(\d+):(\d+)", line)
-            if abs_path or file_path:
-                path = abs_path or file_path
+            base_path = re.search(r"at (.*):(\d+):(\d+)$")
+            if abs_path or file_path or base_path:
+                path = abs_path or file_path or base_path
                 fpath, errorline, char = path.groups()
                 if fpath.startswith("node:"):
                     continue

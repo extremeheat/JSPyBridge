@@ -91,9 +91,7 @@ class PyBridge {
     const resp = await waitFor(cb => this.request(req, cb), REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
-    if (resp.key === 'error') {
-      throw new PythonException(stack, resp.sig)
-    }
+    if (resp.key === 'error') throw new PythonException(stack, resp.sig)
     return resp.val
   }
 
@@ -197,6 +195,7 @@ class PyBridge {
   }
 
   makePyObject (ffid, inspectString) {
+    const self = this
     // "Intermediate" objects are returned while chaining. If the user tries to log
     // an Intermediate then we know they forgot to use await, as if they were to use
     // await, then() would be implicitly called where we wouldn't return a Proxy, but
@@ -242,7 +241,6 @@ class PyBridge {
             }
           }
           if (prop === Symbol.asyncIterator) {
-            const self = this
             return async function *iter () {
               const it = await self.call(0, ['Iterate'], [{ ffid }])
               while (true) {
