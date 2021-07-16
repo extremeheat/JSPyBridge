@@ -73,6 +73,9 @@ class EventLoop:
         self.callbackExecutor.start()
         self.pyi = pyi.PyInterface(self, config.executor)
 
+    def stop(self):
+      connection.stop()
+
     # === THREADING ===
     def newTaskThread(self, handler, *args):
         state = TaskState()

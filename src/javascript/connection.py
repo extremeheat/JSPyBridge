@@ -6,16 +6,20 @@ from .config import debug
 # Special handling for IPython jupyter notebooks
 stdout = sys.stdout
 notebook = False
-try:
-    shell = get_ipython().__class__.__name__
-    if shell == 'ZMQInteractiveShell':
-        stdout = subprocess.PIPE
-        notebook = True
-        # Jupyter notebook or qtconsole
-    elif shell == 'TerminalInteractiveShell':
-        pass  # Terminal running IPython
-except NameError:
-    pass
+
+def is_notebook():
+  try:
+    from IPython import get_ipython
+  except Exception: return False
+  if 'COLAB_GPU' in os.environ: return True
+
+  shell = get_ipython().__class__.__name__
+  if shell == 'ZMQInteractiveShell':
+    return True
+
+if is_notebook():
+  notebook = True
+  stdout = subprocess.PIPE
 
 
 def supports_color():
@@ -109,6 +113,7 @@ def com_io():
         print(
             "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 15 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
         )
+        stop()
         raise e
 
     for send in sendQ:
@@ -140,11 +145,19 @@ def stop():
         stdout_thread.stop()
     except Exception:
         pass
+    config.event_loop = None
+    config.event_thread = None
+    config.executor = None
+    # The "root" interface to JavaScript with FFID 0
+    config.global_jsi = None
+    # Currently this breaks GC
+    config.fast_mode = False
+
 
 
 def is_alive():
     return proc.poll() is None
 
 
-# Make sure out child process is killed if the parent one is exiting
+# Make sure our child process is killed if the parent one is exiting
 atexit.register(stop)
