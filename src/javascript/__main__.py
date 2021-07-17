@@ -1,11 +1,11 @@
 import os, sys, argparse, shutil
 
 parser = argparse.ArgumentParser(
-    description="javascript (JSPyBridge) package manager. Use this to clear the internal package store."
+    description="javascript (JSPyBridge) package manager. Use this to clear or update the internal package store."
 )
-parser.add_argument("clean", nargs="?", default=False)
+parser.add_argument("--clean", default=False, action="store_true")
+parser.add_argument("--update", default=False, action="store_true")
 args = parser.parse_args()
-
 
 if args.clean:
     d = os.path.dirname(__file__)
@@ -25,6 +25,9 @@ if args.clean:
         os.remove(np)
     except Exception:
         pass
-
+if args.update:
+    print("Updating package store")
+    os.chdir(os.path.dirname(__file__) + '/js')
+    os.system("npm update")
 else:
     parser.print_help(sys.stderr)
