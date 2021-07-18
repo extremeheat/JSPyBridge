@@ -1,4 +1,4 @@
-## 0.2.4
+## 0.2.5
 * py: Support Node versions 14+
 
 ## 0.2.3
