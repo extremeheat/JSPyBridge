@@ -51,7 +51,14 @@ class Bridge {
         console,
         require: $require,
         _require: require,
-        globalThis
+        globalThis,
+        needsNodePatches: () => {
+          const [major, minor] = process.versions.node.split('.')
+          if ((major == 14 && minor < 17) || (major == 15)) { // eslint-disable-line
+            return true
+          }
+          return false
+        }
       }
     }
     this.ipc = ipc

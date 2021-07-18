@@ -13,6 +13,9 @@ def init():
     config.global_jsi = proxy.Proxy(config.executor, 0)
     atexit.register(config.event_loop.on_exit)
 
+    if config.global_jsi.needsNodePatches():
+        config.node_emitter_patches = True
+
 
 init()
 
@@ -34,11 +37,10 @@ console = config.global_jsi.console
 globalThis = config.global_jsi.globalThis
 
 
-def AsyncTask(fn):
-    fn.is_async_task = True
-
-    def decor(start):
-        t = config.event_loop.startThread(fn)
+def AsyncTask(start=False):
+    def decor(fn):
+        fn.is_async_task = True
+        t = config.event_loop.newTaskThread(fn)
         if start:
             t.start()
 
@@ -53,7 +55,17 @@ abort = config.event_loop.abortThread
 # you will not be able to off an emitter.
 def On(emitter, event):
     # print("On", emitter, event,onEvent)
-    def decor(fn):
+    def decor(_fn):
+        # Once Colab updates to Node 16, we can remove this.
+        # Here we need to manually add in the `this` argument for consistency in Node versions.
+        # In JS we could normally just bind `this` but there is no bind in Python.
+        if config.node_emitter_patches:
+            def handler(*args, **kwargs):
+                _fn(emitter, *args, **kwargs)
+            fn = handler
+        else:
+            fn = _fn
+
         emitter.on(event, fn)
         # We need to do some special things here. Because each Python object
         # on the JS side is unique, EventEmitter is unable to equality check
@@ -77,7 +89,10 @@ def Once(emitter, event):
         i = hash(fn)
 
         def handler(*args, **kwargs):
-            fn(*args, **kwargs)
+            if config.node_emitter_patches:
+                fn(emitter, *args, **kwargs)
+            else:
+                fn(*args, **kwargs)
             del config.event_loop.callbacks[i]
 
         emitter.once(event, handler)
