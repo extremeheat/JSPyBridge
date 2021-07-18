@@ -34,11 +34,10 @@ console = config.global_jsi.console
 globalThis = config.global_jsi.globalThis
 
 
-def AsyncTask(fn):
-    fn.is_async_task = True
-
-    def decor(start):
-        t = config.event_loop.startThread(fn)
+def AsyncTask(start=False):
+    def decor(fn):
+        fn.is_async_task = True
+        t = config.event_loop.newTaskThread(fn)
         if start:
             t.start()
 

@@ -1,11 +1,23 @@
-if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[0]) < 14) {
-  console.error('Your node version is currently', process.versions.node)
-  console.error('Please update it to a version >= 14.x.x from https://nodejs.org/')
-  process.exit(1)
-}
 /**
  * The JavaScript Interface for Python
  */
+
+if (typeof process !== 'undefined') {
+  const [nodeVersion] = parseInt(process.versions.node.split('.'))
+  if ( nodeVersion < 14) {
+    console.error('Your node version is currently', process.versions.node)
+    console.error('Please update it to a version >= 14.x.x from https://nodejs.org/')
+    process.exit(1)
+  } else if (nodeVersion < 16) {
+    const emitter = require('events').EventEmitter
+    const oldEmit = oldEmit.prototype.emit
+    emitter.prototype.emit = function (...args) {
+      // We need to manually bind this pre-Node 16
+      oldEmit(this, ...args)
+    }
+  } 
+}
+
 const util = require('util')
 const { PyBridge } = require('./pyi')
 const { $require } = require('./deps')
