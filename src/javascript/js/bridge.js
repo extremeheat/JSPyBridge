@@ -6,8 +6,6 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 /**
  * The JavaScript Interface for Python
  */
-
-
 const util = require('util')
 const { PyBridge } = require('./pyi')
 const { $require } = require('./deps')

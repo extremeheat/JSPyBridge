@@ -1,3 +1,6 @@
+## 0.2.4
+* py: Support Node versions 14+
+
 ## 0.2.3
 * py: Add notebook and Google Colab support [#15](https://github.com/extremeheat/JSPyBridge/pull/15)
 * py: CLI now has a new --update flag to update internal, Node.js dependencies. Now use --clean to reset the package store.

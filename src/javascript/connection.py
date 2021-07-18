@@ -111,7 +111,7 @@ def com_io():
         )
     except Exception as e:
         print(
-            "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 15 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
+            "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 16 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
         )
         stop()
         raise e
