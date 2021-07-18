@@ -7,6 +7,8 @@ executor = None
 global_jsi = None
 # Currently this breaks GC
 fast_mode = False
+# Whether we need patches for legacy node versions
+node_emitter_patches = False
 
 
 if ("DEBUG" in os.environ) and ("jspybridge" in os.getenv("DEBUG")):
