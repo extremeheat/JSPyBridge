@@ -13,7 +13,7 @@ class DemoClass extends EventEmitter {
     this.y++
     setInterval(() => {
       this.emit('increment', () => 3, this.y++, { a: { y: this.y } })
-    }, 50)
+    }, 40)
   }
 
   get () {
@@ -54,6 +54,12 @@ class DemoClass extends EventEmitter {
     }
     someMethod.x = 'wow'
     return someMethod
+  }
+
+  wait () {
+    setTimeout(() => {
+      this.emit('done')
+    }, 400)
   }
 
   static hello () {

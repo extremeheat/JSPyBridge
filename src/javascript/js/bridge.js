@@ -187,6 +187,8 @@ class Bridge {
             madeCount++
           } else if (v.ffid) {
             input[k] = this.m[v.ffid]
+          } else {
+            parse(v)
           }
         } else {
           parse(v)

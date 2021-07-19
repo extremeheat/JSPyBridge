@@ -1,6 +1,6 @@
 import os
 import time
-from javascript import require, console, On, Once, off
+from javascript import require, console, On, Once, off, once
 
 DemoClass = require("./javascript/js/test.js").DemoClass
 
@@ -59,7 +59,9 @@ except Exception as e:
 
 print("Array", demo.arr.valueOf())
 
-time.sleep(0.1)
-# This should throw for now :
-# demo.x = 3
-# print(demo)
+demo.wait()
+
+demo.x = 3
+
+once(demo, 'done')
+print("OK, we can now exit")
