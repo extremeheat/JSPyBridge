@@ -25,7 +25,7 @@ if args.clean:
         os.remove(np)
     except Exception:
         pass
-if args.update:
+elif args.update:
     print("Updating package store")
     os.chdir(os.path.dirname(__file__) + '/js')
     os.system("npm update")

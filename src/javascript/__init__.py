@@ -35,7 +35,7 @@ def require(name, version=None):
 
 console = config.global_jsi.console
 globalThis = config.global_jsi.globalThis
-
+_events = config.global_jsi.require('events')
 
 def AsyncTask(start=False):
     def decor(fn):
@@ -104,3 +104,7 @@ def Once(emitter, event):
 def off(emitter, event, handler):
     emitter.off(event, handler)
     del config.event_loop.callbacks[getattr(handler, "ffid")]
+
+def once(emitter, event):
+    val = _events.once(emitter, event, timeout=1000)
+    return val
