@@ -40,7 +40,7 @@ class Executor:
             raise JavaScriptError(attr, res["error"])
         return res
 
-    def pcall(self, ffid, action, attr, args, timeout=10):
+    def pcall(self, ffid, action, attr, args, timeout=1000):
         """
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the

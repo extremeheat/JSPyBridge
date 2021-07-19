@@ -9,6 +9,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
 const util = require('util')
 const { PyBridge } = require('./pyi')
 const { $require } = require('./deps')
+const { once } = require('events')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
 const colors = process.env.FORCE_COLOR !== '0'
@@ -52,6 +53,7 @@ class Bridge {
         require: $require,
         _require: require,
         globalThis,
+        once,
         needsNodePatches: () => {
           const [major, minor] = process.versions.node.split('.')
           if ((major == 14 && minor < 17) || (major == 15)) { // eslint-disable-line

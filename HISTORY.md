@@ -1,3 +1,6 @@
+## 0.2.6
+* py: Add new top-level `once` export, alias to Node.js's events function.
+
 ## 0.2.5
 * py: Support Node versions 14+
 

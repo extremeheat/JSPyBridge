@@ -90,8 +90,11 @@ This library provides some wrappers around EventEmitters. You must use them over
 These wrappers are avaliable as `@On(emitter, eventName)`, `@Once(emitter, eventName)` and
 the top-level `off(emitter, eventName, handlerFn)` function.
 
+Note that you are still able to use the `once` static function from Node.js's `emitter` library.
+This library provides a default export for this, used as in the example below.
+
 ```py
-from javascript import require, On, Once, off
+from javascript import require, On, Once, off, once
 MyEmitter = require('./emitter.js')
 # New class instance
 myEmitter = MyEmitter()
