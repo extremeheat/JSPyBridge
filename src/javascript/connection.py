@@ -131,6 +131,7 @@ def com_io():
     while proc.poll() == None:
         stderr_lines.append(proc.stderr.readline())
         config.event_loop.queue.put("stdin")
+    stop()
 
 
 def stdout_read():
@@ -153,7 +154,10 @@ def stop():
     config.event_thread = None
     config.executor = None
     # The "root" interface to JavaScript with FFID 0
-    config.global_jsi = None
+    class Null:
+      def __getattr__(self, *args, **kwargs):
+        raise Exception("The JavaScript process has crashed. Please restart the runtime to access JS APIs.")
+    config.global_jsi = Null()
     # Currently this breaks GC
     config.fast_mode = False
 

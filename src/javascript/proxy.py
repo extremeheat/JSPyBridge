@@ -31,7 +31,9 @@ class Executor:
             l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
 
         if not l.wait(10):
-            print("Timed out", action, ffid, attr)
+            if not config.event_thread:
+              print("\n** The Node process has crashed. Please restart the runtime to use JS APIs. **\n")
+            print("Timed out", action, ffid, attr, repr(config.event_thread))
             raise Exception(f"Timed out accessing '{attr}'")
         res, barrier = self.loop.responses[r]
         del self.loop.responses[r]
@@ -114,12 +116,18 @@ class Executor:
             for requestId in pre["val"]:
                 ffid = pre["val"][requestId]
                 self.bridge.m[ffid] = wanted[int(requestId)]
-                if hasattr(self.bridge.m[ffid], "__call__"):
-                    setattr(self.bridge.m[ffid], "iffid", ffid)
+                # This logic just for Event Emitters
+                try:
+                  if hasattr(self.bridge.m[ffid], "__call__"):
+                      setattr(self.bridge.m[ffid], "iffid", ffid)
+                except Exception:
+                    pass
 
             barrier.wait()
 
         if not l.wait(timeout):
+            if not config.event_thread:
+              print("\n** The Node process has crashed. Please restart the runtime to use JS APIs. **\n")
             raise Exception(
                 f"Call to '{attr}' timed out. Increase the timeout by setting the `timeout` keyword argument."
             )
