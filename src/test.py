@@ -73,7 +73,6 @@ print(eval_js('''
         await pythonArray.append(i);
         pythonObject[i] = i;
     }
-    console.log('Demo', demo)
     const fn = await demo.moreComplex()
     console.log('wrapped fn', await fn()); // Should be 3
     pythonObject.var = 5;
