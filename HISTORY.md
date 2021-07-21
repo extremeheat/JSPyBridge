@@ -1,3 +1,6 @@
+## 0.2.9
+* py: Improve error handling on Python process exit.
+
 ## 0.2.7
 * py: Add new JavaScript expression evaluator
 

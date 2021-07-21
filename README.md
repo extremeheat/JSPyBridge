@@ -126,6 +126,19 @@ are registered to a FinalizationRegistry. In Python, `__del__` is used to track 
 destruction. When the proxy object is destoryed on one side of the bridge, its refrence is removed
 from the other side of the bridge. This means you don't have to deal with memory management.
 
+* When doing a function call, any foreign objects will be sent to you as a reference. For example,
+  if you're in JavaScript and do a function call to Python that returns an array, you won't get a
+  JS array back, but you will get a reference to the Python array. You can still access the array
+  normally with the [] notation, as long as you use await. If you would like the bridge to turn
+  the foreign refrence to something native, you can request a primitive value by calling `.valueOf()`
+  on the Python array. This would give you a JS array. It works the same the other way around.
+* The above behavior makes it very fast to pipe data from one function onto another, avoiding costly
+  conversions.
+* This above behavior is not present for callbacks and function parameters. The bridge will try to
+  serialize what it can, and will give you a foreign reference if it's unable to serialize something.
+  So if you pass a JS object, you'll get a Python dict, but if the dict contains something like a class,
+  you'll get a reference in its place.
+
 ## Python
 
 You can import the bridge module with 
