@@ -3,9 +3,3 @@ __*__
 .DS*
 src/**/package.json
 package-lock.json
-build*
-dist*
-demos*
-*egg*
-src/JSPyBridge*
-*.txt
