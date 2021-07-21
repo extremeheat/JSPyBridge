@@ -27,7 +27,7 @@ if args.clean:
         pass
 elif args.update:
     print("Updating package store")
-    os.chdir(os.path.dirname(__file__) + '/js')
+    os.chdir(os.path.dirname(__file__) + "/js")
     os.system("npm update")
 else:
     parser.print_help(sys.stderr)

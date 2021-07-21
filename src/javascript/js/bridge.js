@@ -46,7 +46,6 @@ class Bridge {
     // to Python.
     this.ffid = 0
     // This contains a refrence map of FFIDs to JS objects.
-    // TODO: figure out gc, maybe weakmaps
     this.m = {
       0: {
         console,
@@ -60,6 +59,13 @@ class Bridge {
             return true
           }
           return false
+        },
+        async evaluateWithContext($block, $locals) {
+          const $variables = Object.keys($locals)
+          const $inputs = $variables.map(v => `$locals["${v}"]`)
+          const $code = ($block.split('\n').length === 1 && !$block.includes('return ')) ? 'return ' + $block : $block
+          const $finalCode = `(async (${$variables.join(', ')}) => { ${$code} })(${$inputs.join(', ')})`
+          return await eval($finalCode)
         }
       }
     }

@@ -1,6 +1,6 @@
 import os
 import time
-from javascript import require, console, On, Once, off, once
+from javascript import require, console, On, Once, off, once, eval_js
 
 DemoClass = require("./javascript/js/test.js").DemoClass
 
@@ -60,8 +60,26 @@ except Exception as e:
 print("Array", demo.arr.valueOf())
 
 demo.wait()
+once(demo, "done")
 
 demo.x = 3
 
-once(demo, 'done')
+pythonArray = []
+pythonObject = {"var": 3}
+
+# fmt: off
+print(eval_js('''
+    for (let i = 0; i < 10; i++) {
+        await pythonArray.append(i);
+        pythonObject[i] = i;
+    }
+    pythonObject.var = 5;
+    const fn = await demo.moreComplex()
+    console.log('wrapped fn', await fn()); // Should be 3
+    return 2
+'''))
+# fmt: on
+
+print("My var", pythonObject)
+
 print("OK, we can now exit")

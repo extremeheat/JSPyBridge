@@ -7,19 +7,23 @@ from .config import debug
 stdout = sys.stdout
 notebook = False
 
-def is_notebook():
-  try:
-    from IPython import get_ipython
-  except Exception: return False
-  if 'COLAB_GPU' in os.environ: return True
 
-  shell = get_ipython().__class__.__name__
-  if shell == 'ZMQInteractiveShell':
-    return True
+def is_notebook():
+    try:
+        from IPython import get_ipython
+    except Exception:
+        return False
+    if "COLAB_GPU" in os.environ:
+        return True
+
+    shell = get_ipython().__class__.__name__
+    if shell == "ZMQInteractiveShell":
+        return True
+
 
 if is_notebook():
-  notebook = True
-  stdout = subprocess.PIPE
+    notebook = True
+    stdout = subprocess.PIPE
 
 
 def supports_color():
@@ -128,9 +132,11 @@ def com_io():
         stderr_lines.append(proc.stderr.readline())
         config.event_loop.queue.put("stdin")
 
+
 def stdout_read():
     while proc.poll() is None:
         print(proc.stdout.readline().decode("utf-8"))
+
 
 def start():
     global com_thread
@@ -141,8 +147,6 @@ def start():
 def stop():
     try:
         proc.terminate()
-        com_thread.stop()
-        stdout_thread.stop()
     except Exception:
         pass
     config.event_loop = None
@@ -152,7 +156,6 @@ def stop():
     config.global_jsi = None
     # Currently this breaks GC
     config.fast_mode = False
-
 
 
 def is_alive():

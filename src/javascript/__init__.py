@@ -1,11 +1,11 @@
 # This file contains all the exposed modules
 from . import config, proxy, events
-import threading, time, atexit, os, sys
+import threading, inspect, time, atexit, os, sys
 
 
 def init():
     if config.event_loop:
-        return # Do not start event loop again
+        return  # Do not start event loop again
     config.event_loop = events.EventLoop()
     config.event_thread = threading.Thread(target=config.event_loop.loop, args=(), daemon=True)
     config.event_thread.start()
@@ -36,6 +36,21 @@ def require(name, version=None):
 console = config.global_jsi.console
 globalThis = config.global_jsi.globalThis
 
+
+def eval_js(js):
+    frame = inspect.currentframe()
+    rv = None
+    try:
+        local_vars = {}
+        for local in frame.f_back.f_locals:
+            if not local.startswith("__"):
+                local_vars[local] = frame.f_back.f_locals[local]
+        rv = config.global_jsi.evaluateWithContext(js, local_vars, forceRefs=True)
+    finally:
+        del frame
+    return rv
+
+
 def AsyncTask(start=False):
     def decor(fn):
         fn.is_async_task = True
@@ -59,8 +74,10 @@ def On(emitter, event):
         # Here we need to manually add in the `this` argument for consistency in Node versions.
         # In JS we could normally just bind `this` but there is no bind in Python.
         if config.node_emitter_patches:
+
             def handler(*args, **kwargs):
                 _fn(emitter, *args, **kwargs)
+
             fn = handler
         else:
             fn = _fn
@@ -103,6 +120,7 @@ def Once(emitter, event):
 def off(emitter, event, handler):
     emitter.off(event, handler)
     del config.event_loop.callbacks[getattr(handler, "ffid")]
+
 
 def once(emitter, event):
     val = config.global_jsi.once(emitter, event, timeout=1000)
