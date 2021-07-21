@@ -141,7 +141,7 @@ class Executor:
         return True
 
     def callProp(self, ffid, method, args, *, timeout=None, forceRefs=False):
-        resp = self.pcall(ffid, "call", method, args, timeout, forceRefs=forceRefs)
+        resp = self.pcall(ffid, "call", method, args, timeout=timeout, forceRefs=forceRefs)
         return resp
 
     def initProp(self, ffid, method, args):
@@ -197,7 +197,7 @@ class Proxy(object):
         mT, v = (
             self._exe.initProp(self._pffid, self._pname, args)
             if self._es6
-            else self._exe.callProp(self._pffid, self._pname, args, timeout, forceRefs=forceRefs)
+            else self._exe.callProp(self._pffid, self._pname, args, timeout=timeout, forceRefs=forceRefs)
         )
         if mT == "fn":
             return Proxy(self._exe, v)
