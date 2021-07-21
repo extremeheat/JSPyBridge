@@ -73,9 +73,9 @@ print(eval_js('''
         await pythonArray.append(i);
         pythonObject[i] = i;
     }
+    pythonObject.var = 5;
     const fn = await demo.moreComplex()
     console.log('wrapped fn', await fn()); // Should be 3
-    pythonObject.var = 5;
     return 2
 '''))
 # fmt: on
