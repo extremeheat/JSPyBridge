@@ -40,7 +40,9 @@ class Executor:
             raise JavaScriptError(attr, res["error"])
         return res
 
-    def pcall(self, ffid, action, attr, args, timeout=1000):
+    # forceRefs=True means that the non-primitives in the second parameter will not be recursively
+    # parsed for references. It's specifcally for eval_js.
+    def pcall(self, ffid, action, attr, args, /, timeout=1000, forceRefs=False):
         """
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the
@@ -73,9 +75,23 @@ class Executor:
                 wanted[self.ctr] = arg
                 return {"r": self.ctr, "ffid": ""}
 
-        payload = json.dumps(packet, default=ser)
-        # a bit of a hack, but we need to add in the counter after we've already serialized ...
-        payload = payload[:-1] + f',"p":{self.ctr}}}'
+        if forceRefs:
+            _block, _locals = args
+            packet['args'] = [args[0], {}]
+            flocals = packet['args'][1]
+            for k in _locals:
+                v = _locals[k]
+                if (type(v) is int) or (type(v) is float) or (v is None) or (v is True) or (v is False):
+                    flocals[k] = v
+                else:
+                    flocals[k] = ser(v)
+            packet['p'] = self.ctr
+            payload = json.dumps(packet)
+        else:
+            payload = json.dumps(packet, default=ser)
+            # a bit of a perf hack, but we need to add in the counter after we've already serialized ...
+            payload = payload[:-1] + f',"p":{self.ctr}}}'
+
         l = self.loop.queue_request(callRespId, payload)
         # We only have to wait for a FFID assignment response if
         # we actually sent any non-primitives, otherwise skip
@@ -92,13 +108,13 @@ class Executor:
             for requestId in pre["val"]:
                 ffid = pre["val"][requestId]
                 self.bridge.m[ffid] = wanted[int(requestId)]
-                setattr(self.bridge.m[ffid], "iffid", ffid)
+                if hasattr(self.bridge.m[ffid], '__call__'):
+                    setattr(self.bridge.m[ffid], "iffid", ffid)
 
             barrier.wait()
 
         if not l.wait(timeout):
-            raise Exception(f"Call to '{attr}' timed out")
-
+            raise Exception(f"Call to '{attr}' timed out. Increase the timeout by setting the `timeout` keyword argument.")
         res, barrier = self.loop.responses[callRespId]
         del self.loop.responses[callRespId]
 
@@ -116,8 +132,8 @@ class Executor:
         self.pcall(ffid, "set", method, [val])
         return True
 
-    def callProp(self, ffid, method, args, timeout=None):
-        resp = self.pcall(ffid, "call", method, args, timeout)
+    def callProp(self, ffid, method, args, /, timeout=None, forceRefs=False):
+        resp = self.pcall(ffid, "call", method, args, timeout, forceRefs=forceRefs)
         return resp
 
     def initProp(self, ffid, method, args):
@@ -169,11 +185,11 @@ class Proxy(object):
         else:
             return val
 
-    def __call__(self, *args, timeout=10):
+    def __call__(self, *args, timeout=10, forceRefs=False):
         mT, v = (
             self._exe.initProp(self._pffid, self._pname, args)
             if self._es6
-            else self._exe.callProp(self._pffid, self._pname, args, timeout)
+            else self._exe.callProp(self._pffid, self._pname, args, timeout, forceRefs=forceRefs)
         )
         if mT == "fn":
             return Proxy(self._exe, v)

@@ -1,6 +1,6 @@
 # This file contains all the exposed modules
 from . import config, proxy, events
-import threading, time, atexit, os, sys
+import threading, inspect, time, atexit, os, sys
 
 
 def init():
@@ -35,6 +35,20 @@ def require(name, version=None):
 
 console = config.global_jsi.console
 globalThis = config.global_jsi.globalThis
+
+def eval_js(js):
+    frame = inspect.currentframe()
+    rv = None
+    try:
+        local_vars = {}
+        for local in frame.f_back.f_locals:
+            if not local.startswith("__"):
+                local_vars[local] = frame.f_back.f_locals[local]
+        rv = config.global_jsi.evaluateWithContext(js, local_vars, forceRefs=True)
+    finally:
+        del frame
+    return rv
+
 
 def AsyncTask(start=False):
     def decor(fn):

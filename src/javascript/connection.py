@@ -141,8 +141,6 @@ def start():
 def stop():
     try:
         proc.terminate()
-        com_thread.stop()
-        stdout_thread.stop()
     except Exception:
         pass
     config.event_loop = None
