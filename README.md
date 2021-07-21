@@ -17,11 +17,8 @@ Requires Node.js 16 and Python 3.8 or newer.
 * Bidirectional callbacks with arbitrary arguments
 * Iteration and exception handling support
 * Object inspection allows you to easily `console.log` or `print()` any foreign objects
-
-#### Exclusive to python bridge for javascript
-* Python class extension and inheritance. See pytorch and tensorflow examples.
-#### Exclusive to javascript bridge for python
-* Native decorator-based event emitter support (javascript bridge)
+* (Bridge to call Python from JS) Python class extension and inheritance. See pytorch and tensorflow examples.
+* (Bridge to call JS from Python) Native decorator-based event emitter support
 
 
 ## Basic usage example
@@ -97,12 +94,16 @@ callbacks, and do loss-less function calls with any arguments you like (with the
 | Callbacks | ✔ | ✔ | ❌ |
 | Call classes | ✔ | ✔ |  |
 | Iterators | ✔ | ✔ | ❌ |
-| Inline eval | ✔ | ❌ |  |
+| Inline eval | ✔ | ✔ |  |
 | Dependency Management | ❌ | ✔ | ❌ |
 | Local File Imports | ✔ | ✔ | ❌ |
 | Error Management | ✔ | ✔ | ✔ |
 | Object inspection | ✔ | ✔ | ❌ |
 
+#### Notable details
+
+* The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
+* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over STDERR which means that JSON output in JS STDERR can interfere with the bridge. The same issue exists on Windows with pythoni. You are very unlikely to have issues with this, but it will be fixed soon. 
 
 # Documentation
 

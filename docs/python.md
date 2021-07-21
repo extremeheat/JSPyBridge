@@ -107,3 +107,32 @@ def handleIncrement(this, counter):
 # Trigger the event handler
 myEmitter.inc()
 ```
+
+### expression evaluation
+
+You can use the exported `eval_js` function to evaluate JavaScript code within the current Python context. The parameter to this function is a JS string to evaluate, with access to all the Python variables in scope. Make sure to use `await` anywhere you do a function call or a property access on a Python object. You can set variables without await.
+
+```julia
+import javascript
+
+countUntil = 9
+myArray = [1]
+myObject = { 'hello': '' }
+
+# Make sure you await everywhere you expect a JS call !
+output = javascript.eval_js('''
+    myObject['world'] = 'hello'    
+    for (let x = 0; x < countUntil; x++) {
+        await myArray.append(2)
+    }
+    return 'it worked'
+''')
+
+# If we look at myArray and myObject, we should see it updated
+print(output, myArray, myObject)
+```
+
+You can also use it inline.
+```swift
+x_or_z = eval_js(''' obj.x ?? obj.z ''')
+```
