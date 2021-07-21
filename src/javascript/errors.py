@@ -50,7 +50,7 @@ chalk = Chalk()
 
 
 def format_line(line):
-    if line.startswith("<") or line.startswith('\\'):
+    if line.startswith("<") or line.startswith("\\"):
         return line
     statements = [
         "const ",
@@ -127,7 +127,7 @@ def processPyStacktrace(stack):
         if lin.startswith("  File"):
             tokens = lin.split("\n")
             lin = tokens[0]
-            Code = tokens[1] if len(tokens) > 1 else chalk.italic('<via standard input>')
+            Code = tokens[1] if len(tokens) > 1 else chalk.italic("<via standard input>")
             fname = lin.split('"')[1]
             line = re.search(r"\, line (\d+)", lin).group(1)
             at = re.search(r"\, in (.*)", lin)
@@ -141,11 +141,16 @@ def processPyStacktrace(stack):
 
     return error_line, lines
 
-INTERNAL_FILES = ['bridge.js', 'pyi.js', 'errors.js', 'deps.js', 'test.js']
+
+INTERNAL_FILES = ["bridge.js", "pyi.js", "errors.js", "deps.js", "test.js"]
+
+
 def isInternal(file):
     for f in INTERNAL_FILES:
-        if f in file: return True
+        if f in file:
+            return True
     return False
+
 
 def processJsStacktrace(stack, allowInternal=False):
     lines = []

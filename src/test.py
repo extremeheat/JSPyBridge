@@ -60,13 +60,14 @@ except Exception as e:
 print("Array", demo.arr.valueOf())
 
 demo.wait()
-once(demo, 'done')
+once(demo, "done")
 
 demo.x = 3
 
 pythonArray = []
-pythonObject = { 'var': 3 }
+pythonObject = {"var": 3}
 
+# fmt: off
 print(eval_js('''
     for (let i = 0; i < 10; i++) {
         await pythonArray.append(i);
@@ -78,6 +79,7 @@ print(eval_js('''
     pythonObject.var = 5;
     return 2
 '''))
+# fmt: on
 
 print("My var", pythonObject)
 

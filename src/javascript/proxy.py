@@ -77,15 +77,21 @@ class Executor:
 
         if forceRefs:
             _block, _locals = args
-            packet['args'] = [args[0], {}]
-            flocals = packet['args'][1]
+            packet["args"] = [args[0], {}]
+            flocals = packet["args"][1]
             for k in _locals:
                 v = _locals[k]
-                if (type(v) is int) or (type(v) is float) or (v is None) or (v is True) or (v is False):
+                if (
+                    (type(v) is int)
+                    or (type(v) is float)
+                    or (v is None)
+                    or (v is True)
+                    or (v is False)
+                ):
                     flocals[k] = v
                 else:
                     flocals[k] = ser(v)
-            packet['p'] = self.ctr
+            packet["p"] = self.ctr
             payload = json.dumps(packet)
         else:
             payload = json.dumps(packet, default=ser)
@@ -108,13 +114,15 @@ class Executor:
             for requestId in pre["val"]:
                 ffid = pre["val"][requestId]
                 self.bridge.m[ffid] = wanted[int(requestId)]
-                if hasattr(self.bridge.m[ffid], '__call__'):
+                if hasattr(self.bridge.m[ffid], "__call__"):
                     setattr(self.bridge.m[ffid], "iffid", ffid)
 
             barrier.wait()
 
         if not l.wait(timeout):
-            raise Exception(f"Call to '{attr}' timed out. Increase the timeout by setting the `timeout` keyword argument.")
+            raise Exception(
+                f"Call to '{attr}' timed out. Increase the timeout by setting the `timeout` keyword argument."
+            )
         res, barrier = self.loop.responses[callRespId]
         del self.loop.responses[callRespId]
 

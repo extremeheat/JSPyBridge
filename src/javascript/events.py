@@ -74,7 +74,7 @@ class EventLoop:
         self.pyi = pyi.PyInterface(self, config.executor)
 
     def stop(self):
-      connection.stop()
+        connection.stop()
 
     # === THREADING ===
     def newTaskThread(self, handler, *args):
