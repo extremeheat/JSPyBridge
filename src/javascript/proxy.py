@@ -42,7 +42,7 @@ class Executor:
 
     # forceRefs=True means that the non-primitives in the second parameter will not be recursively
     # parsed for references. It's specifcally for eval_js.
-    def pcall(self, ffid, action, attr, args, /, timeout=1000, forceRefs=False):
+    def pcall(self, ffid, action, attr, args, *, timeout=1000, forceRefs=False):
         """
         This function does a two-part call to JavaScript. First, a preliminary request is made to JS
         with the function ID, attribute and arguments that Python would like to call. For each of the
@@ -140,7 +140,7 @@ class Executor:
         self.pcall(ffid, "set", method, [val])
         return True
 
-    def callProp(self, ffid, method, args, /, timeout=None, forceRefs=False):
+    def callProp(self, ffid, method, args, *, timeout=None, forceRefs=False):
         resp = self.pcall(ffid, "call", method, args, timeout, forceRefs=forceRefs)
         return resp
 
