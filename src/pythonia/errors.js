@@ -12,7 +12,7 @@ function formatLine (line) {
 function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStacktrace) {
   const lines = []
   const log = (...sections) => lines.push(sections.join(' '))
-  log('🐍', chalk.white.bgRedBright.bold(' Python Error '), `Call to '${failedCall.replace('~~', '')}' failed:`)
+  log(chalk.supportsColor ? '🐍' : '*** PY ***', chalk.white.bgRedBright.bold(' Python Error '), `Call to '${failedCall.replace('~~', '')}' failed:`)
   log(chalk.dim('>'), formatLine(jsErrorline))
 
   for (const traceline of jsStacktrace) {
@@ -30,7 +30,7 @@ function printError (failedCall, jsErrorline, jsStacktrace, pyErrorline, pyStack
       log(' ', chalk.dim(at))
     }
   }
-  log('🌉', chalk.bold(pyErrorline))
+  log(chalk.supportsColor ? '🌉' : '*** JS ***', chalk.bold(pyErrorline))
   return lines
 }
 
