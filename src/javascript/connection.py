@@ -155,8 +155,11 @@ def stop():
     config.executor = None
     # The "root" interface to JavaScript with FFID 0
     class Null:
-      def __getattr__(self, *args, **kwargs):
-        raise Exception("The JavaScript process has crashed. Please restart the runtime to access JS APIs.")
+        def __getattr__(self, *args, **kwargs):
+            raise Exception(
+                "The JavaScript process has crashed. Please restart the runtime to access JS APIs."
+            )
+
     config.global_jsi = Null()
     # Currently this breaks GC
     config.fast_mode = False

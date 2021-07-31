@@ -32,7 +32,7 @@ class Executor:
 
         if not l.wait(10):
             if not config.event_thread:
-              print("\n** The Node process has crashed. Please restart the runtime to use JS APIs. **\n")
+                print(config.dead)
             print("Timed out", action, ffid, attr, repr(config.event_thread))
             raise Exception(f"Timed out accessing '{attr}'")
         res, barrier = self.loop.responses[r]
@@ -118,8 +118,8 @@ class Executor:
                 self.bridge.m[ffid] = wanted[int(requestId)]
                 # This logic just for Event Emitters
                 try:
-                  if hasattr(self.bridge.m[ffid], "__call__"):
-                      setattr(self.bridge.m[ffid], "iffid", ffid)
+                    if hasattr(self.bridge.m[ffid], "__call__"):
+                        setattr(self.bridge.m[ffid], "iffid", ffid)
                 except Exception:
                     pass
 
@@ -127,7 +127,7 @@ class Executor:
 
         if not l.wait(timeout):
             if not config.event_thread:
-              print("\n** The Node process has crashed. Please restart the runtime to use JS APIs. **\n")
+                print(config.dead)
             raise Exception(
                 f"Call to '{attr}' timed out. Increase the timeout by setting the `timeout` keyword argument."
             )
@@ -205,7 +205,9 @@ class Proxy(object):
         mT, v = (
             self._exe.initProp(self._pffid, self._pname, args)
             if self._es6
-            else self._exe.callProp(self._pffid, self._pname, args, timeout=timeout, forceRefs=forceRefs)
+            else self._exe.callProp(
+                self._pffid, self._pname, args, timeout=timeout, forceRefs=forceRefs
+            )
         )
         if mT == "fn":
             return Proxy(self._exe, v)
@@ -215,12 +217,7 @@ class Proxy(object):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
             return self._call(self._pname if self._pffid == self.ffid else "", "class", self._pffid)
-        # Small optimization ... though doesn't seem to make a big difference !
-        # if attr in self._resolved and config.fast_mode:
-        #     methodType, val = self._resolved[attr]
-        #     return self._call(attr, methodType, val)
         methodType, val = self._exe.getProp(self._pffid, attr)
-        # self._resolved[attr] = methodType, val
         return self._call(attr, methodType, val)
 
     def __getitem__(self, attr):

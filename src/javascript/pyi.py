@@ -8,6 +8,19 @@ from .errors import JavaScriptError, getErrorMessage
 from weakref import WeakValueDictionary
 
 
+def python(method):
+    return importlib.import_module(method, package=None)
+
+
+def fileImport(moduleName, absolutePath, folderPath):
+    if folderPath not in sys.path:
+        sys.path.append(folderPath)
+    spec = importlib.util.spec_from_file_location(moduleName, absolutePath)
+    foo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(foo)
+    return foo
+
+
 class Iterate:
     def __init__(self, v):
         self.what = v
@@ -39,7 +52,7 @@ fix_key = lambda key: key.replace("~~", "") if type(key) is str else key
 
 
 class PyInterface:
-    m = {0: {"Iterate": Iterate}}
+    m = {0: {"python": python, "fileImport": fileImport, "Iterate": Iterate}}
     # Things added to this dict are auto GC'ed
     weakmap = WeakValueDictionary()
     cur_ffid = 10000
