@@ -24,17 +24,22 @@ def require(name, version=None):
     calling_dir = None
     if name.startswith("."):
         # Some code to extract the caller's file path, needed for relative imports
-        namespace = sys._getframe(1).f_globals
-        cwd = os.getcwd()
-        rel_path = namespace["__file__"]
-        abs_path = os.path.join(cwd, rel_path)
-        calling_dir = os.path.dirname(abs_path)
+        try:
+            namespace = sys._getframe(1).f_globals
+            cwd = os.getcwd()
+            rel_path = namespace["__file__"]
+            abs_path = os.path.join(cwd, rel_path)
+            calling_dir = os.path.dirname(abs_path)
+        except Exception:
+            # On Notebooks, the frame info above does not exist, so assume the CWD as caller
+            calling_dir = os.getcwd()
 
     return config.global_jsi.require(name, version, calling_dir, timeout=900)
 
 
-console = config.global_jsi.console
+console = config.global_jsi.console  # TODO: Remove this in 1.0
 globalThis = config.global_jsi.globalThis
+RegExp = config.global_jsi.RegExp
 
 
 def eval_js(js):

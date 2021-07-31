@@ -5,14 +5,20 @@ const log = process.env.DEBUG ? console.log : () => {}
 
 // TODO: are dangling handlers an issue?
 class StdioCom {
-  constructor (ver = 3) {
-    this.python = ver === 3 ? 'python3' : 'python2'
+  constructor () {
     this.start()
   }
 
   start () {
     this.handlers = {}
-    this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
+    const stdio = ['inherit', 'inherit', 'inherit', 'ipc']
+    const args = [join(__dirname, 'interface.py')]
+    try {
+      this.proc = cp.spawn(process.env.PYTHON_BIN || 'python3', args, { stdio })
+    } catch (e) {
+      if (e.code === 'ENOENT' && !process.env.PYTHON_BIN) this.proc = cp.spawn('python', args, { stdio })
+      else throw e
+    }
     // BAD HACK: since the channel is not exposed, and we need to send JSON with a
     // custom serializer, we basically have two choices:
     // 1) either JSON.stringify it with a custom encoder in our lib, then have it JSON.stringified
@@ -20,6 +26,7 @@ class StdioCom {
     // 2) use a hack to get the low level IPC API and write raw strings to it.
     // There is no 'string' serialization option for IPC. It's either JSON or 'Advanced' which uses
     // internal V8 serialization APIs; fast but unusable in Python.
+    // See https://github.com/nodejs/node/issues/39317
     const symbols = Object.getOwnPropertySymbols(this.proc)
     const symbol = symbols.find(sym => sym.toString() === 'Symbol(kChannelHandle)')
     const channel = this.proc[symbol]

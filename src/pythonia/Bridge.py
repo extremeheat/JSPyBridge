@@ -79,6 +79,8 @@ class Bridge:
         )
         self.executor = Executor(self)
 
+        setattr(os, "JSPyBridge", Proxy(self.executor, 0))
+
     def assign_ffid(self, what):
         self.cur_ffid += 1
         self.m[self.cur_ffid] = what

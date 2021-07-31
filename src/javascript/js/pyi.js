@@ -68,6 +68,10 @@ class PyBridge {
       // Once the Proxy is freed, we also want to release the pyClass ref
       delete this.jsi.m[ffid]
     })
+
+    globalThis.JSPyBridge = {
+      python: this.makePyObject(0).python
+    }
   }
 
   runTasks = () => {

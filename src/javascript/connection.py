@@ -6,6 +6,7 @@ from .config import debug
 # Special handling for IPython jupyter notebooks
 stdout = sys.stdout
 notebook = False
+NODE_BIN = getattr(os.environ, "NODE_BIN") if hasattr(os.environ, "NODE_BIN") else "node"
 
 
 def is_notebook():
@@ -108,7 +109,7 @@ def com_io():
     global proc, stdout_thread
     try:
         proc = subprocess.Popen(
-            ["node", dn + "/js/bridge.js"],
+            [NODE_BIN, dn + "/js/bridge.js"],
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=subprocess.PIPE,
@@ -155,8 +156,11 @@ def stop():
     config.executor = None
     # The "root" interface to JavaScript with FFID 0
     class Null:
-      def __getattr__(self, *args, **kwargs):
-        raise Exception("The JavaScript process has crashed. Please restart the runtime to access JS APIs.")
+        def __getattr__(self, *args, **kwargs):
+            raise Exception(
+                "The JavaScript process has crashed. Please restart the runtime to access JS APIs."
+            )
+
     config.global_jsi = Null()
     # Currently this breaks GC
     config.fast_mode = False

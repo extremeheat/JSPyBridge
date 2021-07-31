@@ -17,7 +17,7 @@ class Ipc:
             apiout.flush()
         except Exception:
             # Quit if we are unable to write (is the parent process dead?)
-            exit(1)
+            sys.exit(1)
 
 
 ipc = Ipc()

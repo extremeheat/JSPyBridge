@@ -52,6 +52,7 @@ class Bridge {
         require: $require,
         _require: require,
         globalThis,
+        RegExp,
         once,
         needsNodePatches: () => {
           const [major, minor] = process.versions.node.split('.')
