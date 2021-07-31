@@ -37,8 +37,9 @@ def require(name, version=None):
     return config.global_jsi.require(name, version, calling_dir, timeout=900)
 
 
-console = config.global_jsi.console
+console = config.global_jsi.console  # TODO: Remove this in 1.0
 globalThis = config.global_jsi.globalThis
+RegExp = config.global_jsi.RegExp
 
 
 def eval_js(js):

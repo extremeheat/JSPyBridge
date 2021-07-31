@@ -101,51 +101,12 @@ callbacks, and do loss-less function calls with any arguments you like (with the
 | Error Management | ✔ | ✔ | ✔ |
 | Object inspection | ✔ | ✔ | ❌ |
 
-#### Notable details
-
-* The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
-* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over STDERR which means that JSON output in JS STDERR can interfere with the bridge. The same issue exists on Windows with pythoni. You are very unlikely to have issues with this, but it will be fixed soon. 
-
-* You can set the Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 
-
 ## Who's using it
 * [PrismarineJS/mineflayer](https://github.com/PrismarineJS/mineflayer) -- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrismarineJS/mineflayer/blob/master/docs/mineflayer.ipynb)
 
 # Documentation
 
-This bridge works through standard input/output pipes, there are no native modules and the 
-communication can happen through anywhere--either pipes or network sockets.
-
-You can import and call any JS or Python class you want, with few exceptions.
-
-**How it works.** For every property access, there is a 
-communication protocol where one side may access properties on the other, and also complete
-function calls. Non-primitive values are sent as foreign object reference IDs (FFID). These FFIDs
-exist in a map on both sides of the bridge, and map numeric IDs with a object reference. 
-
-On the opposite side to the one which holds a reference, this FFID is assigned to a Proxy object.
-In JS, a ES6 proxy is used, and in Python, the proxy is a normal class with custom `__getattr__` 
-and other magic methods. Each proxy property access is mirrored on the other side of the bridge. 
-
-Proxy objects on both sides of the bridge are GC tracked. In JavaScript, all python Proxy objects
-are registered to a FinalizationRegistry. In Python, `__del__` is used to track the Proxy object's
-destruction. When the proxy object is destoryed on one side of the bridge, its refrence is removed
-from the other side of the bridge. This means you don't have to deal with memory management.
-
-* When doing a function call, any foreign objects will be sent to you as a reference. For example,
-  if you're in JavaScript and do a function call to Python that returns an array, you won't get a
-  JS array back, but you will get a reference to the Python array. You can still access the array
-  normally with the [] notation, as long as you use await. If you would like the bridge to turn
-  the foreign refrence to something native, you can request a primitive value by calling `.valueOf()`
-  on the Python array. This would give you a JS array. It works the same the other way around.
-* The above behavior makes it very fast to pipe data from one function onto another, avoiding costly
-  conversions.
-* This above behavior is not present for callbacks and function parameters. The bridge will try to
-  serialize what it can, and will give you a foreign reference if it's unable to serialize something.
-  So if you pass a JS object, you'll get a Python dict, but if the dict contains something like a class,
-  you'll get a reference in its place.
-
-## Python
+## From Python
 
 You can import the bridge module with 
 ```py
@@ -160,12 +121,6 @@ supports both CommonJS and ES6 modules.
 If you are passing a module name (does not start with / or include a .) such as 'chalk', it will search 
 for the dependency in the internal node_module folder and if not found, install it automatically. 
 This install will only happen once, it won't impact startup afterwards.
-
-<!-- If you prefer to use the native node.js require function, you can instead import it from the global namespace, for example :
-```js
-from javascript import globalThis.require as require
-``` 
-then use it normally. However, note you will be responsibe for installing the dependencies. -->
 
 The second paramater to the built-in require function is the version of the package you want, for
 example `require('chalk', '^3')` to get a version greater than major version 3. Just like you would
@@ -182,7 +137,12 @@ we will install `latest` version instead, or use the version that may already be
 * All callbacks run on a dedicated callback thread. DO NOT BLOCK in a callback or all other events will be blocked. Instead:
 * Use the @AsyncTask decorator when you need to spawn a new thread for an async JS task.
 
-For more, see docs/python.md.
+For more, see [docs/python.md](https://github.com/extremeheat/JSPyBridge/blob/master/docs/python.md).
+
+### Usage
+
+<details>
+  <summary>👉 Click here to see some code usage examples 👈</summary>
 
 ### Basic import
 
@@ -279,13 +239,9 @@ method = require('./callback').method
 method(lambda v: print(v), 2) # Prints 44
 ```
 
+</details>
 
-
-## JavaScript
-
-The magic behind this is the usage of Proxy chains which permits call stack build up, until
-a .then call for property access or a function call is done. Afterwards, the callstack is sent
-and executed in Python.
+## From JavaScript
 
 * All the Python APIs are async. You must await them all. 
 * Use `python.exit()` or `process.exit()` at the end to quit the Python process.
@@ -302,6 +258,9 @@ and executed in Python.
 * See [docs/javascript.md](docs/javascript.md) for more docs, and the examples for more info
 
 ### Usage
+
+<details>
+  <summary>👉 Click here to see some code usage examples 👈</summary>
 
 ### Basic import
 
@@ -340,3 +299,25 @@ for await (const file of files) {
   console.log(file)
 }
 ```
+</details>
+
+## Details
+* When doing a function call, any foreign objects will be sent to you as a reference. For example,
+  if you're in JavaScript and do a function call to Python that returns an array, you won't get a
+  JS array back, but you will get a reference to the Python array. You can still access the array
+  normally with the [] notation, as long as you use await. If you would like the bridge to turn
+  the foreign refrence to something native, you can request a primitive value by calling `.valueOf()`
+  on the Python array. This would give you a JS array. It works the same the other way around.
+* The above behavior makes it very fast to pipe data from one function onto another, avoiding costly
+  conversions.
+* This above behavior is not present for callbacks and function parameters. The bridge will try to
+  serialize what it can, and will give you a foreign reference if it's unable to serialize something.
+  So if you pass a JS object, you'll get a Python dict, but if the dict contains something like a class,
+  you'll get a reference in its place.
+
+#### Notable details
+
+* The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
+* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over standard error which means that JSON output in JS standard error can interfere with the bridge. The same issue exists on Windows with python. You are however very unlikely to have issues with this.
+
+* You can set the Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 

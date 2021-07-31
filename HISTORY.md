@@ -2,6 +2,7 @@
 * Expose JSPyBridge on both sides of bridge. On python via `os.JSPyBridge` and via `globalThis.JSPyBridge` in Node.js.
 * Customizable Node.js/Python binary path through `NODE_BIN` and `PYTHON_BIN` enviornment flags
 * js: (Windows) Fix Electron stdout crashing issue
+* py: RegExp is now exposed top-level for easier usability
 
 ## 0.2.9
 * py: Improve error handling on Python process exit.
