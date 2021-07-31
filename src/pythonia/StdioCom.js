@@ -4,14 +4,20 @@ const { join } = require('path')
 const log = process.env.DEBUG ? console.log : () => {}
 
 class StdioCom {
-  constructor (ver = 3) {
-    this.python = ver === 3 ? 'python3' : 'python2'
+  constructor () {
     this.start()
   }
 
   start () {
     this.handlers = {}
-    this.proc = cp.spawn(this.python, [join(__dirname, 'interface.py')], { stdio: ['pipe', 'inherit', 'pipe'] })
+    const args = [join(__dirname, 'interface.py')]
+    const stdio = process.versions.electron ? 'pipe' : ['pipe', 'inherit', 'pipe']
+    try {
+      this.proc = cp.spawn(process.env.PYTHON_BIN || 'python3', args, { stdio })
+    } catch (e) {
+      if (e.code === 'ENOENT' && !process.env.PYTHON_BIN) this.proc = cp.spawn('python', args, { stdio })
+      else throw e
+    }
     this.proc.stderr.on('data', buf => {
       const data = String(buf)
       for (const line of data.split('\n')) {
@@ -28,6 +34,7 @@ class StdioCom {
         }
       }
     })
+    if (process.versions.electron) this.proc.stdout.pipe(process.stdout)
   }
 
   end () {

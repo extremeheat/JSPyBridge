@@ -6,6 +6,7 @@ from .config import debug
 # Special handling for IPython jupyter notebooks
 stdout = sys.stdout
 notebook = False
+NODE_BIN = getattr(os.environ, "NODE_BIN") if hasattr(os.environ, "NODE_BIN") else "node"
 
 
 def is_notebook():
@@ -108,7 +109,7 @@ def com_io():
     global proc, stdout_thread
     try:
         proc = subprocess.Popen(
-            ["node", dn + "/js/bridge.js"],
+            [NODE_BIN, dn + "/js/bridge.js"],
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=subprocess.PIPE,

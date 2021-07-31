@@ -1,3 +1,8 @@
+## 0.2.10
+* Expose JSPyBridge on both sides of bridge. On python via `os.JSPyBridge` and via `globalThis.JSPyBridge` in Node.js.
+* Customizable Node.js/Python binary path through `NODE_BIN` and `PYTHON_BIN` enviornment flags
+* js: (Windows) Fix Electron stdout crashing issue
+
 ## 0.2.9
 * py: Improve error handling on Python process exit.
 

@@ -106,6 +106,7 @@ callbacks, and do loss-less function calls with any arguments you like (with the
 * The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
 * On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over STDERR which means that JSON output in JS STDERR can interfere with the bridge. The same issue exists on Windows with pythoni. You are very unlikely to have issues with this, but it will be fixed soon. 
 
+* You can set the Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 
 
 ## Who's using it
 * [PrismarineJS/mineflayer](https://github.com/PrismarineJS/mineflayer) -- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/PrismarineJS/mineflayer/blob/master/docs/mineflayer.ipynb)
