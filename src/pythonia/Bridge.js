@@ -1,9 +1,3 @@
-if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[0]) < 16) {
-  console.error('Your node version is currently', process.versions.node)
-  console.error('Please update it to a version >= 16.x.x from https://nodejs.org/')
-  process.exit(1)
-}
-
 const util = require('util')
 const { JSBridge } = require('./jsi')
 const errors = require('./errors')
@@ -341,7 +335,7 @@ class Bridge {
     const handler = {
       get: (target, prop, reciever) => {
         const next = new Intermediate(target.callstack)
-        // log('```prop', next.callstack, prop)
+        // log('`prop', next.callstack, prop)
         if (prop === '$$') return target
         if (prop === 'ffid') return ffid
         if (prop === 'toJSON') return () => ({ ffid })
