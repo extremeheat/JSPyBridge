@@ -103,6 +103,9 @@ def test_eval():
 
     print("My var", pythonObject)
 
+def test_bigint():
+    bigInt = eval_js('100000n')
+    print(bigInt)
 
 test_require()
 test_classes()
@@ -115,3 +118,4 @@ test_valueOf()
 test_once()
 test_assignment()
 test_eval()
+test_bigint()

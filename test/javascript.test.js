@@ -14,3 +14,8 @@ it('runs test', function () {
   assert(fs.existsSync('./HelloWorld.txt'))
   fs.unlinkSync('./HelloWorld.txt')
 })
+
+it('runs general test', function () {
+  // Just make sure it passes without a bad exit code
+  cp.execSync(`python3 ${d}/javascript/test_general.py`, { stdio: 'inherit' })
+})
