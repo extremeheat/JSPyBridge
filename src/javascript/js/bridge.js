@@ -61,7 +61,7 @@ class Bridge {
           }
           return false
         },
-        async evaluateWithContext($block, $locals) {
+        async evaluateWithContext ($block, $locals) {
           const $variables = Object.keys($locals)
           const $inputs = $variables.map(v => `$locals["${v}"]`)
           const $code = ($block.split('\n').length === 1 && !$block.includes('return ')) ? 'return ' + $block : $block

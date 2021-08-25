@@ -18,6 +18,7 @@
     "mocha": "latest",
     "standard": "^16.0.3",
     "pythonia": "file:.",
+    "babel-eslint": "^10.1.0",
     "browserify": "^17.0.0"
   },
   "dependencies": {

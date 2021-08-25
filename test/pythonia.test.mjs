@@ -91,7 +91,7 @@ await it('can iterate asynchronously', async function () {
 await it('can recieve big numbers', async function () {
   const bigNumber = await py`2**63`
   console.log(bigNumber)
-  assert.ok(bigNumber > 2**60)
+  assert.ok(bigNumber > 2 ** 60)
 })
 
 // process.exit(0)
