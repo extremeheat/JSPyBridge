@@ -31,6 +31,7 @@ elif args.update:
     os.chdir(os.path.dirname(__file__) + "/js")
     os.system("npm update")
 elif args.install:
+    os.chdir(os.path.dirname(__file__) + "/js")
     os.system(f"npm install {args.install}")
 else:
     parser.print_help(sys.stderr)
