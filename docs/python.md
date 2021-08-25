@@ -16,7 +16,9 @@ Dependencies are automatically maanged through the library through the `require`
 you run into issues with dependencies, you can clear the internal `node_modules` folder cache
 by using `python3 -m javascript --clean` in a command line.
 
-You can update the internal packages with `python3 -m javascript --update`.
+You can update the internal packages with `python3 -m javascript --update <npm package>`. 
+
+You can install a package internally by using `python3 -m javascript --install <npm package>`. Internally, whatever you place after --update will be passed to `npm install <...>`. For example, use `python3 -m javascript --install PrismarineJS/vec3` to install the `vec3` package from git.
 
 ### imports
 
