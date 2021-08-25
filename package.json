@@ -8,6 +8,7 @@
   "repository": "https://github.com/extremeheat/JSPyBridge",
   "homepage": "https://github.com/extremeheat/JSPyBridge#readme",
   "scripts": {
+    "pretest": "npm i -g test && pip3 install .",
     "prepare": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
