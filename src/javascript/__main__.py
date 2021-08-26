@@ -5,6 +5,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--clean", default=False, action="store_true")
 parser.add_argument("--update", default=False, action="store_true")
+parser.add_argument("--install", default=False, action="store")
 args = parser.parse_args()
 
 if args.clean:
@@ -29,5 +30,8 @@ elif args.update:
     print("Updating package store")
     os.chdir(os.path.dirname(__file__) + "/js")
     os.system("npm update")
+elif args.install:
+    os.chdir(os.path.dirname(__file__) + "/js")
+    os.system(f"npm install {args.install}")
 else:
     parser.print_help(sys.stderr)

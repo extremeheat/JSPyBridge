@@ -2,7 +2,7 @@ import os
 import time
 from javascript import require, console, On, Once, off, once, eval_js
 
-DemoClass = require("./javascript/js/test.js").DemoClass
+DemoClass = require("./test.js").DemoClass
 
 chalk, fs = require("chalk"), require("fs")
 
@@ -44,6 +44,7 @@ def onceIncrement(this, *args):
 
 
 demo.increment()
+time.sleep(0.5)
 
 demo.arr[1] = 5
 demo.obj[1] = 5

@@ -1,3 +1,6 @@
+## 0.2.11
+* py: add an `--install <npm package>` option to the CLI to install internal packages outside of scripts
+
 ## 0.2.10
 * Expose JSPyBridge on both sides of bridge. On python via `os.JSPyBridge` and via `globalThis.JSPyBridge` in Node.js.
 * Customizable Node.js/Python binary path through `NODE_BIN` and `PYTHON_BIN` enviornment flags

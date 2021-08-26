@@ -19,7 +19,6 @@ class WsCom:
 
     # Submit a job to asyncio to send since we're in another thread
     def queue(self, what):
-        # print("SENDING", what)
         if type(what) == str:
             w = what
         else:
@@ -28,7 +27,6 @@ class WsCom:
 
     # asyncio wants to put a message into our read queue
     def put(self, what):
-        # print("PUT INTO Q", what)
         self.recvQ.put(what)
 
 

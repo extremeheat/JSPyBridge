@@ -8,20 +8,22 @@
   "repository": "https://github.com/extremeheat/JSPyBridge",
   "homepage": "https://github.com/extremeheat/JSPyBridge#readme",
   "scripts": {
+    "pretest": "pip3 install -e . && python3 -m javascript --install chalk",
     "prepare": "pip3 install black",
     "lint": "python3 -m black --line-length 100 src",
     "fix": "standard --fix",
     "test": "mocha"
   },
   "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "browserify": "^17.0.0",
     "mocha": "latest",
-    "standard": "^16.0.3",
     "pythonia": "file:.",
-    "browserify": "^17.0.0"
+    "standard": "^16.0.3"
   },
   "dependencies": {
     "caller": "^1.0.1",
-    "chalk": "^4.1.1"
+    "chalk": "^4.1.2"
   },
   "peerDependencies": {
     "ws": "^7.5.1"
