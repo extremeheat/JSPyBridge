@@ -13,7 +13,7 @@ class DemoClass extends EventEmitter {
     this.y++
     setInterval(() => {
       this.emit('increment', () => 3, this.y++, { a: { y: this.y } })
-    }, 40)
+    }, 20)
   }
 
   get () {

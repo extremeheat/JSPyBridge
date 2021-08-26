@@ -44,6 +44,7 @@ def onceIncrement(this, *args):
 
 
 demo.increment()
+time.sleep(0.5)
 
 demo.arr[1] = 5
 demo.obj[1] = 5
