@@ -89,8 +89,8 @@ await it('can iterate asynchronously', async function () {
 })
 
 await it('can iterate from Python', async function () {
-  const a = await f.iter({ 'x': 1, 'y': 2, 'z': 3 })
-  const b = await f.iter([ 1, 2, 3 ])
+  const a = await f.iter({ x: 1, y: 2, z: 3 })
+  const b = await f.iter([1, 2, 3])
   assert.deepEqual(await a.valueOf(), ['x', 'y', 'z'])
   assert.deepEqual(await b.valueOf(), [1, 2, 3])
 })
