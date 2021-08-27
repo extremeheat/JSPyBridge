@@ -31,6 +31,10 @@ def test_iter():
         f = i
     assert f.a == 3
 
+    expect = ['x', 'y', 'z']
+    for key in demo.object():
+        assert key == expect.pop(0)
+
 def some_method(text):
     print("Callback called with", text)
     assert text == 'It works !'

@@ -24,6 +24,10 @@ class DemoClass extends EventEmitter {
     return [[], 5, 6, 7, 8, { a: this.y }]
   }
 
+  object () {
+    return { x: 2, y: 3, z: 1 }
+  }
+
   async other (clas) {
     return (await clas.y) + 2
   }

@@ -1,8 +1,8 @@
 // process.env.DEBUG = 1
 import { py, python, PyClass } from 'pythonia'
 import assert from 'assert'
-const f = await python('./test/pyImp.py')
-const demo = await python('./test/demo.py')
+const f = await python('./pythonia/pyImp.py')
+const demo = await python('./pythonia/demo.py')
 
 // async function it (what, fn) {
 //   console.log('it', what)
@@ -86,6 +86,13 @@ await it('can iterate asynchronously', async function () {
     v += entry
   }
   assert.strictEqual(v, 7)
+})
+
+await it('can iterate from Python', async function () {
+  const a = await f.iter({ 'x': 1, 'y': 2, 'z': 3 })
+  const b = await f.iter([ 1, 2, 3 ])
+  assert.deepEqual(await a.valueOf(), ['x', 'y', 'z'])
+  assert.deepEqual(await b.valueOf(), [1, 2, 3])
 })
 
 await it('can recieve big numbers', async function () {

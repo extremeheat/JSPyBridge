@@ -3,3 +3,4 @@ __*__
 .DS*
 src/**/package.json
 package-lock.json
+*.egg-info
