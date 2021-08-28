@@ -26,9 +26,11 @@ class Executor:
         if action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
         if action == "inspect":  # return require('util').inspect(obj[prop])
-            l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid})
+            l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid, "key": attr})
         if action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
+        if action == "keys":
+            l = self.queue(r, {"r": r, "action": "keys", "ffid": ffid})
         if action == "raw":
             # (not really a FFID, but request ID)
             r = ffid
@@ -100,6 +102,9 @@ class Executor:
         resp = self.ipc("inspect", ffid, mode)
         return resp["val"]
 
+    def keys(self, ffid):
+        return self.ipc("keys", ffid, "")["keys"]
+
     def free(self, ffid):
         self.i += 1
         try:
@@ -116,7 +121,7 @@ class Executor:
         return self.loop.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6", "~class"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6", "~class", "_Keys"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
@@ -129,6 +134,7 @@ class Proxy(object):
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
         self._es6 = es6
+        self._Keys = None
 
     def _call(self, method, methodType, val):
         this = self
@@ -172,10 +178,19 @@ class Proxy(object):
 
     def __iter__(self):
         self._ix = 0
+        if self.length == None:
+            self._Keys = self._exe.keys(self.ffid)
         return self
 
     def __next__(self):
-        if self._ix < self.length:
+        if self._Keys:
+            if self._ix < len(self._Keys):
+                result = self._Keys[self._ix]
+                self._ix += 1
+                return result
+            else:
+                raise StopIteration
+        elif self._ix < self.length:
             result = self[self._ix]
             self._ix += 1
             return result

@@ -173,6 +173,12 @@ class Bridge {
     this.ipc.send({ r, val: v.valueOf() })
   }
 
+  async keys (r, ffid) {
+    const v = await this.m[ffid]
+    const keys = Object.getOwnPropertyNames(v)
+    this.ipc.send({ r, keys })
+  }
+
   free (r, ffid, attr, args) {
     for (const id of args) {
       delete this.m[id]

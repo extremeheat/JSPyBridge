@@ -18,6 +18,13 @@ def some_event(cb, vfn):
     cb("from python", inner)
 
 
+def iter(obj):
+    ret = []
+    for key in obj:
+        ret.append(key)
+    return ret
+
+
 x = [1, 2, 3]
 y = {"a": "wow", "b": "naw"}
 
@@ -27,3 +34,4 @@ class A:
 
 
 a = A()
+

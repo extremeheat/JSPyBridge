@@ -1,3 +1,6 @@
+## 0.2.12
+* Iterate over non-arrays in JavaScript from Python [#29](https://github.com/extremeheat/JSPyBridge/pull/29)
+
 ## 0.2.11
 * py: add an `--install <npm package>` option to the CLI to install internal packages outside of scripts
 
