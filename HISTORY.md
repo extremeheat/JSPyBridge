@@ -1,3 +1,6 @@
+## 0.2.13
+* Add support for node 14 (#33)
+
 ## 0.2.12
 * Iterate over non-arrays in JavaScript from Python [#29](https://github.com/extremeheat/JSPyBridge/pull/29)
 
