@@ -74,7 +74,7 @@ function processJSStacktrace (stack, allowInternal) {
       const path = absPath || filePath || barePath
       if (path) {
         const [fpath, errline, char] = path.slice(1)
-        if (fpath.startsWith('node:')) continue
+        if (fpath.startsWith('node:') || fpath.startsWith('internal/')) continue
         const file = fs.readFileSync(fpath.startsWith('file:') ? new URL(fpath) : fpath, 'utf-8')
         const flines = file.split('\n')
         jsErrorline = flines[errline - 1]
