@@ -8,7 +8,7 @@
 
 Interoperate Node.js and Python. You can run Python from Node.js, *or* run Node.js from Python. **Work in progress.** 
 
-Requires Node.js 16 and Python 3.8 or newer.
+Requires Node.js 14 and Python 3.8 or newer.
 
 ## Key Features
 
