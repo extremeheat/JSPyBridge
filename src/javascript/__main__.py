@@ -1,5 +1,7 @@
 import os, sys, argparse, shutil
 
+PACKAGEJSON = '{\n\t"name": "js-modules",\n\t"description": "This folder holds the installed JS deps",\n\t"dependencies": {}\n}'
+
 parser = argparse.ArgumentParser(
     description="javascript (JSPyBridge) package manager. Use this to clear or update the internal package store."
 )
@@ -32,6 +34,9 @@ elif args.update:
     os.system("npm update")
 elif args.install:
     os.chdir(os.path.dirname(__file__) + "/js")
+    if not os.path.exists("package.json"):
+        with open("package.json", "w") as f:
+            f.write(PACKAGEJSON)
     os.system(f"npm install {args.install}")
 else:
     parser.print_help(sys.stderr)
