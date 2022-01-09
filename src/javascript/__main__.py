@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--clean", default=False, action="store_true")
 parser.add_argument("--update", default=False, action="store_true")
 parser.add_argument("--install", default=False, action="store")
+parser.add_argument("--uninstall", default=False, action="store")
 args = parser.parse_args()
 
 if args.clean:
@@ -38,5 +39,11 @@ elif args.install:
         with open("package.json", "w") as f:
             f.write(PACKAGEJSON)
     os.system(f"npm install {args.install}")
+elif args.uninstall:
+    os.chdir(os.path.dirname(__file__) + "/js")
+    if os.path.exists("package.json"):
+        os.system(f"npm uninstall {args.uninstall}")
+    else:
+        printf("No packages are currently installed")
 else:
     parser.print_help(sys.stderr)
