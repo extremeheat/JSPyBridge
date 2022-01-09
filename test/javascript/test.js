@@ -72,6 +72,10 @@ class DemoClass extends EventEmitter {
     return 'world'
   }
 
+  returnNull () {
+    return null
+  }
+
   toString () {
     return '123!'
   }

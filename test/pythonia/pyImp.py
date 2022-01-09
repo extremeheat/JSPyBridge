@@ -15,6 +15,7 @@ def inner():
 
 def some_event(cb, vfn):
     print("CB", cb, vfn, vfn.someMethod(), vfn.get(3))
+    assert vfn.returnsNull() is None
     cb("from python", inner)
 
 

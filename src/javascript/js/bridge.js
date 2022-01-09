@@ -12,7 +12,7 @@ const { $require } = require('./deps')
 const { once } = require('events')
 
 const debug = process.env.DEBUG?.includes('jspybridge') ? console.debug : () => { }
-const colors = process.env.FORCE_COLOR !== '0'
+const supportsColors = process.env.FORCE_COLOR !== '0'
 
 function getType (obj) {
   if (obj?.ffid) return 'py'
@@ -35,6 +35,7 @@ function getType (obj) {
     return 'fn'
   }
   if (typeof obj === 'bigint') return 'big'
+  if (obj === null) return 'void'
   if (typeof obj === 'object') return 'obj'
   if (!isNaN(obj)) return 'num'
   if (typeof obj === 'string') return 'string'
@@ -162,7 +163,8 @@ class Bridge {
   }
 
   // called for debug in JS, print() in python via __str__
-  async inspect (r, ffid) {
+  async inspect (r, ffid, mode) {
+    const colors = supportsColors && (mode === 'str')
     const s = util.inspect(await this.m[ffid], { colors })
     this.ipc.send({ r, val: s })
   }
