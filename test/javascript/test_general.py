@@ -111,6 +111,9 @@ def test_bigint():
     bigInt = eval_js('100000n')
     print(bigInt)
 
+def test_nullFromJsReturnsNone():
+    assert demo.returnNull() is None
+
 test_require()
 test_classes()
 test_iter()
@@ -123,3 +126,4 @@ test_once()
 test_assignment()
 test_eval()
 test_bigint()
+test_nullFromJsReturnsNone()

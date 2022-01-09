@@ -23,6 +23,10 @@ describe('Bridge from Node.js', function () {
       someMethod () {
         return 3
       }
+
+      returnsNull () {
+        return null
+      }
     }
 
     await f.some_event(async (message, method) => {
