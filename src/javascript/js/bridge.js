@@ -162,7 +162,8 @@ class Bridge {
   }
 
   // called for debug in JS, print() in python via __str__
-  async inspect (r, ffid) {
+  async inspect (r, ffid, mode) {
+    const colors = colors && (mode === 'str')
     const s = util.inspect(await this.m[ffid], { colors })
     this.ipc.send({ r, val: s })
   }
