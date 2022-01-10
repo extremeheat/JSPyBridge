@@ -126,8 +126,7 @@ def com_io():
                 [NODE_BIN, dn + "/js/bridge.js"],
                 stdin=subprocess.PIPE,
                 stdout=stdout,
-                stderr=subprocess.PIPE,
-                creationflags = subprocess.CREATE_NO_WINDOW
+                stderr=subprocess.PIPE
             )
 
     except Exception as e:
