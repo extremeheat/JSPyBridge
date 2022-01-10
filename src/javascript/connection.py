@@ -113,9 +113,10 @@ def readAll():
 def com_io():
     global proc, stdout_thread
     try:
-        creation_flags = None
-        if 'CREATE_NO_WINDOW' in subprocess:
+        try:
             creation_flags = subprocess.CREATE_NO_WINDOW
+        except Exception:
+            creation_flags = None
         proc = subprocess.Popen(
             [NODE_BIN, dn + "/js/bridge.js"],
             stdin=subprocess.PIPE,
