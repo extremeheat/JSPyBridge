@@ -22,7 +22,10 @@ def is_notebook():
         return True
 
 
-if is_notebook():
+# Modified stdout
+modified_stdout = sys.stdout != sys.__stdout__
+
+if is_notebook() or modified_stdout:
     notebook = True
     stdout = subprocess.PIPE
 
@@ -113,6 +116,7 @@ def com_io():
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=subprocess.PIPE,
+            creationflags = subprocess.CREATE_NO_WINDOW
         )
     except Exception as e:
         print(
