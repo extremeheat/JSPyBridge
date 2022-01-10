@@ -118,7 +118,7 @@ def com_io():
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=subprocess.PIPE,
-            creationflags = subprocess.CREATE_NO_WINDOW
+            creationflags = subprocess.CREATE_NO_WINDOW if 'CREATE_NO_WINDOW' in subprocess else 0
         )
     except Exception as e:
         print(
