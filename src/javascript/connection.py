@@ -39,7 +39,9 @@ def supports_color():
     supported_platform = plat != "Pocket PC" and (plat == "win32" or "ANSICON" in os.environ)
     # isatty is not always implemented, #6223.
     is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-    if notebook:
+    if 'idlelib.run' in sys.modules:
+        return False
+    if notebook and not modified_stdout:
         return True
     return supported_platform and is_a_tty
 
