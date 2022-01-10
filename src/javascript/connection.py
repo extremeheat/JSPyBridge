@@ -22,7 +22,10 @@ def is_notebook():
         return True
 
 
-if is_notebook():
+# Modified stdout
+modified_stdout = (sys.stdout != sys.__stdout__) or (getattr(sys, 'ps1', sys.flags.interactive) == '>>> ')
+
+if is_notebook() or modified_stdout:
     notebook = True
     stdout = subprocess.PIPE
 
@@ -36,7 +39,9 @@ def supports_color():
     supported_platform = plat != "Pocket PC" and (plat == "win32" or "ANSICON" in os.environ)
     # isatty is not always implemented, #6223.
     is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-    if notebook:
+    if 'idlelib.run' in sys.modules:
+        return False
+    if notebook and not modified_stdout:
         return True
     return supported_platform and is_a_tty
 
@@ -108,12 +113,22 @@ def readAll():
 def com_io():
     global proc, stdout_thread
     try:
-        proc = subprocess.Popen(
-            [NODE_BIN, dn + "/js/bridge.js"],
-            stdin=subprocess.PIPE,
-            stdout=stdout,
-            stderr=subprocess.PIPE,
-        )
+        if os.name == 'nt':
+            proc = subprocess.Popen(
+                [NODE_BIN, dn + "/js/bridge.js"],
+                stdin=subprocess.PIPE,
+                stdout=stdout,
+                stderr=subprocess.PIPE,
+                creationflags = subprocess.CREATE_NO_WINDOW
+            )
+        else:
+            proc = subprocess.Popen(
+                [NODE_BIN, dn + "/js/bridge.js"],
+                stdin=subprocess.PIPE,
+                stdout=stdout,
+                stderr=subprocess.PIPE
+            )
+
     except Exception as e:
         print(
             "--====--\t--====--\n\nBridge failed to spawn JS process!\n\nDo you have Node.js 16 or newer installed? Get it at https://nodejs.org/\n\n--====--\t--====--"
