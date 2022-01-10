@@ -1,5 +1,6 @@
 ## 0.2.14
 * Return None when JS returns null, disable colors in repr(), add uninstall to python package cli (#38)
+* py: Use piped stdout if sys.stdout is modified, IDLE fixes (#41) 
 
 ## 0.2.13
 * Add support for node 14 (#33)
