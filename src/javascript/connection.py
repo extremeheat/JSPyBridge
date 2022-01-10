@@ -23,7 +23,7 @@ def is_notebook():
 
 
 # Modified stdout
-modified_stdout = sys.stdout != sys.__stdout__
+modified_stdout = (sys.stdout != sys.__stdout__) or (getattr(sys, 'ps1', sys.flags.interactive))
 
 if is_notebook() or modified_stdout:
     notebook = True
