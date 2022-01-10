@@ -1,3 +1,6 @@
+## 0.2.14
+* Return None when JS returns null, disable colors in repr(), add uninstall to python package cli (#38)
+
 ## 0.2.13
 * Add support for node 14 (#33)
 
