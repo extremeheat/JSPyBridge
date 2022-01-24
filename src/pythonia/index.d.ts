@@ -1,6 +1,4 @@
-/// <reference path="./py.stdlib.d.ts" />
-
-export function python<T extends PyTypeName>(type: T) : Promise<PyObjectType<T>>
+export function python(fileName: string): Promise
 // Template function to evaulate Python code 
 export function py(tokens, ...replacements)
 
@@ -40,7 +38,7 @@ interface py {
    * })
    * ```
    */
-  with(statement: PyObjectType<any>, callback: (handle: any) => Promise<void>): Promise<void>
+  with(statement, callback: (handle: any) => Promise<void>): Promise<void>
 }
 
 interface python {
@@ -77,7 +75,7 @@ export class PyClass {
    * @param superArguments The positional arguments you want to pass to the super `__init__`
    * @param superKeywordArguments The keyword arguments you want to pass to the super `__init__`
    */
-  constructor(superclass: PyObjectType<any>, superArguments: [], superKeywordArguments: {})
+  constructor(superclass, superArguments: [], superKeywordArguments: {})
 
   /**
    * This class is called after the Python class has been created.
