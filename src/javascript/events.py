@@ -88,7 +88,7 @@ class EventLoop:
             if method == handler:
                 thread.start()
                 return
-        self.newTaskThread(method)
+        t = self.newTaskThread(method)
         t.start()
 
     # Signal to the thread that it should stop. No forcing.
