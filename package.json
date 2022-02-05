@@ -2,7 +2,7 @@
   "name": "pythonia",
   "author": "extremeheat",
   "description": "Bridge to call and interop Python APIs from Node.js",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "main": "./src/pythonia/index.js",
   "types": "./src/pythonia/index.d.ts",
   "repository": "https://github.com/extremeheat/JSPyBridge",
