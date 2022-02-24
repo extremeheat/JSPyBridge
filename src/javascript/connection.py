@@ -113,7 +113,7 @@ def readAll():
 def com_io():
     global proc, stdout_thread
     try:
-        if os.name == 'nt':
+        if os.name == 'nt' and 'idlelib.run' in sys.modules:
             proc = subprocess.Popen(
                 [NODE_BIN, dn + "/js/bridge.js"],
                 stdin=subprocess.PIPE,
