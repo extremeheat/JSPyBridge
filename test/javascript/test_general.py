@@ -1,4 +1,5 @@
-from javascript import require, console, On, Once, off, once, eval_js
+from javascript import require, globalThis, On, Once, off, once, eval_js
+console = globalThis.console
 
 def assertEquals(cond, val): assert cond == val
 

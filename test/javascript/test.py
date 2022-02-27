@@ -1,6 +1,7 @@
 import os
 import time
-from javascript import require, console, On, Once, off, once, eval_js
+from javascript import require, globalThis, On, Once, off, once, eval_js
+console = globalThis.console
 
 DemoClass = require("./test.js").DemoClass
 
