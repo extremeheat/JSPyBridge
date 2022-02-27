@@ -1,3 +1,6 @@
+## 1.0.0
+* py: BREAKING Remove `console` top level export. Import `globalThis` and use `globalThis.console` if you need access to the global `console` object.
+
 ## 0.2.16
 * py: Fixed console.log not working in Windows (#50) - @Peticali
 
