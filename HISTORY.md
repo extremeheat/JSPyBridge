@@ -1,3 +1,6 @@
+## 0.2.16
+* py: Fixed console.log not working in Windows (#50) - @Peticali
+
 ## 0.2.15
 * py: Fix variable assignment in events #45
 * js/pythonia: Remove some type definitions (#43)
