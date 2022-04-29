@@ -15,7 +15,10 @@ class Ipc:
             apiout.flush()
         except Exception:
             # Quit if we are unable to write (is the parent process dead?)
-            sys.exit(1)
+            try:
+                sys.exit(1)
+            except Exception:
+                pass
 
 
 ipc = Ipc()
@@ -32,8 +35,8 @@ def com_io():
     else:
         fd = int(os.environ["NODE_CHANNEL_FD"])
         api = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
-        apiin = api.makefile("r")
-        apiout = api.makefile("w")
+        apiin = api.makefile("r", encoding="utf-8")
+        apiout = api.makefile("w", encoding="utf-8")
     ipc.readline = apiin.readline
     while True:
         data = apiin.readline()
