@@ -1,3 +1,6 @@
+## 1.0.0
+* pythonia: use utf-8 encoding for bridging (#54)
+
 ## 0.2.16
 * py: Fixed console.log not working in Windows (#50) - @Peticali
 
