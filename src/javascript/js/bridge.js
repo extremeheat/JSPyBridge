@@ -264,18 +264,42 @@ const ipc = {
 }
 
 const bridge = new Bridge(ipc)
+let message = '';
 process.stdin.on('data', data => {
   const d = String(data)
-  debug('py -> js', d)
-  for (const line of d.split('\n')) {
-    try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
-    if (j.c === 'pyi') {
-      handlers[j.r]?.(j)
+  for (let i = 0; i < d.length; i++) {
+    if (d[i] === os.EOL) {
+      debug('py -> js', message)
+      for (const line of message.split('\n')) {
+        try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
+        if (j.c === 'pyi') {
+          handlers[j.r]?.(j)
+        } else {
+          bridge.onMessage(j)
+        }
+      }
+      message = '';
     } else {
-      bridge.onMessage(j)
+        message += d[i];
     }
   }
 })
+
+
+// flush last line
+process.stdin.on('end', () => {
+    if (message.length > 0) {
+      debug('py -> js', message)
+      for (const line of message.split('\n')) {
+        try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
+        if (j.c === 'pyi') {
+          handlers[j.r]?.(j)
+        } else {
+          bridge.onMessage(j)
+        }
+      }
+    }
+});
 
 process.on('exit', () => {
   debug('** Node exiting')
