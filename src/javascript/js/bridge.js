@@ -7,6 +7,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
  * The JavaScript Interface for Python
  */
 const util = require('util')
+const os = require('os')
 const { PyBridge } = require('./pyi')
 const { $require } = require('./deps')
 const { once } = require('events')
@@ -264,7 +265,7 @@ const ipc = {
 }
 
 const bridge = new Bridge(ipc)
-let message = '';
+let message = ''
 process.stdin.on('data', data => {
   const d = String(data)
   for (let i = 0; i < d.length; i++) {
@@ -278,28 +279,27 @@ process.stdin.on('data', data => {
           bridge.onMessage(j)
         }
       }
-      message = '';
+      message = ''
     } else {
-        message += d[i];
+      message += d[i]
     }
   }
 })
 
-
 // flush last line
 process.stdin.on('end', () => {
-    if (message.length > 0) {
-      debug('py -> js', message)
-      for (const line of message.split('\n')) {
+  if (message.length > 0) {
+    debug('py -> js', message)
+    for (const line of message.split('\n')) {
         try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
-        if (j.c === 'pyi') {
-          handlers[j.r]?.(j)
-        } else {
-          bridge.onMessage(j)
-        }
+      if (j.c === 'pyi') {
+        handlers[j.r]?.(j)
+      } else {
+        bridge.onMessage(j)
       }
     }
-});
+  }
+})
 
 process.on('exit', () => {
   debug('** Node exiting')
