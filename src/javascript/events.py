@@ -169,15 +169,21 @@ class EventLoop:
             # Read the inbound data and route it to correct handler
             inbounds = connection.readAll()
             for inbound in inbounds:
-                r = inbound["r"]
-                cbid = inbound["cb"] if "cb" in inbound else None
-                if "c" in inbound and inbound["c"] == "pyi":
-                    j = inbound
-                    self.callbackExecutor.add_job(r, cbid, self.pyi.inbound, inbound)
-                if r in self.requests:
-                    lock, timeout = self.requests[r]
-                    barrier = threading.Barrier(2, timeout=5)
-                    self.responses[r] = inbound, barrier
-                    del self.requests[r]
-                    lock.set()  # release, allow calling thread to resume
-                    barrier.wait()
+                try:
+                    r = inbound["r"]
+                    cbid = inbound["cb"] if "cb" in inbound else None
+                    if "c" in inbound and inbound["c"] == "pyi":
+                        j = inbound
+                        self.callbackExecutor.add_job(r, cbid, self.pyi.inbound, inbound)
+                    if r in self.requests:
+                        lock, timeout = self.requests[r]
+                        # Give the main event loop here up to 60 seconds before deciding the connection died
+                        # Many RGBot actions like pathfinding could take much longer than the original value of 5 seconds
+                        # Once one of these calls fails, the IPC is dead
+                        barrier = threading.Barrier(2, timeout=60)
+                        self.responses[r] = inbound, barrier
+                        del self.requests[r]
+                        lock.set()  # release, allow calling thread to resume
+                        barrier.wait()
+                 except Exception as err:
+                    print(f"Error occurred in Python to JS IPC bridge: {err}", file=sys.stderr)
