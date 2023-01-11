@@ -205,8 +205,10 @@ class Proxy(object):
             return self._exe.get(val)
         else:
             return val
-
-    def __call__(self, *args, timeout=10, forceRefs=False):
+        
+    # The default timeout was 5 seconds before which was woefully too short for most RGBot actions to complete
+    # Instead of the user having to manage a timeout on every call into RGBot, the default is now 60 seconds.
+    def __call__(self, *args, timeout=60, forceRefs=False):
         mT, v = (
             self._exe.initProp(self._pffid, self._pname, args)
             if self._es6
