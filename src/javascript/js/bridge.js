@@ -7,7 +7,6 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
  * The JavaScript Interface for Python
  */
 const util = require('util')
-const os = require('os')
 const { PyBridge } = require('./pyi')
 const { $require } = require('./deps')
 const { once } = require('events')
@@ -269,7 +268,7 @@ let message = ''
 process.stdin.on('data', data => {
   const d = String(data)
   for (let i = 0; i < d.length; i++) {
-    if (d[i] === os.EOL) {
+    if (d[i] === '\n') {
       debug('py -> js', message)
       for (const line of message.split('\n')) {
         try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
