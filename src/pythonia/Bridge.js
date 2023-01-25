@@ -358,7 +358,7 @@ class Bridge {
         if (typeof prop === 'symbol') {
           if (prop === Symbol.iterator) {
             // This is just for destructuring arrays
-            return function *iter () {
+            return function * iter () {
               for (let i = 0; i < 100; i++) {
                 const next = new Intermediate([...target.callstack, i])
                 yield new Proxy(next, handler)
@@ -367,7 +367,7 @@ class Bridge {
             }
           }
           if (prop === Symbol.asyncIterator) {
-            return async function *iter () {
+            return async function * iter () {
               const it = await self.call(0, ['Iterate'], [{ ffid }])
               while (true) {
                 const val = await it.Next()
