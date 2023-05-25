@@ -4,11 +4,7 @@ if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[
   process.exit(1)
 }
 
-if (typeof window !== 'undefined') {
-  var { StdioCom } = require('./WebsocketCom')
-} else {
-  var { StdioCom } = process.platform === 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
-}
+const { StdioCom } = process.platform === 'win32' ? require('./StdioCom') : require('./IpcPipeCom')
 
 const { dirname, join, resolve } = require('path')
 const { PyClass, Bridge } = require('./Bridge')
