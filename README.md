@@ -321,3 +321,5 @@ for await (const file of files) {
 * On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over standard error which means that JSON output in JS standard error can interfere with the bridge. The same issue exists on Windows with python. You are however very unlikely to have issues with this.
 
 * You can set the Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 
+
+* Function calls will timeout after 100000 ms and throw a `BridgeException` error. That default value can be overridden by defining the new value of `REQ_TIMEOUT` in an environment variable.
