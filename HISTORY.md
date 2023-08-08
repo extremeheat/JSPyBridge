@@ -1,7 +1,5 @@
 ## 1.0.3
-* [Update commands.yml](https://github.com/extremeheat/JSPyBridge/commit/42d65d853144ade7622056c210646ad39797b41a) (thanks @extremeheat)
-* [Add repo commands workflow](https://github.com/extremeheat/JSPyBridge/commit/c6bb772048eea577ba460139c364a770aef0abe9) (thanks @extremeheat)
-* [Add option to configure call timeout (REQ_TIMEOUT) from env var (#90)](https://github.com/extremeheat/JSPyBridge/commit/95ad451f22ab5f20b8b63372377ea560a18c04b0) (thanks @jc-roman)
+* [Add option to configure call timeout (REQ_TIMEOUT) from env var for Python calls from JavaScript (#90)](https://github.com/extremeheat/JSPyBridge/commit/95ad451f22ab5f20b8b63372377ea560a18c04b0) (thanks @jc-roman)
 
 ## 1.0.2
 * pythonia: Remove websocket comm [#83](https://github.com/extremeheat/JSPyBridge/pull/83), to fix issue with Electron-like environments
