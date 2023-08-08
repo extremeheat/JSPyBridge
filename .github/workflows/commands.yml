@@ -12,7 +12,8 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v3
-      token: ${{ secrets.PAT_TOKEN }}
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
     - name: Run command handlers
       uses: PrismarineJS/prismarine-repo-actions@master
       with:
