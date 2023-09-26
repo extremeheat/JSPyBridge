@@ -6,7 +6,7 @@ from .config import debug
 # Special handling for IPython jupyter notebooks
 stdout = sys.stdout
 notebook = False
-NODE_BIN = getattr(os.environ, "NODE_BIN") if hasattr(os.environ, "NODE_BIN") else "node"
+NODE_BIN = os.environ.get('NODE_BIN') or (getattr(os.environ, "NODE_BIN") if hasattr(os.environ, "NODE_BIN") else "node")
 
 
 def is_notebook():
