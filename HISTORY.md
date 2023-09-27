@@ -1,3 +1,6 @@
+## 1.0.4
+* [javascript: check NODE_BIN in os.environ dict instead of attr (#100)](https://github.com/extremeheat/JSPyBridge/commit/054332f69b51ee2b9dca6d8de188313f9070d208) (thanks @extremeheat)
+
 ## 1.0.3
 * [Add option to configure call timeout (REQ_TIMEOUT) from env var for Python calls from JavaScript (#90)](https://github.com/extremeheat/JSPyBridge/commit/95ad451f22ab5f20b8b63372377ea560a18c04b0) (thanks @jc-roman)
 
