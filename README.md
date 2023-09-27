@@ -1,9 +1,8 @@
 # JSPyBridge
 [![NPM version](https://img.shields.io/npm/v/pythonia.svg)](http://npmjs.com/package/pythonia)
 [![PyPI](https://img.shields.io/pypi/v/javascript)](https://pypi.org/project/javascript/)
-[![Build Status](https://github.com/extremeheat/JSPyBridge/workflows/Node.js%20CI/badge.svg)](https://github.com/extremeheat/JSPyBridge/actions/workflows/)
+[![Build Status](https://github.com/extremeheat/JSPyBridge/actions/workflows/node.yml/badge.svg)](https://github.com/extremeheat/JSPyBridge/actions/workflows/)
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/extremeheat/jspybridge)
-
 
 
 Interoperate Node.js and Python. You can run Python from Node.js, *or* run Node.js from Python. **Work in progress.** 
