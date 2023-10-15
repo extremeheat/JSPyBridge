@@ -174,7 +174,12 @@ class Bridge {
     const v = await this.m[ffid]
     this.ipc.send({ r, val: v.valueOf() })
   }
-
+  
+  async blob (r, ffid) {
+    const v = await this.m[ffid]
+    this.ipc.sendBlob(v, r)
+  }
+  
   async keys (r, ffid) {
     const v = await this.m[ffid]
     const keys = Object.getOwnPropertyNames(v)
@@ -251,6 +256,11 @@ const ipc = {
   send: data => {
     debug('js -> py', data)
     process.stderr.write(JSON.stringify(data) + '\n')
+  },
+  sendBlob: (data, r) => {
+    process.stderr.write('blob!{"r":'+r+',"len":'+data.length+'}!')
+    process.stderr.write(data)
+    process.stderr.write('\n')
   },
   writeRaw: (data, r, cb) => {
     debug('js -> py', data)

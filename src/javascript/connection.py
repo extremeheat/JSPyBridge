@@ -59,23 +59,33 @@ dn = os.path.dirname(__file__)
 proc = com_thread = stdout_thread = None
 
 
-def read_stderr(stderrs):
-    ret = []
-    for stderr in stderrs:
-        inp = stderr.decode("utf-8")
-        for line in inp.split("\n"):
-            if not len(line):
-                continue
-            if not line.startswith('{"r"'):
-                print("[JSE]", line)
-                continue
-            try:
-                d = json.loads(line)
-                debug("[js -> py]", int(time.time() * 1000), line)
-                ret.append(d)
-            except ValueError as e:
-                print("[JSE]", line)
-    return ret
+def readCommItem(comm):
+    
+    line = comm.readline()
+    if not line:
+        return
+    
+    # blobs may contain any value, including b"\n", so we track len and fetch possible remaining data
+    if line.startswith(b"blob!"):
+        _, d, blob = line.split(b"!", maxsplit=2)
+        d = json.loads(d.decode("utf-8"))
+        req_len = d.pop("len")
+        fetch_len = req_len - len(blob) + 1
+        if fetch_len > 0:
+            blob += comm.read(fetch_len)
+        d["blob"] = blob[:req_len]
+        return d
+    
+    line = line.decode("utf-8")
+    if not line.startswith('{"r"'):
+        print("[JSE]", line)
+        return
+    try:
+        d = json.loads(line)
+        debug("[js -> py]", int(time.time() * 1000), line)
+        return d
+    except ValueError as e:
+        print("[JSE]", line)
 
 
 sendQ = []
@@ -100,14 +110,15 @@ def writeAll(objs):
             break
 
 
-stderr_lines = []
+comm_items = []
 
 # Reads from the socket, in this case it's standard error. Returns an array
-# of responses from the server.
+# of parsed responses from the server.
 def readAll():
-    ret = read_stderr(stderr_lines)
-    stderr_lines.clear()
-    return ret
+    global comm_items
+    capture = comm_items
+    comm_items = []
+    return capture
 
 
 def com_io():
@@ -139,20 +150,25 @@ def com_io():
     for send in sendQ:
         proc.stdin.write(send)
     proc.stdin.flush()
-
+    
+    # FIXME untested
     if notebook:
         stdout_thread = threading.Thread(target=stdout_read, args=(), daemon=True)
         stdout_thread.start()
 
-    while proc.poll() == None:
-        stderr_lines.append(proc.stderr.readline())
-        config.event_loop.queue.put("stdin")
+    while proc.poll() is None:
+        item = readCommItem(proc.stderr)
+        if item:
+            comm_items.append(item)
+            if config.event_loop != None:
+                config.event_loop.queue.put("stdin")
     stop()
 
 
+# FIXME untested
 def stdout_read():
     while proc.poll() is None:
-        print(proc.stdout.readline().decode("utf-8"))
+        os.write(sys.stdout.fileno(), proc.stdout.readline())
 
 
 def start():

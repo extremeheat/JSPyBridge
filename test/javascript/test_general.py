@@ -1,4 +1,6 @@
-from javascript import require, console, On, Once, off, once, eval_js
+import time
+from pathlib import Path
+from javascript import require, console, On, Once, off, once, eval_js, globalThis
 
 def assertEquals(cond, val): assert cond == val
 
@@ -53,7 +55,6 @@ def test_events():
     def onceIncrement(this, *args):
         print("Hey, I'm only called once !")
 
-
     demo.increment()
 
 def test_arrays():
@@ -78,6 +79,45 @@ def test_valueOf():
     assert a[1] == 5
     assert a[2] == 3
     print("Array", demo.arr.valueOf())
+
+
+def test_blobValueOf_withNewLine():
+    
+    # use this file itself as test data for simplicity
+    fs = require("fs")
+    FILE = Path(__file__).resolve()
+    js_buffer = fs.readFileSync(str(FILE), {"encoding": None})
+    
+    t_start = time.time()
+    blob_value = js_buffer.blobValueOf()
+    assert isinstance(blob_value, bytes)
+    assert b"\n" in blob_value
+    t_blob = time.time() - t_start
+    
+    t_start = time.time()
+    json_value = js_buffer.valueOf()
+    t_json = time.time() - t_start
+    assert json_value["type"] == "Buffer"
+    assert isinstance(json_value["data"], list)
+    
+    # confirm both transfer strategies return the same data, and transferred data matches with natively reproduced data
+    native_value = FILE.read_bytes()
+    assert blob_value == bytes(json_value["data"]) == native_value
+    
+    # don't actually assert to avoid time dependent test case
+    print(f"blobValueOf() was factor {round(t_json/t_blob, 4)} faster than valueOf()")
+
+
+def test_BlobValueOf_noNewLine():
+    input_value = "Test short value without new line."
+    # 'from' is a reserved keyword in python, so use dict getitem as a workaround
+    js_buffer = globalThis.Buffer["from"](input_value, "utf-8")
+    blob_value = js_buffer.blobValueOf()
+    assert b"\n" not in blob_value
+    json_value = js_buffer.valueOf()
+    assert json_value["type"] == "Buffer"
+    assert blob_value == bytes(json_value["data"]) == bytes(input_value, "utf-8")
+
 
 def test_once():
     demo.wait()
@@ -122,6 +162,8 @@ test_events()
 test_arrays()
 test_errors()
 test_valueOf()
+test_blobValueOf_withNewLine()
+test_BlobValueOf_noNewLine()
 test_once()
 test_assignment()
 test_eval()
