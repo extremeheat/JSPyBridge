@@ -146,7 +146,8 @@ def com_io():
 
     while proc.poll() == None:
         stderr_lines.append(proc.stderr.readline())
-        config.event_loop.queue.put("stdin")
+        if config.event_loop != None:
+            config.event_loop.queue.put("stdin")
     stop()
 
 
