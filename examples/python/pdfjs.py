@@ -15,10 +15,9 @@ import javascript
 # NOTE canvas must be the build pdfjs is linked against, otherwise it'll fail with type error
 pdfjs = javascript.require("pdfjs-dist")
 libcanvas = javascript.require("canvas")
-jsfs = javascript.require("fs")
 
 
-def render_pdf(inpath, outdir, scale=4):
+def render_pdf(inpath, outdir, scale):
     
     pdf = pdfjs.getDocument(str(inpath)).promise
     n_pages = pdf.numPages
@@ -51,7 +50,7 @@ def main():
     ResolvedPath = lambda p: Path(p).expanduser().resolve()
     parser.add_argument("inpath", type=ResolvedPath)
     parser.add_argument("--outdir", "-o", type=ResolvedPath)
-    parser.add_argument("--scale", type=float)
+    parser.add_argument("--scale", type=float, default=4)
     
     args = parser.parse_args()
     if not args.outdir.exists():
