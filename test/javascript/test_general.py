@@ -105,7 +105,7 @@ def test_blobValueOf_withNewLine():
     assert blob_value == bytes(json_value["data"]) == native_value
     
     # don't actually assert to avoid time dependent test case
-    print(f"blobValueOf() was factor {round(t_json/t_blob, 4)} faster than valueOf()")
+    print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
 
 
 def test_BlobValueOf_noNewLine():
