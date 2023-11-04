@@ -33,6 +33,7 @@ def render_pdf(inpath, outdir, scale):
         context = canvas.getContext("2d")
         page.render({"canvasContext": context, "viewport": viewport}).promise
         
+        # note that blobValueOf() is much faster than valueOf()["data"] for large byte buffers
         js_buffer = canvas.toBuffer("raw")
         py_buffer = js_buffer.blobValueOf()
         

@@ -105,6 +105,7 @@ def test_blobValueOf_withNewLine():
     assert blob_value == bytes(json_value["data"]) == native_value
     
     # don't actually assert to avoid time dependent test case
+    # note, the performance difference is much more pronounced for bigger values (see examples/pdfjs.py)
     print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
 
 

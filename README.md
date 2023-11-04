@@ -312,12 +312,14 @@ for await (const file of files) {
   - `.valueOf()` can be used on any JSON-serializable object, but may be very slow for big data.
   - `.blobValueOf()` can be used on any pipe-writeable object implementing the `length` property (e.g. `Buffer`). It can be massively faster by circumventing the JSON+UTF8 encode/decode layer, which is inept for large byte arrays.
 
-* You can set the Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 
+* You can use custom Node.js/Python binary paths by setting the `NODE_BIN` or `PYTHON_BIN` enviornment variables before importing the library. Otherwise, the `node` and `python3` or `python` binaries will be called relative to your PATH enviornment variable. 
+
+* The inter-process communication can be inspected by setting the `DEBUG` env var to `jspybridge`.
 
 #### Limitations
 
 * The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
 
-* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over standard error which means that specific output in JS standard error can interfere with the bridge. As of this writing, the prefices `{"r"` and `blob!` are reserved. The same issue exists on Windows with python. You are however very unlikely to have issues with this.
+* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over standard error which means that specific output in JS standard error can interfere with the bridge (as of this writing, the prefices `{"r"` and `blob!` are reserved). A similar issue exists on Windows with Python. You are however very unlikely to have issues with this.
 
 * Function calls will timeout after 100000 ms and throw a `BridgeException` error. That default value can be overridden by defining the new value of `REQ_TIMEOUT` in an environment variable.

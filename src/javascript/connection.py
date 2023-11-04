@@ -59,21 +59,32 @@ dn = os.path.dirname(__file__)
 proc = com_thread = stdout_thread = None
 
 
-def readCommItem(comm):
+def readComItem(stream):
     
-    line = comm.readline()
+    line = stream.readline()
     if not line:
         return
     
-    # blobs may contain any value, including b"\n", so we track len and fetch possible remaining data
     if line.startswith(b"blob!"):
+        
         _, d, blob = line.split(b"!", maxsplit=2)
         d = json.loads(d.decode("utf-8"))
-        req_len = d.pop("len")
-        fetch_len = req_len - len(blob) + 1
+        
+        # blobs may contain any value, including b"\n", so we track length and fetch possible remaining data
+        # note that either initial_len or fetch_len will include space for a trailing \n
+        target_len = d.pop("len")
+        initial_len = len(blob)
+        fetch_len = (target_len - initial_len) + 1
+        debug(f"[js -> py] blob r:{d['r']}: target_len {target_len}, initial_len {initial_len}, fetch_len {fetch_len}")
         if fetch_len > 0:
-            blob += comm.read(fetch_len)
-        d["blob"] = blob[:req_len]
+            blob += stream.read(fetch_len)
+        
+        # must end with \n (added by bridge) to separate the next IPC call, which will be received via .readline()
+        assert blob.endswith(b"\n")
+        d["blob"] = blob[:-1]
+        assert len(d["blob"]) == target_len
+        debug(f"[js -> py] blob r:{d['r']}: {d['blob'][:20]} ... {d['blob'][-20:]} (truncated)")
+        
         return d
     
     line = line.decode("utf-8")
@@ -157,7 +168,7 @@ def com_io():
         stdout_thread.start()
 
     while proc.poll() is None:
-        item = readCommItem(proc.stderr)
+        item = readComItem(proc.stderr)
         if item:
             comm_items.append(item)
             if config.event_loop != None:
