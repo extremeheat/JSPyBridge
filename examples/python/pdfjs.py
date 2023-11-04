@@ -17,9 +17,9 @@ pdfjs = javascript.require("pdfjs-dist")
 libcanvas = javascript.require("canvas")
 
 
-def render_pdf(inpath, outdir, scale):
+def render_pdf(input, outdir, scale):
     
-    pdf = pdfjs.getDocument(str(inpath)).promise
+    pdf = pdfjs.getDocument(input).promise
     n_pages = pdf.numPages
     n_digits = len(str(n_pages))
     
@@ -46,18 +46,23 @@ def render_pdf(inpath, outdir, scale):
 def main():
     
     parser = argparse.ArgumentParser(
-        description="Render a PDF file with Mozilla pdf.js via JsPyBridge",
+        description="Render a PDF file with Mozilla pdf.js via JsPyBridge.\n" +
+        "Known issues: - URL support is buggy; - certain PDFs may hit memory limits.",
     )
-    ResolvedPath = lambda p: Path(p).expanduser().resolve()
-    parser.add_argument("inpath", type=ResolvedPath)
-    parser.add_argument("--outdir", "-o", type=ResolvedPath)
+    path_type = lambda p: Path(p).expanduser().resolve()
+    input_type = lambda p: p if p.startswith("http") else str(path_type(p))
+    parser.add_argument(
+        "input", type=input_type,
+        help="Input file path or URL.",
+    )
+    parser.add_argument("--outdir", "-o", type=path_type)
     parser.add_argument("--scale", type=float, default=4)
     
     args = parser.parse_args()
     if not args.outdir.exists():
         args.outdir.mkdir(parents=True, exist_ok=True)
     
-    render_pdf(args.inpath, args.outdir, scale=args.scale)
+    render_pdf(args.input, args.outdir, scale=args.scale)
 
 
 main()
