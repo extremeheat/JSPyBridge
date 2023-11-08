@@ -81,7 +81,7 @@ def test_valueOf():
     print("Array", demo.arr.valueOf())
 
 
-def test_blobValueOf_withNewLine():
+def test_blobValueOf_containingNLs():
     
     # use this file itself as test data for simplicity
     fs = require("fs")
@@ -109,15 +109,17 @@ def test_blobValueOf_withNewLine():
     print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
 
 
-def test_BlobValueOf_noNewLine():
-    input_value = "Test short value without new line."
-    # 'from' is a reserved keyword in python, so use dict getitem as a workaround
-    js_buffer = globalThis.Buffer["from"](input_value, "utf-8")
-    blob_value = js_buffer.blobValueOf()
-    assert b"\n" not in blob_value
-    json_value = js_buffer.valueOf()
-    assert json_value["type"] == "Buffer"
-    assert blob_value == bytes(json_value["data"]) == bytes(input_value, "utf-8")
+def test_BlobValueOf_noNL_and_paddingNLs():
+    test_values = ["Short test value without newline, or with padding newlines."]
+    for _ in range(2):
+        test_values.append("\n"+test_values[-1]+"\n")
+    for val in test_values:
+        # 'from' is a reserved keyword in python, so use dict getitem as a workaround
+        js_buffer = globalThis.Buffer["from"](val, "utf-8")
+        blob_value = js_buffer.blobValueOf()
+        json_value = js_buffer.valueOf()
+        assert json_value["type"] == "Buffer"
+        assert blob_value == bytes(json_value["data"]) == bytes(val, "utf-8")
 
 
 def test_once():
@@ -163,8 +165,8 @@ test_events()
 test_arrays()
 test_errors()
 test_valueOf()
-test_blobValueOf_withNewLine()
-test_BlobValueOf_noNewLine()
+test_blobValueOf_containingNLs()
+test_BlobValueOf_noNL_and_paddingNLs()
 test_once()
 test_assignment()
 test_eval()
