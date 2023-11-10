@@ -83,7 +83,7 @@ def readComItem(stream):
         assert blob.endswith(b"\n")
         d["blob"] = blob[:-1]
         assert len(d["blob"]) == target_len
-        debug(f"[js -> py] blob r:{d['r']}: {d['blob'][:20]} ... {d['blob'][-20:]} (truncated)")
+        debug(f"[js -> py] blob r:{d['r']}: {d['blob'][:20]} ... (truncated)")
         
         return d
     
