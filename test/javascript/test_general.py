@@ -81,7 +81,7 @@ def test_valueOf():
     print("Array", demo.arr.valueOf())
 
 
-def test_blobValueOf_containingNLs():
+def test_blobValueOf_generalValue():
     
     # use this file itself as test data for simplicity
     fs = require("fs")
@@ -109,10 +109,13 @@ def test_blobValueOf_containingNLs():
     print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
 
 
-def test_BlobValueOf_noNL_and_paddingNLs():
-    test_values = ["Short test value without newline, or with padding newlines."]
-    for _ in range(2):
-        test_values.append("\n"+test_values[-1]+"\n")
+def test_BlobValueOf_specificValues():
+    test_values = [
+        "Value without newline.",
+        "\nValue with single enclosing newlines\n",
+        "\n\nTest with double enclosing newlines\n\n",
+        "\n", "\n\n", "\n\n\n", "\n"*10,  # test various amounts of newlines only
+    ]
     for val in test_values:
         # 'from' is a reserved keyword in python, so use dict getitem as a workaround
         js_buffer = globalThis.Buffer["from"](val, "utf-8")
@@ -165,8 +168,8 @@ test_events()
 test_arrays()
 test_errors()
 test_valueOf()
-test_blobValueOf_containingNLs()
-test_BlobValueOf_noNL_and_paddingNLs()
+test_blobValueOf_generalValue()
+test_BlobValueOf_specificValues()
 test_once()
 test_assignment()
 test_eval()
