@@ -90,9 +90,9 @@ def test_blobValueOf_generalValue():
     
     t_start = time.time()
     blob_value = js_buffer.blobValueOf()
+    t_blob = time.time() - t_start
     assert isinstance(blob_value, bytes)
     assert b"\n" in blob_value
-    t_blob = time.time() - t_start
     
     t_start = time.time()
     json_value = js_buffer.valueOf()
