@@ -113,7 +113,7 @@ def test_BlobValueOf_specificValues():
     test_values = [
         "Value without newline.",
         "\nValue with single enclosing newlines\n",
-        "\n\nTest with double enclosing newlines\n\n",
+        "\n\nValue with double enclosing newlines\n\n",
         "\n", "\n\n", "\n\n\n", "\n"*10,  # test various amounts of newlines only
     ]
     for val in test_values:
