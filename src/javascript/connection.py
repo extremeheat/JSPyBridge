@@ -121,14 +121,14 @@ def writeAll(objs):
             break
 
 
-comm_items = []
+com_items = []
 
 # Reads from the socket, in this case it's standard error. Returns an array
 # of parsed responses from the server.
 def readAll():
-    global comm_items
-    capture = comm_items
-    comm_items = []
+    global com_items
+    capture = com_items
+    com_items = []
     return capture
 
 
@@ -170,7 +170,7 @@ def com_io():
     while proc.poll() is None:
         item = readComItem(proc.stderr)
         if item:
-            comm_items.append(item)
+            com_items.append(item)
             if config.event_loop != None:
                 config.event_loop.queue.put("stdin")
     stop()
