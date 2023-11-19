@@ -109,14 +109,17 @@ def test_blobValueOf_generalValue():
     print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
 
 
-def test_BlobValueOf_specificValues():
+def test_blobValueOf_specificValues():
     test_values = [
-        "Value without newline.",
+        "Value without newline",
+        "Value with \nembedded\n newlines",
         "\nValue with single enclosing newlines\n",
         "\n\nValue with double enclosing newlines\n\n",
-        "\n", "\n\n", "\n\n\n", "\n"*10,  # test various amounts of newlines only
+        # test an empty string and various amounts of newlines only
+        "", *["\n"*c for c in (1, 2, 3, 10)]
     ]
     for val in test_values:
+        print(f"blobValueOf() {val!r}")
         # 'from' is a reserved keyword in python, so use dict getitem as a workaround
         js_buffer = globalThis.Buffer["from"](val, "utf-8")
         blob_value = js_buffer.blobValueOf()
@@ -169,7 +172,7 @@ test_arrays()
 test_errors()
 test_valueOf()
 test_blobValueOf_generalValue()
-test_BlobValueOf_specificValues()
+test_blobValueOf_specificValues()
 test_once()
 test_assignment()
 test_eval()
