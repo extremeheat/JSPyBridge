@@ -15,21 +15,26 @@ class Executor:
         self.bridge = self.loop.pyi
 
     def ipc(self, action, ffid, attr, args=None):
+        # NOTE The actions here translate to function calls in bridge.js
         self.i += 1
         r = self.i  # unique request ts, acts as ID for response
         l = None  # the lock
         if action == "get":  # return obj[prop]
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
-        if action == "init":  # return new obj[prop]
+        elif action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
-        if action == "inspect":  # return require('util').inspect(obj[prop])
+        elif action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid, "key": attr})
-        if action == "serialize":  # return JSON.stringify(obj[prop])
+        elif action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
-        if action == "set":
+        elif action == "blob":
+            l = self.queue(r, {"r": r, "action": "blob", "ffid": ffid})
+        elif action == "set":
             l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
-        if action == "keys":
+        elif action == "keys":
             l = self.queue(r, {"r": r, "action": "keys", "ffid": ffid})
+        else:
+            assert False, f"Unhandled action '{action}'"
 
         if not l.wait(10):
             if not config.event_thread:
@@ -265,7 +270,11 @@ class Proxy(object):
     def valueOf(self):
         ser = self._exe.ipc("serialize", self.ffid, "")
         return ser["val"]
-
+    
+    def blobValueOf(self):
+        blob = self._exe.ipc("blob", self.ffid, "")
+        return blob["blob"]
+    
     def __str__(self):
         return self._exe.inspect(self.ffid, "str")
 

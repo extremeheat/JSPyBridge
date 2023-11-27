@@ -1,4 +1,6 @@
-from javascript import require, console, On, Once, off, once, eval_js
+import time
+from pathlib import Path
+from javascript import require, console, On, Once, off, once, eval_js, globalThis
 
 def assertEquals(cond, val): assert cond == val
 
@@ -53,7 +55,6 @@ def test_events():
     def onceIncrement(this, *args):
         print("Hey, I'm only called once !")
 
-
     demo.increment()
 
 def test_arrays():
@@ -78,6 +79,54 @@ def test_valueOf():
     assert a[1] == 5
     assert a[2] == 3
     print("Array", demo.arr.valueOf())
+
+
+def test_blobValueOf_generalValue():
+    
+    # use this file itself as test data for simplicity
+    fs = require("fs")
+    FILE = Path(__file__).resolve()
+    js_buffer = fs.readFileSync(str(FILE), {"encoding": None})
+    
+    t_start = time.time()
+    blob_value = js_buffer.blobValueOf()
+    t_blob = time.time() - t_start
+    assert isinstance(blob_value, bytes)
+    assert b"\n" in blob_value
+    
+    t_start = time.time()
+    json_value = js_buffer.valueOf()
+    t_json = time.time() - t_start
+    assert json_value["type"] == "Buffer"
+    assert isinstance(json_value["data"], list)
+    
+    # confirm both transfer strategies return the same data, and transferred data matches with natively reproduced data
+    native_value = FILE.read_bytes()
+    assert blob_value == bytes(json_value["data"]) == native_value
+    
+    # don't actually assert to avoid time dependent test case
+    # note, the performance difference is much more pronounced for bigger values (see examples/pdfjs.py)
+    print(f"blobValueOf() faster? {t_blob < t_json} (t_blob: {t_blob}, t_json {t_json})")
+
+
+def test_blobValueOf_specificValues():
+    test_values = [
+        "Value without newline",
+        "Value with \nembedded\n newlines",
+        "\nValue with single enclosing newlines\n",
+        "\n\nValue with double enclosing newlines\n\n",
+        # test an empty string and various amounts of newlines only
+        "", *["\n"*c for c in (1, 2, 3, 10)]
+    ]
+    for val in test_values:
+        print(f"blobValueOf() {val!r}")
+        # 'from' is a reserved keyword in python, so use dict getitem as a workaround
+        js_buffer = globalThis.Buffer["from"](val, "utf-8")
+        blob_value = js_buffer.blobValueOf()
+        json_value = js_buffer.valueOf()
+        assert json_value["type"] == "Buffer"
+        assert blob_value == bytes(json_value["data"]) == bytes(val, "utf-8")
+
 
 def test_once():
     demo.wait()
@@ -122,6 +171,8 @@ test_events()
 test_arrays()
 test_errors()
 test_valueOf()
+test_blobValueOf_generalValue()
+test_blobValueOf_specificValues()
 test_once()
 test_assignment()
 test_eval()

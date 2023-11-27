@@ -59,23 +59,44 @@ dn = os.path.dirname(__file__)
 proc = com_thread = stdout_thread = None
 
 
-def read_stderr(stderrs):
-    ret = []
-    for stderr in stderrs:
-        inp = stderr.decode("utf-8")
-        for line in inp.split("\n"):
-            if not len(line):
-                continue
-            if not line.startswith('{"r"'):
-                print("[JSE]", line)
-                continue
-            try:
-                d = json.loads(line)
-                debug("[js -> py]", int(time.time() * 1000), line)
-                ret.append(d)
-            except ValueError as e:
-                print("[JSE]", line)
-    return ret
+def readComItem(stream):
+    
+    line = stream.readline()
+    if not line:
+        return
+    
+    if line.startswith(b"blob!"):
+        
+        _, d, blob = line.split(b"!", maxsplit=2)
+        d = json.loads(d.decode("utf-8"))
+        
+        # blobs may contain any value, including b"\n", so we track length and fetch possible remaining data
+        # note that either initial_len or fetch_len will include space for a trailing \n
+        target_len = d.pop("len")
+        initial_len = len(blob)
+        fetch_len = (target_len - initial_len) + 1
+        debug(f"[js -> py] blob r:{d['r']}: target_len {target_len}, initial_len {initial_len}, fetch_len {fetch_len}")
+        if fetch_len > 0:
+            blob += stream.read(fetch_len)
+        
+        # must end with \n (added by bridge) to separate the next IPC call, which will be received via .readline()
+        assert blob.endswith(b"\n")
+        d["blob"] = blob[:-1]
+        assert len(d["blob"]) == target_len
+        debug(f"[js -> py] blob r:{d['r']}: {d['blob'][:20]} ... (truncated)")
+        
+        return d
+    
+    line = line.decode("utf-8")
+    if not line.startswith('{"r"'):
+        print("[JSE]", line)
+        return
+    try:
+        d = json.loads(line)
+        debug("[js -> py]", int(time.time() * 1000), line)
+        return d
+    except ValueError as e:
+        print("[JSE]", line)
 
 
 sendQ = []
@@ -100,14 +121,15 @@ def writeAll(objs):
             break
 
 
-stderr_lines = []
+com_items = []
 
 # Reads from the socket, in this case it's standard error. Returns an array
-# of responses from the server.
+# of parsed responses from the server.
 def readAll():
-    ret = read_stderr(stderr_lines)
-    stderr_lines.clear()
-    return ret
+    global com_items
+    capture = com_items
+    com_items = []
+    return capture
 
 
 def com_io():
@@ -139,21 +161,25 @@ def com_io():
     for send in sendQ:
         proc.stdin.write(send)
     proc.stdin.flush()
-
+    
+    # FIXME untested
     if notebook:
         stdout_thread = threading.Thread(target=stdout_read, args=(), daemon=True)
         stdout_thread.start()
 
-    while proc.poll() == None:
-        stderr_lines.append(proc.stderr.readline())
-        if config.event_loop != None:
-            config.event_loop.queue.put("stdin")
+    while proc.poll() is None:
+        item = readComItem(proc.stderr)
+        if item:
+            com_items.append(item)
+            if config.event_loop != None:
+                config.event_loop.queue.put("stdin")
     stop()
 
 
+# FIXME untested
 def stdout_read():
     while proc.poll() is None:
-        print(proc.stdout.readline().decode("utf-8"))
+        os.write(sys.stdout.fileno(), proc.stdout.readline())
 
 
 def start():
