@@ -1,3 +1,7 @@
+## 1.1.0
+* [Allow transferring binary data from JS to Python without serialization (CC #67) (#103)](https://github.com/extremeheat/JSPyBridge/commit/36a0c74d14ef891a72f1c39d9c83bb4e36ab35ba) (thanks @mara004)
+* [Add None check for event_loop before adding to its queue (#105)](https://github.com/extremeheat/JSPyBridge/commit/2f2752285e2c627c7b6ae88eb66a18a6517e8eaf) (thanks @mrdanpsmith)
+
 ## 1.0.4
 * [javascript: check NODE_BIN in os.environ dict instead of attr (#100)](https://github.com/extremeheat/JSPyBridge/commit/054332f69b51ee2b9dca6d8de188313f9070d208) (thanks @extremeheat)
 
