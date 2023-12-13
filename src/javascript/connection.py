@@ -19,7 +19,9 @@ def is_notebook():
 
     shell = get_ipython().__class__.__name__
     if shell == "ZMQInteractiveShell":
-        return True
+        return True # Jupyter
+    elif shell == "TerminalInteractiveShell":
+        return True # IPython
 
 
 # Modified stdout
@@ -41,7 +43,7 @@ def supports_color():
     is_a_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
     if 'idlelib.run' in sys.modules:
         return False
-    if notebook and not modified_stdout:
+    if is_notebook():
         return True
     return supported_platform and is_a_tty
 
@@ -179,7 +181,7 @@ def com_io():
 # FIXME untested
 def stdout_read():
     while proc.poll() is None:
-        os.write(sys.stdout.fileno(), proc.stdout.readline())
+        print(proc.stdout.readline().decode("utf-8"))
 
 
 def start():
