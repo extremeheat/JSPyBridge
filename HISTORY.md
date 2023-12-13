@@ -1,3 +1,6 @@
+## 1.1.1
+* [Fix `javascript` stdout not appearing in Python on notebooks (#112)](https://github.com/extremeheat/JSPyBridge/commit/d2ec236ec6b348804103816ca92de98699cb9036) (thanks @extremeheat)
+
 ## 1.1.0
 * [Allow transferring binary data from JS to Python without serialization (CC #67) (#103)](https://github.com/extremeheat/JSPyBridge/commit/36a0c74d14ef891a72f1c39d9c83bb4e36ab35ba) (thanks @mara004)
 * [Add None check for event_loop before adding to its queue (#105)](https://github.com/extremeheat/JSPyBridge/commit/2f2752285e2c627c7b6ae88eb66a18a6517e8eaf) (thanks @mrdanpsmith)
