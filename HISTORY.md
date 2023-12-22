@@ -1,3 +1,6 @@
+## 1.1.2
+* [javascript: don't try manually resolving path after package installation, try import() directly (#115)](https://github.com/extremeheat/JSPyBridge/commit/0e3a0913165142a62616dafaca4003cee2af304f) (thanks @extremeheat)
+
 ## 1.1.1
 * [Fix `javascript` stdout not appearing in Python on notebooks (#112)](https://github.com/extremeheat/JSPyBridge/commit/d2ec236ec6b348804103816ca92de98699cb9036) (thanks @extremeheat)
 
