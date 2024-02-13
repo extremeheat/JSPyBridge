@@ -137,19 +137,17 @@ class PyBridge {
         ) {
           const ffid = ++this.jsi.ffid
           this.jsi.m[ffid] = v
-          this.queueForCollection(ffid, v)
           return { ffid }
         }
       }
       return v
     })
 
-    const stacktrace = new PythonException(stack)
-
     const resp = await waitFor(resolve => this.com.writeRaw(payload, r, resolve), timeout || REQ_TIMEOUT, () => {
       throw new BridgeException(`Attempt to access '${stack.join('.')}' failed.`)
     })
     if (resp.key === 'error') {
+      const stacktrace = new PythonException(stack)
       stacktrace.setPythonTrace(resp.sig)
       throw stacktrace
     }
