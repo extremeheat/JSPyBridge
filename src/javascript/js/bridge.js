@@ -174,12 +174,12 @@ class Bridge {
     const v = await this.m[ffid]
     this.ipc.send({ r, val: v.valueOf() })
   }
-  
+
   async blob (r, ffid) {
     const v = await this.m[ffid]
     this.ipc.sendBlob(v, r)
   }
-  
+
   async keys (r, ffid) {
     const v = await this.m[ffid]
     const keys = Object.getOwnPropertyNames(v)
@@ -258,7 +258,7 @@ const ipc = {
     process.stderr.write(JSON.stringify(data) + '\n')
   },
   sendBlob: (data, r) => {
-    process.stderr.write('blob!{"r":'+r+',"len":'+data.length+'}!')
+    process.stderr.write('blob!{"r":' + r + ',"len":' + data.length + '}!')
     process.stderr.write(data)
     process.stderr.write('\n')
   },
@@ -283,7 +283,11 @@ process.stdin.on('data', data => {
       for (const line of message.split('\n')) {
         try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
         if (j.c === 'pyi') {
-          handlers[j.r]?.(j)
+          const handler = handlers[j.r]
+          if (handler) {
+            handler(j)
+            delete handlers[j.r]
+          }
         } else {
           bridge.onMessage(j)
         }
@@ -302,7 +306,11 @@ process.stdin.on('end', () => {
     for (const line of message.split('\n')) {
         try { var j = JSON.parse(line) } catch (e) { continue } // eslint-disable-line
       if (j.c === 'pyi') {
-        handlers[j.r]?.(j)
+        const handler = handlers[j.r]
+        if (handler) {
+          handler(j)
+          delete handlers[j.r]
+        }
       } else {
         bridge.onMessage(j)
       }

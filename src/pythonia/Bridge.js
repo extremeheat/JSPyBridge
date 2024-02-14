@@ -237,7 +237,7 @@ class Bridge {
           const ffid = pre.val[r]
           // Python is the owner of the memory, we borrow a ref to it and once
           // we're done with it (GC'd), we can ask python to free it
-          if (made[r] instanceof Promise) throw Error('You did not await a paramater when calling ' + stack.join('.'))
+          if (made[r] instanceof Promise) throw Error('You did not await a parameter when calling ' + stack.join('.'))
           this.jsi.m[ffid] = made[r]
           this.queueForCollection(ffid, made[r])
         }
@@ -296,7 +296,7 @@ class Bridge {
   }
 
   /**
-   * This method creates a Python class which proxies overriden entries on the
+   * This method creates a Python class which proxies overridden entries on the
    * on the JS side over to JS. Conversely, in JS when a property access
    * is performed on an object that doesn't exist, it's sent to Python.
    */
