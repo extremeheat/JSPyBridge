@@ -1,3 +1,6 @@
+## 1.1.3
+* [javascript: fix handler leak (#121)](https://github.com/extremeheat/JSPyBridge/commit/5a2bd1eabf86987ab5641dd4913d3fc2e0ba4ad0) (thanks @extremeheat)
+
 ## 1.1.2
 * [javascript: don't try manually resolving path after package installation, try import() directly (#115)](https://github.com/extremeheat/JSPyBridge/commit/0e3a0913165142a62616dafaca4003cee2af304f) (thanks @extremeheat)
 
