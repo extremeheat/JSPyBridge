@@ -24,7 +24,7 @@ class EventExecutorThread(threading.Thread):
 
     def __init__(self):
         super().__init__()
-        self.setDaemon(True)
+        self.daemon = True
 
     def add_job(self, request_id, cb_id, job, args):
         if request_id in self.doing:
