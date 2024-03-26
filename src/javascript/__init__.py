@@ -20,6 +20,11 @@ def init():
 init()
 
 
+def terminate():
+    if config.event_loop:
+        config.event_loop.stop()
+
+
 def require(name, version=None):
     calling_dir = None
     if name.startswith("."):

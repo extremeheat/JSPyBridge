@@ -48,8 +48,6 @@ class EventLoop:
     queue = Queue()
     freeable = []
 
-    callbackExecutor = EventExecutorThread()
-
     # This contains a map of active callbacks that we're tracking.
     # As it's a WeakRef dict, we can add stuff here without blocking GC.
     # Once this list is empty (and a CB has been GC'ed) we can exit.
@@ -70,6 +68,7 @@ class EventLoop:
 
     def __init__(self):
         connection.start()
+        self.callbackExecutor = EventExecutorThread()
         self.callbackExecutor.start()
         self.pyi = pyi.PyInterface(self, config.executor)
 
