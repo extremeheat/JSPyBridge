@@ -18,12 +18,12 @@ class TaskState:
 
 
 class EventExecutorThread(threading.Thread):
-    running = True
-    jobs = Queue()
-    doing = []
 
     def __init__(self):
         super().__init__()
+        self.running = True
+        self.jobs = Queue()
+        self.doing = []
         self.daemon = True
 
     def add_job(self, request_id, cb_id, job, args):
@@ -44,30 +44,32 @@ class EventExecutorThread(threading.Thread):
 # JS and Python happens through this event loop. Because of Python's "Global Interperter Lock"
 # only one thread can run Python at a time, so no race conditions to worry about.
 class EventLoop:
-    active = True
-    freeable = []
-
-    # This contains a map of active callbacks that we're tracking.
-    # As it's a WeakRef dict, we can add stuff here without blocking GC.
-    # Once this list is empty (and a CB has been GC'ed) we can exit.
-    # Looks like someone else had the same idea :)
-    # https://stackoverflow.com/questions/21826700/using-python-weakset-to-enable-a-callback-functionality
-    callbacks = WeakValueDictionary()
-
-    # The threads created managed by this event loop.
-    threads = []
-
-    outbound = []
-
-    # After a socket request is made, it's ID is pushed to self.requests. Then, after a response
-    # is recieved it's removed from requests and put into responses, where it should be deleted
-    # by the consumer.
-    requests = {}  # Map of requestID -> threading.Lock
-    responses = {}  # Map of requestID -> response payload
 
     def __init__(self):
         connection.start()
+
+        self.active = True
+        self.freeable = []
         self.queue = Queue()
+
+        # This contains a map of active callbacks that we're tracking.
+        # As it's a WeakRef dict, we can add stuff here without blocking GC.
+        # Once this list is empty (and a CB has been GC'ed) we can exit.
+        # Looks like someone else had the same idea :)
+        # https://stackoverflow.com/questions/21826700/using-python-weakset-to-enable-a-callback-functionality
+        self.callbacks = WeakValueDictionary()
+
+        # The threads created managed by this event loop.
+        self.threads = []
+
+        self.outbound = []
+
+        # After a socket request is made, it's ID is pushed to self.requests. Then, after a response
+        # is recieved it's removed from requests and put into responses, where it should be deleted
+        # by the consumer.
+        self.requests = {}  # Map of requestID -> threading.Lock
+        self.responses = {}  # Map of requestID -> response payload
+
         self.callbackExecutor = EventExecutorThread()
         self.callbackExecutor.start()
         self.pyi = pyi.PyInterface(self, config.executor)
@@ -162,7 +164,7 @@ class EventLoop:
             self.threads = [x for x in self.threads if x[2].is_alive()]
 
             if len(self.freeable) > 40:
-                self.queue_payload({"r": r, "action": "free", "ffid": "", "args": self.freeable})
+                self.queue_payload({"r": 0, "action": "free", "ffid": "", "args": self.freeable})
                 self.freeable = []
 
             # Read the inbound data and route it to correct handler
