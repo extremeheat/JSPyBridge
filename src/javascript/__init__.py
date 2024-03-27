@@ -4,13 +4,20 @@ import threading, inspect, time, atexit, os, sys
 
 
 def init():
+    global console, globalThis, RegExp, start, stop, abort
     if config.event_loop:
         return  # Do not start event loop again
     config.event_loop = events.EventLoop()
+    start = config.event_loop.startThread
+    stop = config.event_loop.stopThread
+    abort = config.event_loop.abortThread
     config.event_thread = threading.Thread(target=config.event_loop.loop, args=(), daemon=True)
     config.event_thread.start()
     config.executor = proxy.Executor(config.event_loop)
     config.global_jsi = proxy.Proxy(config.executor, 0)
+    console = config.global_jsi.console  # TODO: Remove this in 1.0
+    globalThis = config.global_jsi.globalThis
+    RegExp = config.global_jsi.RegExp
     atexit.register(config.event_loop.on_exit)
 
     if config.global_jsi.needsNodePatches():
@@ -18,6 +25,11 @@ def init():
 
 
 init()
+
+
+def terminate():
+    if config.event_loop:
+        config.event_loop.stop()
 
 
 def require(name, version=None):
@@ -35,11 +47,6 @@ def require(name, version=None):
             calling_dir = os.getcwd()
 
     return config.global_jsi.require(name, version, calling_dir, timeout=900)
-
-
-console = config.global_jsi.console  # TODO: Remove this in 1.0
-globalThis = config.global_jsi.globalThis
-RegExp = config.global_jsi.RegExp
 
 
 def eval_js(js):
@@ -65,10 +72,6 @@ def AsyncTask(start=False):
 
     return decor
 
-
-start = config.event_loop.startThread
-stop = config.event_loop.stopThread
-abort = config.event_loop.abortThread
 
 # You must use this Once decorator for an EventEmitter in Node.js, otherwise
 # you will not be able to off an emitter.

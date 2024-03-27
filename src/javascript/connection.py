@@ -119,7 +119,6 @@ def writeAll(objs):
             proc.stdin.write(j.encode())
             proc.stdin.flush()
         except Exception:
-            stop()
             break
 
 
@@ -175,7 +174,6 @@ def com_io():
             com_items.append(item)
             if config.event_loop != None:
                 config.event_loop.queue.put("stdin")
-    stop()
 
 
 # FIXME untested
