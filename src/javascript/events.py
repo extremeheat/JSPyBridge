@@ -45,7 +45,6 @@ class EventExecutorThread(threading.Thread):
 # only one thread can run Python at a time, so no race conditions to worry about.
 class EventLoop:
     active = True
-    queue = Queue()
     freeable = []
 
     # This contains a map of active callbacks that we're tracking.
@@ -68,6 +67,7 @@ class EventLoop:
 
     def __init__(self):
         connection.start()
+        self.queue = Queue()
         self.callbackExecutor = EventExecutorThread()
         self.callbackExecutor.start()
         self.pyi = pyi.PyInterface(self, config.executor)
