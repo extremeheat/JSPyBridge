@@ -138,3 +138,40 @@ You can also use it inline.
 ```swift
 x_or_z = eval_js(''' obj.x ?? obj.z ''')
 ```
+
+### Controlling the NodeJS process
+
+By default, JSPyBridge spawns a single NodeJS process and all JavaScript calls are handled by it.
+It is possible to manually control this process in order to restore a clean NodeJS process, which
+can be used to clear memory and to recover from process crashes. The NodeJS process can be manually
+terminated and initialized with `terminate()` and `init()`, respectively, as shown in the following
+example:
+
+```py
+import javascript
+
+javascript.eval_js('console.log("Hello from 1st NodeJS process!")')
+javascript.terminate()
+
+javascript.init()
+javascript.eval_js('console.log("Hello from 2nd NodeJS process!")')
+javascript.terminate()
+```
+
+Note that the first NodeJS process does not need to be initialized manually. Thus, calling
+`javascript.init()` right after `import javascript` has no effect.
+
+#### Note about process re-initialization
+
+When re-initializing a NodeJS process with `javascript.init()`, please note that other exposed
+variables, such as `globalThis`, `console`, etc., are also re-assigned. In this case, it is
+recommended to access them using the full module import, as shown in the following example:
+
+```py
+import javascript # instead of `from javascript import globalThis`
+# ...
+now = javascript.globalThis.Date() # instead of `now = globalThis.Date()`
+```
+
+By doing this, `globalThis` is evaluated when called and will return a reference to the most
+recent NodeJS process, as expected.
