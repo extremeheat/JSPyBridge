@@ -112,7 +112,7 @@ def writeAll(objs):
         else:
             j = json.dumps(obj) + "\n"
         debug("[py -> js]", int(time.time() * 1000), j)
-        if not proc:
+        if not proc or proc.poll() is not None:
             sendQ.append(j.encode())
             continue
         try:
@@ -162,6 +162,7 @@ def com_io():
 
     for send in sendQ:
         proc.stdin.write(send)
+    sendQ.clear()
     proc.stdin.flush()
     
     # FIXME untested
@@ -175,7 +176,6 @@ def com_io():
             com_items.append(item)
             if config.event_loop != None:
                 config.event_loop.queue.put("stdin")
-    stop()
 
 
 # FIXME untested
