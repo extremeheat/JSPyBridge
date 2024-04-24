@@ -45,7 +45,7 @@ class StdioCom {
   }
 
   end () {
-    this.proc.kill('SIGKILL')
+    this.proc.kill('SIGTERM')
     this.proc = null
   }
 

@@ -14,11 +14,12 @@ class Ipc:
                 apiout.write(json.dumps(what) + "\n")
             apiout.flush()
         except Exception:
-            # Quit if we are unable to write (is the parent process dead?)
-            try:
-                sys.exit(1)
-            except Exception:
-                pass
+            if not sys.is_finalizing():
+                # Quit if we are unable to write (is the parent process dead?)
+                try:
+                    sys.exit(1)
+                except Exception:
+                    pass
 
 
 ipc = Ipc()
