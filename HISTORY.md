@@ -1,3 +1,9 @@
+## 1.2.0
+* [pythonia: fix: more graceful python shutdown (#134)](https://github.com/extremeheat/JSPyBridge/commit/78e4c4a8cdb127a65eb65e75038f5563eb7e7b3d) (thanks @thearchitector)
+* [Update CI to node 18](https://github.com/extremeheat/JSPyBridge/commit/5828b00889761f57429aed4fb317d20497f9a703) (thanks @extremeheat)
+* [javascript: Allow manual re-initialization of NodeJS process (#131)](https://github.com/extremeheat/JSPyBridge/commit/adab7cff4bfc88d94d5781db503270e9e285b215) (thanks @Tales-Carvalho)
+* [javascript: replace deprecated thread setDaemon setter with property assignment (#124)](https://github.com/extremeheat/JSPyBridge/commit/060f21e13cc55c8efb3e79e1714f96b63eb45fcd) (thanks @Ableytner)
+
 ## 1.1.3
 * [javascript: fix handler leak (#121)](https://github.com/extremeheat/JSPyBridge/commit/5a2bd1eabf86987ab5641dd4913d3fc2e0ba4ad0) (thanks @extremeheat)
 
