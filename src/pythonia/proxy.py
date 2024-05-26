@@ -23,13 +23,15 @@ class Executor:
         l = None  # the lock
         if action == "get":  # return obj[prop]
             l = self.queue(r, {"r": r, "action": "get", "ffid": ffid, "key": attr})
-        if action == "init":  # return new obj[prop]
+        elif action == "init":  # return new obj[prop]
             l = self.queue(r, {"r": r, "action": "init", "ffid": ffid, "key": attr, "args": args})
-        if action == "inspect":  # return require('util').inspect(obj[prop])
+        elif action == "inspect":  # return require('util').inspect(obj[prop])
             l = self.queue(r, {"r": r, "action": "inspect", "ffid": ffid, "key": attr})
-        if action == "serialize":  # return JSON.stringify(obj[prop])
+        elif action == "serialize":  # return JSON.stringify(obj[prop])
             l = self.queue(r, {"r": r, "action": "serialize", "ffid": ffid})
-        if action == "keys":
+        elif action == "set":
+            l = self.queue(r, {"r": r, "action": "set", "ffid": ffid, "key": attr, "args": args})
+        elif action == "keys":
             l = self.queue(r, {"r": r, "action": "keys", "ffid": ffid})
         if action == "raw":
             # (not really a FFID, but request ID)
@@ -90,8 +92,8 @@ class Executor:
         self.pcall(ffid, "set", method, [val])
         return True
 
-    def callProp(self, ffid, method, args, timeout=None):
-        resp = self.pcall(ffid, "call", method, args, timeout)
+    def callProp(self, ffid, method, args, *, timeout=None):
+        resp = self.pcall(ffid, "call", method, args, timeout=timeout)
         return resp
 
     def initProp(self, ffid, method, args):
@@ -121,19 +123,19 @@ class Executor:
         return self.loop.m[ffid]
 
 
-INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_es6", "~class", "_Keys"]
+INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_Is_class", "~class", "_Keys"]
 
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", es6=False):
+    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", needs_init=False):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
         #
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
-        self._es6 = es6
+        self._Is_class = needs_init
         self._Keys = None
 
     def _call(self, method, methodType, val):
@@ -143,7 +145,7 @@ class Proxy(object):
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return Proxy(self._exe, val, es6=True)
+            return Proxy(self._exe, val, needs_init=True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -158,8 +160,10 @@ class Proxy(object):
     def __call__(self, *args, timeout=10):
         mT, v = (
             self._exe.initProp(self._pffid, self._pname, args)
-            if self._es6
-            else self._exe.callProp(self._pffid, self._pname, args, timeout)
+            if self._Is_class
+            else self._exe.callProp(
+                self._pffid, self._pname, args, timeout=timeout
+            )
         )
         if mT == "fn":
             return Proxy(self._exe, v)
@@ -168,7 +172,7 @@ class Proxy(object):
     def __getattr__(self, attr):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
-            return self._call(self._pname if self._pffid == self.ffid else "", "class", self._pffid)
+            return self._call(self._pname if self._pffid == self.ffid else "", "class", self.ffid)
         methodType, val = self._exe.getProp(self._pffid, attr)
         return self._call(attr, methodType, val)
 
