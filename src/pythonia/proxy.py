@@ -128,14 +128,14 @@ INTERNAL_VARS = ["ffid", "_ix", "_exe", "_pffid", "_pname", "_Is_class", "~class
 # "Proxy" classes get individually instanciated for every thread and JS object
 # that exists. It interacts with an Executor to communicate.
 class Proxy(object):
-    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", needs_init=False):
+    def __init__(self, exe, ffid, prop_ffid=None, prop_name="", is_class=False):
         self.ffid = ffid
         self._exe = exe
         self._ix = 0
         #
         self._pffid = prop_ffid if (prop_ffid != None) else ffid
         self._pname = prop_name
-        self._Is_class = needs_init
+        self._Is_class = is_class
         self._Keys = None
 
     def _call(self, method, methodType, val):
@@ -145,7 +145,7 @@ class Proxy(object):
         if methodType == "fn":
             return Proxy(self._exe, val, self.ffid, method)
         if methodType == "class":
-            return Proxy(self._exe, val, needs_init=True)
+            return Proxy(self._exe, val, is_class=True)
         if methodType == "obj":
             return Proxy(self._exe, val)
         if methodType == "inst":
@@ -172,7 +172,7 @@ class Proxy(object):
     def __getattr__(self, attr):
         # Special handling for new keyword for ES5 classes
         if attr == "new":
-            return self._call(self._pname if self._pffid == self.ffid else "", "class", self.ffid)
+            return Proxy(self._exe, self.ffid, self._pffid, self._pname, True)
         methodType, val = self._exe.getProp(self._pffid, attr)
         return self._call(attr, methodType, val)
 
