@@ -1,6 +1,7 @@
 node_modules
-__*__
+__*
 .DS*
 src/**/package.json
 package-lock.json
 *.egg-info
+build
