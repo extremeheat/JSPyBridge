@@ -1,3 +1,6 @@
+## 1.2.1
+* [Fix ES5 class handling, allow disabling timeouts (#137)](https://github.com/extremeheat/JSPyBridge/commit/a2d7369d861b6be9472ce2b72b3a92e78a06cda4) (thanks @extremeheat)
+
 ## 1.2.0
 * [pythonia: fix: more graceful python shutdown (#134)](https://github.com/extremeheat/JSPyBridge/commit/78e4c4a8cdb127a65eb65e75038f5563eb7e7b3d) (thanks @thearchitector)
 * [Update CI to node 18](https://github.com/extremeheat/JSPyBridge/commit/5828b00889761f57429aed4fb317d20497f9a703) (thanks @extremeheat)
