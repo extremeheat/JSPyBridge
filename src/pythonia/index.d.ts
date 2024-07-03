@@ -1,8 +1,7 @@
-export function python(fileName: string): Promise<any>
-// Template function to evaulate Python code
-export function py(tokens: any[], ...replacements: any[]): any
+export interface Py {
+  // Template function to evaulate Python code
+  (tokens: any[], ...replacements: any[]): any
 
-interface py {
   // Template function to exec() Python code
   exec(tokens: any[], ...replacements: any[]): Promise<any>
 
@@ -27,7 +26,7 @@ interface py {
    * ```
    * @param item The Python object
    */
-  enumerate(item: python): Promise<any>
+  enumerate(item: Python): Promise<any>
 
   /**
    * The Python with statement, the first parameter is the Python object
@@ -38,10 +37,11 @@ interface py {
    * })
    * ```
    */
-  with(statement: python, callback: (handle: any) => Promise<void>): Promise<void>
+  with(statement: Python, callback: (handle: any) => Promise<void>): Promise<void>
 }
 
-interface python {
+export interface Python {
+  (fileName: string): Promise<any>
   /**
    * This toggles "Fast Mode", where the bridge skips string serialization. With this enabled, when using console.log
    * you now need to await object.toString(). For example,
@@ -66,6 +66,10 @@ interface python {
   exit(): void
 }
 
+export const python: Python;
+
+export const py: Py;
+
 export class PyClass {
   /**
    * Creates a Python class. **You must use** `await MyClass.init()` when initializing, don't just do `new MyClass()`.
@@ -75,7 +79,7 @@ export class PyClass {
    * @param superArguments The positional arguments you want to pass to the super `__init__`
    * @param superKeywordArguments The keyword arguments you want to pass to the super `__init__`
    */
-  constructor(superclass: python, superArguments: [], superKeywordArguments: {})
+  constructor(superclass: Python, superArguments: [], superKeywordArguments: {})
 
   /**
    * This class is called after the Python class has been created.
