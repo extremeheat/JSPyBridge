@@ -14,7 +14,7 @@ and other magic methods. Each proxy property access is mirrored on the other sid
 
 Proxy objects on both sides of the bridge are GC tracked. In JavaScript, all python Proxy objects
 are registered to a FinalizationRegistry. In Python, `__del__` is used to track the Proxy object's
-destruction. When the proxy object is destoryed on one side of the bridge, its refrence is removed
+destruction. When the proxy object is destoryed on one side of the bridge, its reference is removed
 from the other side of the bridge. This means you don't have to deal with memory management.
 
 ### On the JavaScript side
