@@ -123,10 +123,10 @@ async function $require (name, version, relativeTo) {
     // The user didn't specify a version. So try whatever version we find installed. This can fail for non CJS modules.
     try { return require(name) } catch { }
   }
-
+  [name, ...path] = name.split('/') // for requiring files using from packages
   // A version was specified, or the package wasn't found already installed.
   const newpath = pm.install(name, version)
-  const mod = await import(newpath)
+  const mod = await import([newpath,...path].join('/'))
   return mod.default ?? mod
 }
 
