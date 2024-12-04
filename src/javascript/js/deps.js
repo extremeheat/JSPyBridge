@@ -126,7 +126,7 @@ async function $require (name, version, relativeTo) {
   [name, ...path] = name.split('/') // for requiring files using from packages
   // A version was specified, or the package wasn't found already installed.
   const newpath = pm.install(name, version)
-  const mod = await import([newpath,...path].join('/'))
+  const mod = await import([newpath, ...path].join('/'))
   return mod.default ?? mod
 }
 
