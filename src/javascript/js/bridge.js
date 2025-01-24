@@ -117,7 +117,7 @@ class Bridge {
     try {
       this.m[ffid][attr] = val
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
     this.ipc.send({ r, key: '', val: true })
   }
@@ -138,7 +138,7 @@ class Bridge {
         var v = await this.m[ffid](...args) // eslint-disable-line
       }
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
     const type = getType(v)
     // console.log('GetType', type, v)
@@ -230,7 +230,7 @@ class Bridge {
       }
       await this[action](r, ffid, key, args)
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
   }
 }
