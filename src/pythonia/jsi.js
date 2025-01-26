@@ -92,7 +92,7 @@ class JSBridge {
     try {
       this.m[ffid][attr] = val
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
     this.ipc.send({ r, key: '', val: true })
   }
@@ -113,7 +113,7 @@ class JSBridge {
         var v = await this.m[ffid](...args) // eslint-disable-line
       }
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
     const type = getType(v)
     // console.log('GetType', type, v)
@@ -191,7 +191,7 @@ class JSBridge {
       }
       await this[action](r, ffid, key, args)
     } catch (e) {
-      return this.ipc.send({ r, key: 'error', error: e.stack })
+      return this.ipc.send({ r, key: 'error', error: e.stack || JSON.stringify(e) })
     }
   }
 }

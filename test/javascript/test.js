@@ -54,6 +54,10 @@ class DemoClass extends EventEmitter {
     throw Error('This should fail')
   }
 
+  error2 () {
+    throw {'non error': 'object'}
+  }
+
   ok () {
     function someMethod (a, b, c) {
       return a + b + c
