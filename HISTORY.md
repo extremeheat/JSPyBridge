@@ -1,3 +1,8 @@
+## 1.2.2
+* [Handle non-Error objects thrown in JS (#154)](https://github.com/extremeheat/JSPyBridge/commit/5b3aecd787fb2bb531079b61f8492a92f633eaff) (thanks @extremeheat)
+* [docs: fix typo (#146)](https://github.com/extremeheat/JSPyBridge/commit/bd17b0de48baa761284dfef469641ba46d5357bc) (thanks @simoneb)
+* [pythonia: update typescript types (#142)](https://github.com/extremeheat/JSPyBridge/commit/d17217070ea0ff5baa0c96a06549006dce82df20) (thanks @Pickleboyonline)
+
 ## 1.2.1
 * [Fix ES5 class handling, allow disabling timeouts (#137)](https://github.com/extremeheat/JSPyBridge/commit/a2d7369d861b6be9472ce2b72b3a92e78a06cda4) (thanks @extremeheat)
 
