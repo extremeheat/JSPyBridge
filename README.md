@@ -81,7 +81,7 @@ Check out some cool examples below! Try them on Gitpod! Click the Open in Gitpod
 
 Unlike other bridges, you may notice you're not just writing Python code in JavaScript, or vice-versa. You can operate on objects
 on the other side of the bridge as if the objects existed on your side. This is achieved through real interop support: you can call
-callbacks, and do loss-less function calls with any arguments you like (with the exception of floating points percision of course).
+callbacks, and do loss-less function calls with any arguments you like (with the exception of floating points precision of course).
 
 |  | python(ia) bridge | javascript bridge | [npm:python-bridge](https://www.npmjs.com/package/python-bridge) |
 |---|---|---|---|
@@ -118,7 +118,7 @@ or location of the file to import. Internally, this calls the ES6 dynamic `impor
 supports both CommonJS and ES6 modules.
 
 If you are passing a module name (does not start with / or include a .) such as 'chalk', it will search 
-for the dependency in the internal node_module folder and if not found, install it automatically. 
+for the dependency in the internal node_modules folder and if not found, install it automatically. 
 This install will only happen once, it won't impact startup afterwards.
 
 The second paramater to the built-in require function is the version of the package you want, for
@@ -126,6 +126,18 @@ example `require('chalk', '^3')` to get a version greater than major version 3. 
 if you were using `npm install`. It's reccomended to only use the major version as the name and version
 will be internally treated as a unique package, for example 'chalk--^3'. If you leave this empty, 
 we will install `latest` version instead, or use the version that may already be installed globally.
+
+If you prefer to not use automatic dependency management, and instead use your own `package.json`/`package-lock.json`/`node_modules`, you can use Node.js's `require` function directly. This will use the packages already installed in a `node_modules` directory of your choice:
+
+```py
+import os
+# assuming 'node_modules' in same directory as script,
+# and has 'chalk' installed
+os.environ["NODE_PATH"] = os.path.join(os.path.dirname(__file__), "node_modules")
+from javascript import eval_js
+require = eval_js("require")
+chalk = require("chalk")
+```
 
 ### Usage
 
