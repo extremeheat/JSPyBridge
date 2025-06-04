@@ -29,7 +29,7 @@ See some examples [here](https://github.com/extremeheat/JSPyBridge/tree/master/e
 
 
 ```sh
-pip3 install javascript
+pip install javascript
 ```
 
 
