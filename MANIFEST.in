@@ -2,3 +2,4 @@ include src/javascript/js/bridge.js
 include src/javascript/js/pyi.js
 include src/javascript/js/deps.js
 include src/javascript/js/errors.js
+include src/javascript/js/package.json
