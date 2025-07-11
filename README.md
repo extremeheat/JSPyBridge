@@ -318,8 +318,8 @@ for await (const file of files) {
 
 #### Limitations
 
-* The `ffid` keyword is reserved. You cannot use it in variable names, object keys or values as this is used to internlly track objects.
+* The `ffid` keyword is reserved. You cannot use it in variable names, object keys, or values, as this is used to internally track objects.
 
-* On the bridge to call JavaScript from Python, due to the limiatations of Python and cross-platform IPC, we currently communicate over standard error which means that specific output in JS standard error can interfere with the bridge (as of this writing, the prefices `{"r"` and `blob!` are reserved). A similar issue exists on Windows with Python. You are however very unlikely to have issues with this.
+* On the bridge to call JavaScript from Python, due to the limitations of Python and cross-platform IPC, we currently communicate over standard error which means that specific output in JS standard error can interfere with the bridge. (Currently, the prefixes `{"r"` and `blob!` are reserved.) A similar issue exists on Windows with Python. You are however very unlikely to have issues with this.
 
-* Function calls will timeout after 100000 ms and throw a `BridgeException` error. That default value can be overridden by defining the new value of `REQ_TIMEOUT` in an environment variable, and setting it to 0 will disable timeout checks.
+* Function calls will timeout after 100000 ms (100 sec) and throw a `BridgeException` error. That default value can be overridden by defining an environment variable `REQ_TIMEOUT`. Setting it to 0 will disable timeout checks.
