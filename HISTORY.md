@@ -1,3 +1,8 @@
+## 1.2.3
+* [js: fix require()'ing files inside a package (#147)](https://github.com/extremeheat/JSPyBridge/commit/a93fce586c4ad3d37d3a58710fd934523df94038) (thanks @livinNector)
+* [doc: fix some typos, optimize wording (#160)](https://github.com/extremeheat/JSPyBridge/commit/12455b31875d292626d6056d4aa365b7449783fb) (thanks @mk-pmb)
+* [readme: pip3 -> pip](https://github.com/extremeheat/JSPyBridge/commit/13e6d9ff5bea9f494b5d9d35c6afaac27a678daa) (thanks @extremeheat)
+
 ## 1.2.2
 * [Handle non-Error objects thrown in JS (#154)](https://github.com/extremeheat/JSPyBridge/commit/5b3aecd787fb2bb531079b61f8492a92f633eaff) (thanks @extremeheat)
 * [docs: fix typo (#146)](https://github.com/extremeheat/JSPyBridge/commit/bd17b0de48baa761284dfef469641ba46d5357bc) (thanks @simoneb)
