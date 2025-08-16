@@ -125,10 +125,10 @@ async function $require (name, version, relativeTo) {
     // The user didn't specify a version. So try whatever version we find installed. This can fail for non CJS modules.
     try { return require(name) } catch { }
   }
-  if (name[0]=="@"){
-    [scope,name, ...path] = name.split('/')
+  if (name[0] == '@') {
+    [scope, name, ...path] = name.split('/')
     name = `${scope}/${name}`
-  }else{
+  } else {
     [name, ...path] = name.split('/') // for requiring files using from packages
   }
   // A version was specified, or the package wasn't found already installed.
