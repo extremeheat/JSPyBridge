@@ -18,6 +18,10 @@ describe('Bridge from Python', function () {
 
   it('runs general test', function () {
     // Just make sure it passes without a bad exit code
-    cp.execSync(`python3 ${d}/javascript/test_general.py`, { stdio: 'inherit' })
+    cp.execSync(`python ${d}/javascript/test_general.py`, { stdio: 'inherit' })
+  })
+
+  it('can download npm package', function () {
+    cp.execSync(`python ${d}/javascript/test_install.py`, { stdio: 'inherit' })
   })
 })

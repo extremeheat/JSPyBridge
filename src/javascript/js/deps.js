@@ -125,11 +125,14 @@ async function $require (name, version, relativeTo) {
     // The user didn't specify a version. So try whatever version we find installed. This can fail for non CJS modules.
     try { return require(name) } catch { }
   }
+  let path = []
   if (name[0] == '@') {
-    [scope, name, ...path] = name.split('/')
-    name = `${scope}/${name}`
+    const [_scope, _name, ..._path] = name.split('/')
+    name = `${_scope}/${_name}`
+    path = _path
   } else {
-    [name, ...path] = name.split('/') // for requiring files using from packages
+    const [_name, ..._path] = name.split('/') // for requiring files using from packages
+    name = _name
   }
   // A version was specified, or the package wasn't found already installed.
   const newpath = pm.install(name, version)
