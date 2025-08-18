@@ -1,7 +1,7 @@
 node_modules
 __*
 .DS*
-src/**/package.json
 package-lock.json
 *.egg-info
+dist
 build
