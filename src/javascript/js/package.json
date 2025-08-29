@@ -1,17 +1,8 @@
 {
   "name": "javascript",
   "private": true,
-  "description": "Call and interop Node.js APIs with Python",
-  "version": "1.2.4",
+  "description": "Internal package install directory for JSPyBridge",
+  "version": "1.0.0",
   "license": "MIT",
-  "type": "commonjs",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/extremeheat/JSPyBridge.git"
-  },
-  "author": {
-    "name": "extremeheat",
-    "email": "extreme@protonmail.ch"
-  },
-  "homepage": "https://github.com/extremeheat/JSPyBridge"
+  "type": "commonjs"
 }
