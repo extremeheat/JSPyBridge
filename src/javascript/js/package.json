@@ -1,0 +1,8 @@
+{
+  "name": "javascript",
+  "private": true,
+  "description": "Internal package install directory for JSPyBridge",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "commonjs"
+}
