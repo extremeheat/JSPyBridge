@@ -6,7 +6,7 @@ const errors = require('./errors')
 if (typeof performance === 'undefined') var { performance } = require('perf_hooks')
 
 const log = () => { }
-const REQ_TIMEOUT = parseInt(process.env.REQ_TIMEOUT) ?? 100000
+const REQ_TIMEOUT = isNaN(process.env.REQ_TIMEOUT) ? 100000 : parseInt(process.env.REQ_TIMEOUT)
 
 class BridgeException extends Error {
   constructor (...a) {
