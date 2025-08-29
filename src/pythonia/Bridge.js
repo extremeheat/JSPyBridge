@@ -1,10 +1,9 @@
 const util = require('util')
 const { JSBridge } = require('./jsi')
 const errors = require('./errors')
+
 const log = process.env.DEBUG ? console.debug : () => {}
-// const log = console.log
-// use REQ_TIMEOUT env var value if parseable as integer, otherwise default to 100000 (ms)
-const REQ_TIMEOUT = parseInt(process.env.REQ_TIMEOUT) || 100000
+const REQ_TIMEOUT = parseInt(process.env.REQ_TIMEOUT) ?? 100000
 
 class BridgeException extends Error {
   constructor (...a) {
