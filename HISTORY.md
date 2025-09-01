@@ -1,3 +1,7 @@
+## 1.2.5
+* [Fix timeout handling (#168)](https://github.com/extremeheat/JSPyBridge/commit/3ae9721f2ea16865434233401582b8cb715679bc) (thanks @extremeheat)
+* [fix: allow importing packages in ESM context (#158)](https://github.com/extremeheat/JSPyBridge/commit/9c2ff49282a40ad915a390f10f64901bc1814ee1) (thanks @Killusions)
+
 ## 1.2.4
 * [javascript: Fix npm dependency installing bug (#164)](https://github.com/extremeheat/JSPyBridge/commit/747e1fd221cef6db0ca28480db5e745dbcf57cd6) (thanks @extremeheat)
 
