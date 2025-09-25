@@ -40,7 +40,7 @@ class PackageManager {
   }
 
   getInstalledVersion (name) {
-    return this.installed.dependencies[name]
+    return this.installed.dependencies?.[name]
   }
 
   setInstalledVersion (name, version) {
