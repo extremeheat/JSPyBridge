@@ -1,3 +1,6 @@
+## 1.2.6
+* [Add dependencies field to package.json](https://github.com/extremeheat/JSPyBridge/commit/9c5cbefff12aea3dd024745ff761a5a2b2d9beb0) (thanks @extremeheat)
+
 ## 1.2.5
 * [Fix timeout handling (#168)](https://github.com/extremeheat/JSPyBridge/commit/3ae9721f2ea16865434233401582b8cb715679bc) (thanks @extremeheat)
 * [fix: allow importing packages in ESM context (#158)](https://github.com/extremeheat/JSPyBridge/commit/9c2ff49282a40ad915a390f10f64901bc1814ee1) (thanks @Killusions)
